@@ -1,6 +1,9 @@
 "use client";
 import { TokenLogo } from "@/components/token-logo";
 import Link from "next/link";
+import Image from "next/image";
+import DecimalBase from "decimal.js";
+const Decimal = DecimalBase.clone({ precision: 80 });
 import dynamic from "next/dynamic";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
@@ -106,16 +109,144 @@ export function Stockroom({
     const selected = stocks.find((s) => s.mint === mint);
     if (selected) setStock(selected);
   }, []);
+  const tradeFeeBps =
+    mode === "market" ? 25 : (protocol.data?.tradeFeeBps ?? 25);
   const [amount, setAmount] = useState("100");
   const [marketPayment, setMarketPayment] =
     useState<PaymentToken>(PAYMENT_USDC);
-  const payment = paymentForMode(mode, marketPayment);
+  const [target, setTarget] = useState("");
+  const [stockDecimals, setStockDecimals] = useState(9);
+  useEffect(() => {
+    const c = new AbortController();
+    fetch(`/api/payment-token?mint=${stock.mint}`, { signal: c.signal })
+      .then((r) => r.json())
+      .then((t) => {
+        if (Number.isInteger(t.decimals)) setStockDecimals(t.decimals);
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, [stock.mint]);
+  const funding = paymentForMode(mode, marketPayment);
+  const [selling, setSelling] = useState(false);
+  const isSelling = mode === "market" && selling;
+  const stockToken = {
+    mint: stock.mint,
+    symbol: stock.ticker,
+    name: stock.name,
+    decimals: stockDecimals,
+    logo: stock.logo,
+  };
+  const payment = isSelling ? stockToken : funding;
+  const receive = isSelling ? funding : stockToken;
+  const [receiveAmount, setReceiveAmount] = useState("");
+  const [editingOutput, setEditingOutput] = useState(false);
+  const [estimate, setEstimate] = useState<{
+    input: string;
+    output: string;
+  } | null>(null);
+  const [estimateError, setEstimateError] = useState("");
+  const [estimating, setEstimating] = useState(false);
+  const displayedAmount = editingOutput ? (estimate?.input ?? "") : amount;
+  const displayedOutput = editingOutput
+    ? receiveAmount
+    : (estimate?.output ?? "");
+  function editInput(value: string) {
+    setEditingOutput(false);
+    setEstimate(null);
+    setAmount(value);
+  }
+  useEffect(() => {
+    setEstimate(null);
+    setEstimateError("");
+    const value = editingOutput ? receiveAmount : amount;
+    if (!value || !/^\d+(\.\d+)?$/.test(value) || new Decimal(value).lte(0)) {
+      setEstimating(false);
+      return;
+    }
+    if (mode === "limit") {
+      try {
+        const price = new Decimal(target);
+        if (price.lte(0)) return;
+        setEstimate(
+          editingOutput
+            ? {
+                input: new Decimal(value)
+                  .mul(price)
+                  .mul(10000)
+                  .div(10000 - tradeFeeBps)
+                  .toDecimalPlaces(6, Decimal.ROUND_UP)
+                  .toFixed(),
+                output: value,
+              }
+            : {
+                input: value,
+                output: new Decimal(
+                  formatUnits(
+                    parseUnits(value, 6) -
+                      feeFor(parseUnits(value, 6), tradeFeeBps),
+                    6,
+                  ),
+                )
+                  .div(price)
+                  .toDecimalPlaces(stockDecimals, Decimal.ROUND_DOWN)
+                  .toFixed(),
+              },
+        );
+      } catch {}
+      return;
+    }
+    if (mode !== "market") return;
+    const controller = new AbortController();
+    setEstimating(true);
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/market/estimate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inputMint: payment.mint,
+            outputMint: receive.mint,
+            amount: value,
+            exactOutput: editingOutput,
+          }),
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        if (!controller.signal.aborted) setEstimate(data);
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setEstimateError(
+            error instanceof Error ? error.message : "Estimate unavailable.",
+          );
+      } finally {
+        if (!controller.signal.aborted) setEstimating(false);
+      }
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    amount,
+    receiveAmount,
+    editingOutput,
+    payment.mint,
+    receive.mint,
+    mode,
+    target,
+    stockDecimals,
+    tradeFeeBps,
+  ]);
   const [paymentPicker, setPaymentPicker] = useState(false);
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [resolvingPayment, setResolvingPayment] = useState(false);
   const paymentLookup = useRef(0);
   function choosePayment(token: PaymentToken) {
+    setEditingOutput(false);
+    setEstimate(null);
+    setReceiveAmount("");
     setMarketPayment(token);
     setAmount("");
     setPaymentPicker(false);
@@ -142,7 +273,6 @@ export function Stockroom({
     }
   }
 
-  const [target, setTarget] = useState("");
   const [picker, setPicker] = useState(false);
   const [search, setSearch] = useState("");
   const [issuer, setIssuer] = useState("All");
@@ -152,6 +282,20 @@ export function Stockroom({
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  const [expiry, setExpiry] = useState(30);
+  const [marketPrice, setMarketPrice] = useState<number | null>(null);
+  useEffect(() => {
+    setMarketPrice(null);
+    if (mode !== "limit") return;
+    const c = new AbortController();
+    fetch(`/api/market/estimate?mint=${stock.mint}`, { signal: c.signal })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!c.signal.aborted) setMarketPrice(d.price);
+      })
+      .catch(() => {});
+    return () => c.abort();
+  }, [mode, stock.mint]);
   const [frequency, setFrequency] = useState("Daily");
   const [installments, setInstallments] = useState("10");
   const [orderTab, setOrderTab] = useState("orders");
@@ -210,7 +354,8 @@ export function Stockroom({
   let perPurchase = "—";
   try {
     const count = BigInt(installments);
-    if (count > 0n) perPurchase = formatUnits(parseUnits(amount, 6) / count, 6);
+    if (count > 0n)
+      perPurchase = formatUnits(parseUnits(displayedAmount, 6) / count, 6);
   } catch {}
   const [balances, setBalances] = useState<Balances | null>(null);
   const [paymentMetadata, setPaymentMetadata] = useState<
@@ -286,7 +431,15 @@ export function Stockroom({
     setError("");
     setStatus("");
     setSignature("");
-  }, [owner, stock.mint, amount, mode, payment.mint]);
+  }, [
+    owner,
+    stock.mint,
+    displayedAmount,
+    receiveAmount,
+    mode,
+    payment.mint,
+    receive.mint,
+  ]);
   useEffect(() => {
     setBalances(null);
     setBalanceError("");
@@ -347,7 +500,7 @@ export function Stockroom({
   const payBalance = balances ? (balances[payment.mint]?.amount ?? "0") : null;
   let fee = "—";
   try {
-    fee = formatUnits(feeFor(parseUnits(amount, 6)), 6);
+    fee = formatUnits(feeFor(parseUnits(displayedAmount, 6), tradeFeeBps), 6);
   } catch {}
   const expired = review ? now >= review.expiresAt : false;
   async function getQuote() {
@@ -363,10 +516,10 @@ export function Stockroom({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           owner,
-          mint: stock.mint,
+          mint: receive.mint,
           inputMint: payment.mint,
           mode: "market",
-          amount,
+          amount: displayedAmount,
         }),
       });
       const data = await res.json();
@@ -393,10 +546,11 @@ export function Stockroom({
     try {
       if (
         review.owner !== owner ||
-        review.mint !== stock.mint ||
+        review.mint !== receive.mint ||
         review.inputMint !== payment.mint ||
         review.inputDecimals !== payment.decimals ||
-        review.amount !== parseUnits(amount, payment.decimals).toString() ||
+        review.amount !==
+          parseUnits(displayedAmount, payment.decimals).toString() ||
         Date.now() >= review.expiresAt
       )
         throw new Error("Quote expired. Request a fresh quote.");
@@ -520,6 +674,9 @@ export function Stockroom({
                   onClick={() => {
                     if (paymentForMode(id, marketPayment).mint !== payment.mint)
                       setAmount("");
+                    setEditingOutput(false);
+                    setEstimate(null);
+                    setReceiveAmount("");
                     setMode(id);
                   }}
                 >
@@ -533,13 +690,15 @@ export function Stockroom({
               ))}
             </aside>
             <section
-              className="ticket"
+              className={`ticket ticket-${mode}`}
               aria-label={`${mode === "dca" ? "DCA" : mode === "limit" ? "Limit" : "Market"} stock purchase`}
             >
               <div className="ticket-toolbar">
                 <h1>
                   {mode === "market"
-                    ? "Buy stock"
+                    ? isSelling
+                      ? "Sell stock"
+                      : "Buy stock"
                     : mode === "limit"
                       ? "Buy at your price"
                       : "Build your position"}
@@ -566,6 +725,42 @@ export function Stockroom({
                   </button>
                 </div>
               </div>
+              {mode === "limit" && (
+                <div className="target-field">
+                  <label htmlFor="target">Limit price</label>
+                  <div>
+                    <input
+                      id="target"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                    />
+                    <span>USDC / {stock.ticker}</span>
+                  </div>
+                  <div className="limit-market-reference">
+                    <span>
+                      Market:{" "}
+                      {marketPrice === null
+                        ? "Unavailable"
+                        : marketPrice.toLocaleString(undefined, {
+                            maximumFractionDigits: 6,
+                          })}
+                    </span>
+                    <button
+                      disabled={marketPrice === null}
+                      onClick={() =>
+                        marketPrice !== null &&
+                        setTarget(
+                          new Decimal(marketPrice).toDecimalPlaces(6).toFixed(),
+                        )
+                      }
+                    >
+                      Use market
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="ticket-panel pay-panel">
                 <label htmlFor="amount">
                   {mode === "dca" ? "Total budget" : "Pay"}
@@ -575,9 +770,9 @@ export function Stockroom({
                     id="amount"
                     aria-label={`${payment.symbol} amount`}
                     inputMode="decimal"
-                    value={amount}
+                    value={displayedAmount}
                     placeholder="0.00"
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => editInput(e.target.value)}
                     disabled={busy}
                   />
                   {mode === "market" ? (
@@ -585,7 +780,9 @@ export function Stockroom({
                       className="token-chip"
                       aria-label="Select payment token"
                       disabled={busy}
-                      onClick={() => setPaymentPicker(true)}
+                      onClick={() =>
+                        isSelling ? setPicker(true) : setPaymentPicker(true)
+                      }
                     >
                       <TokenLogo token={payment} />
                       {payment.symbol}
@@ -611,7 +808,7 @@ export function Stockroom({
                       <button
                         key={a}
                         disabled={busy}
-                        onClick={() => setAmount(a)}
+                        onClick={() => editInput(a)}
                       >
                         {payment.mint === USDC ? "$" : ""}
                         {a}
@@ -635,7 +832,7 @@ export function Stockroom({
                       }
                       onClick={() =>
                         payBalance !== null &&
-                        setAmount(formatUnits(payBalance, payment.decimals))
+                        editInput(formatUnits(payBalance, payment.decimals))
                       }
                     >
                       Max
@@ -643,54 +840,95 @@ export function Stockroom({
                   </span>
                 </div>
               </div>
-              <div className="direction">
+              <button
+                type="button"
+                className="direction"
+                aria-label="Switch buying and selling"
+                disabled={busy || mode !== "market"}
+                title={
+                  mode === "market" ? "Switch assets" : "Yield orders use USDC"
+                }
+                onClick={() => {
+                  setSelling(!selling);
+                  editInput(displayedOutput);
+                  setReceiveAmount("");
+                }}
+              >
                 <ArrowDown size={17} />
-              </div>
+              </button>
               <div className="ticket-panel receive-panel">
                 <div className="panel-label">
-                  <span>Buy</span>
-                  <span className="issuer-label">{stock.provider}</span>
+                  <span>
+                    {mode === "limit" ? "Quantity to buy" : "Receive"}
+                  </span>
+                  <span className="issuer-label">
+                    {isSelling ? funding.name : stock.provider}
+                  </span>
                 </div>
                 <div className="ticket-amount">
-                  <span className={`output-amount ${review ? "" : "unquoted"}`}>
-                    {review
-                      ? formatUnits(review.outAmount, review.decimals, 6)
-                      : "—"}
-                  </span>
+                  <input
+                    aria-label={`${receive.symbol} receive amount`}
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    value={
+                      review
+                        ? formatUnits(review.outAmount, review.decimals)
+                        : displayedOutput
+                    }
+                    disabled={busy || mode === "dca"}
+                    onChange={(e) => {
+                      setReview(null);
+                      setEditingOutput(true);
+                      setEstimate(null);
+                      setReceiveAmount(e.target.value);
+                    }}
+                  />
                   <button
                     className="token-chip"
-                    onClick={() => setPicker(true)}
+                    onClick={() =>
+                      isSelling ? setPaymentPicker(true) : setPicker(true)
+                    }
                     disabled={busy}
                     aria-label="Select stock"
                   >
-                    <Logo stock={stock} small />
-                    <strong>{stock.ticker}</strong>
+                    <TokenLogo token={receive} />
+                    <strong>{receive.symbol}</strong>
                     <ChevronDown size={15} />
                   </button>
                 </div>
                 <div className="panel-bottom">
-                  <span>{stock.name}</span>
+                  <span>{receive.name}</span>
                   <span>
                     {balances
-                      ? `Balance: ${balances[stock.mint]?.uiAmount ?? formatUnits(balances[stock.mint]?.amount ?? "0", balances[stock.mint]?.decimals ?? 0, 6)}`
+                      ? `Balance: ${balances[receive.mint]?.uiAmount ?? formatUnits(balances[receive.mint]?.amount ?? "0", balances[receive.mint]?.decimals ?? 0, 6)}`
                       : "Balance: —"}
                   </span>
                 </div>
               </div>
+              {mode === "market" && (
+                <div className="estimate-caption" aria-live="polite">
+                  {estimating
+                    ? "Updating estimate…"
+                    : estimateError ||
+                      (estimate
+                        ? "Estimated · Final amounts shown at review"
+                        : "")}
+                </div>
+              )}
               {mode === "limit" && (
                 <div className="advanced-order">
-                  <div className="target-field">
-                    <label htmlFor="target">Buy when price is</label>
-                    <div>
-                      <input
-                        id="target"
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        value={target}
-                        onChange={(e) => setTarget(e.target.value)}
-                      />
-                      <span>USDC</span>
-                    </div>
+                  <div className="expiry-options">
+                    <span>Expiry</span>
+                    {[1, 7, 30].map((days) => (
+                      <button
+                        key={days}
+                        aria-pressed={expiry === days}
+                        className={expiry === days ? "active" : ""}
+                        onClick={() => setExpiry(days)}
+                      >
+                        {days}D
+                      </button>
+                    ))}
                   </div>
                   <div className="yield-strip">
                     <span>
@@ -702,23 +940,27 @@ export function Stockroom({
                     </span>
                   </div>
                   <div className="limit-yield-details">
-                    <Row label="Earning balance">— USDC</Row>
-                    <Row label="Current order value (draft)">
+                    <Row label="Order value">
                       {(() => {
                         try {
-                          return `${formatUnits(parseUnits(amount, 6), 6)} USDC`;
+                          return `${formatUnits(parseUnits(displayedAmount, 6), 6)} USDC`;
                         } catch {
                           return "— USDC";
                         }
                       })()}
                     </Row>
-                    <Row label="Yield earned on this order">— USDC</Row>
-                    <p>APY unavailable. No active order has been placed.</p>
+                    <Row label="Available">
+                      {payBalance === null ? "—" : formatUnits(payBalance, 6)}{" "}
+                      USDC
+                    </Row>
                   </div>
                 </div>
               )}
               {mode === "dca" && (
                 <div className="advanced-order">
+                  <h2 className="schedule-title">
+                    <Repeat2 size={17} /> Schedule
+                  </h2>
                   <div className="schedule-fields">
                     <label>
                       Every
@@ -727,8 +969,19 @@ export function Stockroom({
                         value={frequency}
                         onChange={(e) => setFrequency(e.target.value)}
                       >
-                        {["Daily", "Weekly", "Monthly"].map((f) => (
-                          <option key={f}>{f}</option>
+                        {["Hourly", "Daily", "Weekly", "Monthly"].map((f) => (
+                          <option key={f} value={f}>
+                            {
+                              (
+                                {
+                                  Hourly: "Hour",
+                                  Daily: "Day",
+                                  Weekly: "Week",
+                                  Monthly: "Month",
+                                } as Record<string, string>
+                              )[f]
+                            }
+                          </option>
                         ))}
                       </select>
                     </label>
@@ -751,7 +1004,7 @@ export function Stockroom({
               <details
                 className="fee-disclosure"
                 key={review?.transaction ?? "no-quote"}
-                open={!!review}
+                open={mode === "market" || !!review}
               >
                 <summary>
                   <span>
@@ -759,13 +1012,13 @@ export function Stockroom({
                     {review ? "Quote details" : "Fees & execution"}
                   </span>
                   <span>
-                    0.25% fee <ChevronDown size={14} />
+                    {percent(tradeFeeBps)} fee <ChevronDown size={14} />
                   </span>
                 </summary>
                 <div className="trade-details">
-                  <Row label="Protocol fee · 0.25%">
+                  <Row label={`Protocol fee · ${percent(tradeFeeBps)}`}>
                     {review
-                      ? `${formatUnits(review.protocolFee, review.feeDecimals)} ${review.feeMint === stock.mint ? stock.ticker : payment.symbol}`
+                      ? `${formatUnits(review.protocolFee, review.feeDecimals)} ${review.feeMint === stock.mint ? stock.ticker : funding.symbol}`
                       : mode === "market"
                         ? "Available with quote"
                         : `${fee} USDC`}
@@ -778,7 +1031,7 @@ export function Stockroom({
                     <>
                       <Row label="Minimum received">
                         {formatUnits(review.minimum, review.decimals)}{" "}
-                        {stock.ticker}
+                        {receive.symbol}
                       </Row>
                       <Row label="Network fee">
                         {formatUnits(review.networkFee, 9)} SOL
@@ -849,19 +1102,24 @@ export function Stockroom({
                         protocol.run({
                           action: "deposit",
                           kind: mode,
-                          amount: parseUnits(amount, 6).toString(),
+                          amount: parseUnits(displayedAmount, 6).toString(),
                           stockMint: stock.mint,
                           targetPrice:
                             mode === "limit"
                               ? parseUnits(target, 6).toString()
                               : "0",
+                          expiresAt: String(
+                            Math.floor(Date.now() / 1000) + expiry * 86400,
+                          ),
                           steps: Number(installments),
                           interval:
-                            frequency === "Weekly"
-                              ? 604800
-                              : frequency === "Monthly"
-                                ? 2592000
-                                : 86400,
+                            frequency === "Hourly"
+                              ? 3600
+                              : frequency === "Weekly"
+                                ? 604800
+                                : frequency === "Monthly"
+                                  ? 2592000
+                                  : 86400,
                         });
                       } catch (e) {
                         setStatus(
@@ -897,10 +1155,12 @@ export function Stockroom({
                       : !wallet.signTransaction
                         ? "Wallet cannot sign"
                         : review && !expired
-                          ? `Buy ${stock.ticker}`
+                          ? `${isSelling ? "Sell" : "Buy"} ${stock.ticker}`
                           : expired
                             ? "Refresh quote"
-                            : "Review buy"}
+                            : isSelling
+                              ? "Review sell"
+                              : "Review buy"}
                   </button>
                 )}
               </div>
@@ -915,7 +1175,7 @@ export function Stockroom({
                     className={orderTab === "orders" ? "active" : ""}
                     onClick={() => setOrderTab("orders")}
                   >
-                    Orders
+                    Open orders
                   </button>
                   <button
                     className={orderTab === "history" ? "active" : ""}
@@ -1146,10 +1406,16 @@ export function Stockroom({
                   className={issuer === p ? "active" : ""}
                   onClick={() => setIssuer(p)}
                 >
-                  {p === "Backpack" && (
-                    <span className="provider-dot backpack" />
+                  {p !== "All" && (
+                    <Image
+                      className="issuer-logo"
+                      src={`/logos/issuers/${p.toLowerCase()}.${p === "Backpack" ? "png" : "svg"}`}
+                      width={20}
+                      height={20}
+                      alt=""
+                      unoptimized
+                    />
                   )}
-                  {p === "Ondo" && <span className="provider-dot ondo" />}
                   {p}
                   <span className="issuer-count">
                     {p === "All"

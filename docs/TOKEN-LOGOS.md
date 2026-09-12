@@ -10,3 +10,5 @@ USDC and SOL artwork is pinned locally under `public/logos/tokens` for immediate
 Other wallet tokens are fetched in a single batch, up to 100 mints. Imported token metadata is optional; unavailable metadata does not bypass or prevent mint verification. Images use the existing circular treatment and fall back to initials when missing, failed, or outside the trusted HTTPS host list. Images send no referrer. Logos and names do not establish issuer authenticity; mint addresses remain visible in the selector.
 
 API reference: https://developers.jup.ag/docs/guides/how-to-get-token-information
+
+Issuer marks in the stock selector are bundled from official site icons: xstocks.com/favicon.svg, ondo.finance/icon.svg, and backpack.exchange/favicon-64x64.png (September 12, 2026).

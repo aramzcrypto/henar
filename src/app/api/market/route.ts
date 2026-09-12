@@ -15,7 +15,7 @@ import {
 } from "@solana/spl-token";
 import { z } from "zod";
 import { connection, assertMainnet, verifiedMint } from "@/lib/solana";
-import { stockFor, USDC } from "@/lib/registry";
+import { stocks, USDC } from "@/lib/registry";
 import {
   SOL_MINT,
   paymentLabel,
@@ -37,7 +37,10 @@ export async function POST(request: Request) {
         amount: z.string().max(30),
       })
       .parse(await request.json());
-    stockFor(input.mint);
+    if (
+      !stocks.some((s) => s.mint === input.mint || s.mint === input.inputMint)
+    )
+      throw new Error("Unsupported stock pair.");
     const owner = new PublicKey(input.owner);
     new PublicKey(input.inputMint);
     if (input.inputMint === input.mint)
@@ -81,9 +84,12 @@ export async function POST(request: Request) {
         true,
         new PublicKey(mint.program),
       ).toBase58();
-      if (input.inputMint === USDC)
-        configuredFees[USDC] ??= getAssociatedTokenAddressSync(
-          new PublicKey(USDC),
+      if (
+        input.inputMint === USDC ||
+        (input.mint !== USDC && stocks.some((s) => s.mint === input.inputMint))
+      )
+        configuredFees[input.inputMint] ??= getAssociatedTokenAddressSync(
+          new PublicKey(input.inputMint),
           treasury,
           true,
           new PublicKey(payment.program),
@@ -244,13 +250,14 @@ export async function POST(request: Request) {
     const after = simulation.value.accounts?.[0]?.lamports;
     if (after === undefined || after === null)
       throw new Error("Could not verify transaction costs.");
-    const rent = accountFunding(
-      BigInt(before),
-      BigInt(after),
-      BigInt(network.value),
-      input.inputMint,
-      amount,
-    );
+    const rent =
+      accountFunding(
+        BigInt(before),
+        BigInt(after),
+        BigInt(network.value),
+        input.inputMint,
+        amount,
+      ) + (input.mint === SOL_MINT ? BigInt(build.outAmount) : 0n);
     if (rent < 0n) throw new Error("Unexpected SOL balance change.");
     return NextResponse.json(
       {

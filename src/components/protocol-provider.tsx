@@ -28,6 +28,7 @@ type RequestAction = {
   targetPrice?: string;
   steps?: number;
   interval?: number;
+  expiresAt?: string;
   recipient?: string;
   message?: string;
 };
