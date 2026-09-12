@@ -81,7 +81,7 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
     setSignature("");
     setBusy(false);
     void refresh();
-    const timer = setInterval(() => void refresh(), 20000);
+    const timer = setInterval(() => void refresh(), 5000);
     return () => clearInterval(timer);
   }, [refresh]);
   const visible = busy || !!prepared || !!error || !!signature;
@@ -161,7 +161,19 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
         throw new Error(
           "Transaction submitted; verification is pending. Check its status before retrying.",
         );
-      if (current === generation.current) await refresh();
+      if (current === generation.current) {
+        await refresh();
+        if (
+          ["open", "openLucky", "bankLucky", "rollLucky"].includes(
+            String(prepared.review.action),
+          )
+        ) {
+          setSignature("");
+          document
+            .getElementById("sealed-packs")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
     } catch (e) {
       if (current === generation.current)
         setError(

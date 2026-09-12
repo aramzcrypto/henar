@@ -13,16 +13,17 @@ import {
 } from "@solana/spl-token";
 import { protocolContext } from "../src/lib/protocol/context";
 import { vaultState, KVAULT, KLEND } from "../src/lib/protocol/kamino";
-import { USDC_KEY } from "../src/lib/protocol/client";
+import { JUPITER_ROUTER } from "../services/solver/pack-swap";
+import { pda, USDC_KEY } from "../src/lib/protocol/client";
 import { PROGRAM_ID as ORAO } from "@orao-network/solana-vrf";
-const PYTH = new PublicKey("rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ");
+import { PYTH_PROGRAMS } from "../src/lib/protocol/pyth";
+const PYTH = PYTH_PROGRAMS.receiverProgramId;
 async function main() {
   const report: { check: string; status: string; detail?: string }[] = [];
   for (const name of [
     "SOLANA_RPC_URL",
     "STOCKROOM_PROGRAM_ID",
     "JUPITER_API_KEY",
-    "PYTH_API_KEY",
     "STOCKROOM_LOOKUP_TABLE",
   ]) {
     report.push({
@@ -45,13 +46,20 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  const { c, config, manifest, programId } = await protocolContext().catch(
-    (error) => {
+  const { c, config, manifest, programId, client } =
+    await protocolContext().catch((error) => {
       console.log(JSON.stringify(report, null, 2));
       throw error;
-    },
-  );
-  for (const key of [programId, KVAULT, KLEND, ORAO, PYTH]) {
+    });
+  const withOracles = process.argv.includes("--with-oracles");
+  for (const key of [
+    programId,
+    KVAULT,
+    KLEND,
+    ORAO,
+    JUPITER_ROUTER,
+    ...(withOracles ? [PYTH] : []),
+  ]) {
     const info = await c.getAccountInfo(key);
     if (!info?.executable)
       throw new Error(`Required program unavailable: ${key}`);
@@ -77,7 +85,25 @@ async function main() {
       "Deployed executable does not match the local checked build.",
     );
   report.push({ check: "deployed-binary", status: "matches-local-build" });
-  if (process.env.PYTH_API_KEY) {
+  const execution = await client.account.packExecution.fetchNullable(
+    pda(programId, "pack-execution"),
+  );
+  report.push({
+    check: "pack-execution",
+    status: execution?.enabled ? "enabled" : "missing",
+    detail: execution
+      ? `Quote authority ${execution.authority}; max budget ${execution.maxBudget} base units; no independent price oracle`
+      : "Configure the pack quote authority",
+  });
+  report.push({
+    check: "automated-position-oracles",
+    status: withOracles ? "checking" : "not-checked",
+    detail:
+      "Packs do not require Pyth. Current Limit/DCA/yield-stock settlement still requires entitled feeds.",
+  });
+  if (withOracles) {
+    if (!process.env.PYTH_API_KEY)
+      throw new Error("PYTH_API_KEY is required for --with-oracles.");
     const prices = await fetchPrices([
       Buffer.from(config.usdcFeed).toString("hex"),
       ...manifest.stocks.map((s) => Buffer.from(s.feed).toString("hex")),

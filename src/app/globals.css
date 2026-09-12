@@ -5127,3 +5127,43 @@ footer a {
  .stock-receipts .section-heading > span { font-size: 10px; }
 }
 .yield-receipt-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #252a3b; color: #bdc4ed; }
+
+/* Lucky shares the existing pack controls; no separate game surface. */
+.lucky-mode { margin: 22px 0; }
+.lucky-mode > p, .lucky-odds p { color: var(--muted, #92959f); font-size: 13px; line-height: 1.6; margin: 12px 0; }
+.lucky-mode-badge { margin-left: 6px; font-size: 10px; opacity: .65; }
+.lucky-mode-note { display: block; color: var(--muted, #92959f); font-size: 12px; line-height: 1.6; margin-top: 10px; }
+.lucky-range { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.lucky-range > span { font-size: 12px; color: var(--muted, #92959f); }
+.lucky-range strong { font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.lucky-range small { font-size: 13px; color: var(--muted, #92959f); }
+.lucky-odds summary { cursor: pointer; font-size: 13px; padding: 12px 0; }
+.lucky-odds summary span { color: var(--muted, #92959f); font-size: 11px; margin-left: 8px; }
+.lucky-odds table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.lucky-odds th, .lucky-odds td { text-align: right; padding: 8px 0; font-weight: 400; }
+.lucky-odds th { color: var(--muted, #92959f); }
+.lucky-odds th:first-child, .lucky-odds td:first-child { text-align: left; }
+.lucky-result-actions { display: flex; flex-wrap: wrap; gap: 10px; max-width: 400px; }
+.lucky-result-actions .primary { width: auto; min-height: 42px; padding: 10px 18px; }
+.lucky-result-actions small { flex-basis: 100%; color: var(--muted, #92959f); font-size: 12px; line-height: 1.5; }
+@media (max-width: 600px) { .lucky-result-actions { width: 100%; } .lucky-result-actions > button { flex: 1; } .lucky-odds summary span { display: block; margin: 5px 0 0; } }
+
+.pack-inventory-item { flex-wrap: wrap; }
+.pack-delivery { display: flex; align-items: center; gap: 20px; width: 100%; padding: 12px 0; }
+.pack-delivery-art { width: 100px; flex: 0 0 100px; display: grid; place-items: center; }
+.pack-delivery-art img { width: 100%; height: auto; object-fit: contain; }
+.pack-delivery-art .asset-logo { width: 64px; height: 64px; }
+.pack-delivery-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.pack-delivery-body > strong { font-size: 22px; }
+.pack-delivery-status, .pack-delivery-proof { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.pack-delivery.delivered .pack-delivery-status { color: var(--accent); }
+.pack-delivery-actions { display: flex; gap: 8px; margin: 8px 0; }
+.pack-delivery.delivered .pack-delivery-art { animation: pack-delivered-reveal 650ms ease-out both; }
+.pack-progress-spin { animation: pack-progress-spin 2s linear infinite; }
+@keyframes pack-progress-spin { to { transform: rotate(360deg); } }
+@keyframes pack-delivered-reveal { from { opacity: 0; transform: scale(.85); filter: brightness(2); } to { opacity: 1; transform: scale(1); filter: brightness(1); } }
+@media (max-width: 640px) { .pack-delivery { gap: 12px; } .pack-delivery-art { width: 64px; flex-basis: 64px; } .pack-delivery-body > strong { font-size: 19px; } }
+@media (prefers-reduced-motion: reduce) { .pack-delivery.delivered .pack-delivery-art, .pack-progress-spin { animation: none; } }
+.pack-execution-details { max-width: 420px; padding: 0 20px; font-size: 12px; color: var(--muted); text-align: left; }
+.pack-execution-details summary { cursor: pointer; text-align: center; padding: 10px; }
+.pack-execution-details p { line-height: 1.65; margin: 12px 0; }

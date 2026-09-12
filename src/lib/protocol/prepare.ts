@@ -37,6 +37,11 @@ export const actionSchema = z.object({
     "open",
     "refundPack",
     "yieldBatch",
+    "openLucky",
+    "bankLucky",
+    "rollLucky",
+    "refundLucky",
+    "resolveLucky",
   ]),
   owner: z.string(),
   account: z.string().optional(),
@@ -86,6 +91,21 @@ export async function prepareAction(input: Action) {
     throw new Error("Select a verified stock mint.");
   const instructions: TransactionInstruction[] = [];
   const tables: AddressLookupTableAccount[] = await protocolLookupTables(c);
+  if (["open", "openLucky", "bankLucky"].includes(input.action)) {
+    const execution = await client.account.packExecution.fetchNullable(
+      pda(programId, "pack-execution"),
+    );
+    if (input.action !== "bankLucky" && (!execution?.enabled || config.paused))
+      throw new Error(
+        "Pack delivery is currently unavailable. Your allocation stays in escrow.",
+      );
+    review.execution =
+      "Jupiter swap, then delivery to your wallet, then reveal";
+    review.quoteService =
+      "Kani chooses the market quote; no independent price oracle";
+    review.protection =
+      "Exact allocation, selected stock, minimum received and 30-second quote expiry";
+  }
   if (input.action === "deposit" || input.action === "preferences") {
     review.yieldDestination = input.destination;
     review.autoPacks = input.autoPacks;
@@ -341,6 +361,108 @@ export async function prepareAction(input: Action) {
       (BigInt(input.count) * 10000000n * BigInt(config.packFeeBps)) /
       10000n
     ).toString();
+  } else if (
+    ["bankLucky", "rollLucky", "refundLucky", "resolveLucky"].includes(
+      input.action,
+    )
+  ) {
+    if (!input.account) throw new Error("Choose a Lucky pack.");
+    resource = new PublicKey(input.account);
+    const pack = await client.account.pack.fetch(resource);
+    if (
+      !pack.owner.equals(owner) ||
+      !pack.config.equals(configKey) ||
+      !pack.lucky
+    )
+      throw new Error("Lucky pack owner or configuration mismatch.");
+    const pool = pda(programId, "lucky-pool");
+    const cash = {
+      pack: resource,
+      pool,
+      usdc: USDC_KEY,
+      poolCash: ata(pool),
+      packCash: ata(resource),
+      tokenProgram: common.tokenProgram,
+    };
+    const base = {
+      cash,
+      owner,
+      config: configKey,
+      ownerCash,
+      randomness: randomnessAccountAddress(Buffer.from(pack.force)),
+    };
+    review.stockBudgetUSDC = pack.budget.toString();
+    review.round = pack.round;
+    review.additionalProtocolFeeUSDC = "0";
+    if (input.action === "resolveLucky") {
+      instructions.push(
+        await client.methods
+          .resolveLucky()
+          .accountsStrict({
+            cash,
+            manifest: pack.manifest,
+            randomness: base.randomness,
+          })
+          .instruction(),
+      );
+    } else if (input.action === "rollLucky") {
+      const poolState = await client.account.luckyPool.fetch(pool);
+      if (
+        !poolState.enabled ||
+        config.paused ||
+        pack.round !== 1 ||
+        !("luckyReady" in pack.status)
+      )
+        throw new Error(
+          "Rollover is unavailable. You can still bank your resolved allocation.",
+        );
+      const nonce = randomBytes(32);
+      const force = createHash("sha256")
+        .update(
+          Buffer.concat([
+            Buffer.from("kani-lucky-roll-v1"),
+            programId.toBuffer(),
+            resource.toBuffer(),
+            Buffer.from([2]),
+            nonce,
+          ]),
+        )
+        .digest();
+      const network = await new Orao({ connection: c }).getNetworkState();
+      instructions.push(
+        await client.methods
+          .rollLucky([...nonce])
+          .accountsStrict({
+            base: { ...base, randomness: randomnessAccountAddress(force) },
+            network: networkStateAccountAddress(),
+            oraoTreasury: network.config.treasury,
+            oraoProgram: ORAO,
+            systemProgram: common.systemProgram,
+          })
+          .instruction(),
+      );
+      review.amountAtRiskUSDC = pack.budget.toString();
+      review.minimumAllocationUSDC = (
+        BigInt(pack.budget.toString()) / 4n
+      ).toString();
+      review.maximumAllocationUSDC = (
+        BigInt(pack.budget.toString()) * 2n
+      ).toString();
+      review.theoreticalReturnBps = 9500;
+      review.odds = "0.25×: 10% · 0.5×: 45% · 1×: 15% · 1.5×: 10% · 2×: 20%";
+      review.randomnessFeeLamports = network.config.requestFee.toString();
+      review.remainingRollovers = 0;
+    } else {
+      instructions.push(
+        await (
+          input.action === "bankLucky"
+            ? client.methods.bankLucky()
+            : client.methods.refundLucky()
+        )
+          .accountsStrict(base)
+          .instruction(),
+      );
+    }
   } else {
     if (!input.account) throw new Error("Choose a pack.");
     resource = new PublicKey(input.account);
@@ -418,24 +540,59 @@ export async function prepareAction(input: Action) {
             )
             .digest();
         const network = await new Orao({ connection: c }).getNetworkState();
-        instructions.push(
-          await client.methods
-            .openPack(batch.nextOpen, [...nonce])
-            .accountsStrict({
-              owner,
-              config: configKey,
-              batch: resource,
-              pack,
-              batchCash: ata(resource),
-              packCash: ata(pack),
-              network: networkStateAccountAddress(),
-              oraoTreasury: network.config.treasury,
-              randomness: randomnessAccountAddress(force),
-              oraoProgram: ORAO,
-              ...common,
-            })
-            .instruction(),
-        );
+        const base = {
+          owner,
+          config: configKey,
+          batch: resource,
+          pack,
+          batchCash: ata(resource),
+          packCash: ata(pack),
+          network: networkStateAccountAddress(),
+          oraoTreasury: network.config.treasury,
+          randomness: randomnessAccountAddress(force),
+          oraoProgram: ORAO,
+          ...common,
+        };
+        if (input.action === "openLucky") {
+          if (!("purchased" in batch.source))
+            throw new Error("Earned packs open in Random mode.");
+          const pool = pda(programId, "lucky-pool");
+          const state = await client.account.luckyPool.fetchNullable(pool);
+          if (!state?.enabled)
+            throw new Error(
+              "Lucky opening is not enabled. Random opening remains available.",
+            );
+          instructions.push(
+            await client.methods
+              .openLucky(batch.nextOpen, [...nonce])
+              .accountsStrict({
+                base,
+                pool,
+                poolCash: ata(pool),
+                treasury: config.treasury,
+              })
+              .instruction(),
+          );
+          const stake = 10000000n - BigInt(batch.unitFee.toString());
+          review.mode = "Lucky · fixed V1 odds";
+          review.amountAtRiskUSDC = stake.toString();
+          review.minimumAllocationUSDC = (stake / 4n).toString();
+          review.maximumAllocationUSDC = (stake * 2n).toString();
+          review.theoreticalReturnBps = 9500;
+          review.odds =
+            "0.25×: 10% · 0.5×: 45% · 1×: 15% · 1.5×: 10% · 2×: 20%";
+          review.feeTiming =
+            "Charged once on opening; non-refundable after opening";
+          review.rollover =
+            "One optional rollover, subject to available reserve";
+        } else {
+          instructions.push(
+            await client.methods
+              .openPack(batch.nextOpen, [...nonce])
+              .accountsStrict(base)
+              .instruction(),
+          );
+        }
         review.randomnessFeeLamports = network.config.requestFee.toString();
         review.protocolFeeUSDC = batch.unitFee.toString();
         resource = pack;

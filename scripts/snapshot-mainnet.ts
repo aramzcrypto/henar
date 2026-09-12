@@ -1,3 +1,4 @@
+import { PYTH_PROGRAMS } from "../src/lib/protocol/pyth";
 import { Wallet } from "@coral-xyz/anchor";
 import { PythSolanaReceiver } from "@pythnetwork/pyth-solana-receiver";
 import { TransactionBuilder } from "@pythnetwork/solana-utils";
@@ -28,6 +29,7 @@ async function main() {
   const testOwner = Keypair.fromSeed(new Uint8Array(32).fill(42));
   const receiver = new PythSolanaReceiver({
     connection: c,
+    ...PYTH_PROGRAMS,
     wallet: new Wallet(testOwner),
   });
   const usdcFeed =

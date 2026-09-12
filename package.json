@@ -27,7 +27,12 @@
     "mainnet:routes": "node --env-file-if-exists=.env.local --import tsx scripts/check-mainnet-routes.ts",
     "mainnet:packets": "node --env-file-if-exists=.env.local --import tsx scripts/check-mainnet-packets.ts",
     "mainnet:lookup:plan": "node --env-file-if-exists=.env.local --import tsx scripts/setup-lookup-table.ts",
-    "mainnet:lookup:setup": "node --env-file-if-exists=.env.local --import tsx scripts/setup-lookup-table.ts --execute"
+    "mainnet:lookup:setup": "node --env-file-if-exists=.env.local --import tsx scripts/setup-lookup-table.ts --execute",
+    "lucky:pool": "node --env-file-if-exists=.env.local --import tsx scripts/lucky-pool.ts",
+    "lucky:simulate": "node --import tsx scripts/simulate-lucky.ts",
+    "pyth:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-pyth.ts",
+    "packs:execution": "node --env-file-if-exists=.env.local --import tsx scripts/pack-execution.ts",
+    "packs:snapshot": "node --env-file-if-exists=.env.local --import tsx scripts/snapshot-pack-swap.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",

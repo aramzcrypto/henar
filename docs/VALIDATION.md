@@ -24,7 +24,7 @@ Default runtime tests use explicit mock vault/oracle fixtures only inside the lo
 
 ## Pending final credentials / funded environment
 
-- `deployed_pyth_full_verification_is_consumed_by_stockroom` is implemented but has not passed: obtaining signed Hermes payloads requires `PYTH_API_KEY` (the unauthenticated endpoint returned HTTP 401). Generate a fresh snapshot with `npm run mainnet:snapshot -- --with-prices` after configuring the key, then run that ignored test.
+- `deployed_pyth_full_verification_is_consumed_by_stockroom` now passes for a signed USDC feed captured with the trial key. The test raises only local CreateAccount rent funding to match ProgramTest 2.3; signed VAA bytes and verifier instructions remain unchanged. This does not establish entitlement to the stock feeds; all 39 current pack-manifest stocks were outside the trial. Packs no longer require this oracle path.
 - Complete atomic swap/settlement simulation, wallet signing and actual stock receipt.
 - Deployed Stockroom binary and configuration verification; real vault/yield accounting, ORAO fulfillment, withdrawals, gifts, expiry/refunds and Portfolio confirmation on mainnet.
 - Stock-specific active transfer-hook/issuer eligibility behavior for all 39 candidate stocks.
@@ -52,3 +52,13 @@ The Pyth variant additionally requires a snapshot produced with `--with-prices`.
 - Kamino SDK source: `38845294447623f6de3afc9dec29875f959f6f48`.
 - Anchor 0.32.1, cargo-build-sbf 4.3.0, Solana CLI/program-test 2.3.13; SDK versions are exact in package.json and package-lock.json; Rust dependencies are locked in Cargo.lock.
 - The `jito-ts` web3 dependency override aligns its old bundled web3 import with the root web3 version. Without it, the Pyth SDK import fails due to an incompatible rpc-websockets package export. No oracle verification shortcut was introduced.
+
+## Lucky implementation update
+
+Added fixed 95% theoretical-return arithmetic, separately funded/escrowed Lucky openings, one owner-authorized rollover, explicit Bank before settlement and guarded timeout recovery. See [LUCKY.md](LUCKY.md) for test scope and mainnet gaps. These changes do not establish live Pyth, VRF fulfillment or funded mainnet validation.
+
+## Oracle-free pack delivery
+
+See [PACK_EXECUTION.md](PACK_EXECUTION.md). A mainnet-captured Jupiter/BABA route passed locally through the deployed Jupiter and issuer token programs, directly spending pack escrow and recording actual owner delivery without Pyth. `pack_swap_is_atomic_bounded_authorized_and_delivers_before_settled` covers local failure rollback and replay protection. These do not constitute funded mainnet execution or an audit.
+
+Latest local snapshot suite: all five ignored integration tests passed (Kamino, ORAO, Lucky/ORAO, signed USDC/Pyth, direct Jupiter/BABA pack). Runtime fixture tests remain separate from actual captured-program tests. Browser fixture verification checks concealment before delivery, actual-unit reveal, Keep/Trade, mobile layout and disclosures.

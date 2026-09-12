@@ -33,6 +33,10 @@ export type BatchView = {
   sender: string;
 };
 export type PackView = {
+  lucky?: boolean;
+  round?: number;
+  stake?: string;
+  budget?: string;
   stockMint?: string;
   displayUnits?: string;
   address: string;
@@ -46,6 +50,13 @@ export type PackView = {
   expiresAt: string;
 };
 export type ProtocolView = {
+  packExecution?: { enabled: boolean; authority: string; maxBudget: string };
+  luckyPool?: {
+    enabled: boolean;
+    reserve: string;
+    maxStake: string;
+    address: string;
+  };
   available: boolean;
   paused: boolean;
   error?: string;

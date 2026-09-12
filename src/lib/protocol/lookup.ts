@@ -13,6 +13,9 @@ export function protocolLookupAddresses(
   const keys = [
     program,
     pda(program, "config"),
+    pda(program, "pack-execution"),
+    pda(program, "lucky-pool"),
+    ata(pda(program, "lucky-pool")),
     pda(program, "manifest", version),
     ...Object.values(common),
     USDC_KEY,

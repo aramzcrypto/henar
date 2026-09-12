@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use stockroom_math::Price;
 // Pyth Receiver PriceUpdateV2 wire layout, as defined by the official SDK.
 // Full verification is mandatory; partial-signature updates are never accepted.
-pub const PYTH_RECEIVER: Pubkey = pubkey!("rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ");
+pub const PYTH_RECEIVER: Pubkey = pubkey!("rec2HHDDnjLfj4kE7VyEtFA1HPGQLK33259532cRyHp");
 #[derive(AnchorDeserialize)]
 enum VerificationLevel {
     Partial { num_signatures: u8 },

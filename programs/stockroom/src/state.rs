@@ -129,6 +129,7 @@ pub enum PackStatus {
     Selected,
     Settled,
     Refunded,
+    LuckyReady,
 }
 #[account]
 #[derive(InitSpace)]
@@ -150,6 +151,10 @@ pub struct Pack {
     pub created_at: i64,
     pub expires_at: i64,
     pub settled_at: i64,
+    pub lucky: bool,
+    pub round: u8,
+    pub stake: u64,
+    pub budget: u64,
     pub bump: u8,
 }
 #[event]
@@ -221,4 +226,15 @@ pub fn emit_activity(
         timestamp: Clock::get()?.unix_timestamp
     });
     Ok(())
+}
+
+/// Only unallocated house capital lives here. Every accepted roll moves its
+/// entire maximum liability into the pack ATA, beyond admin withdrawal authority.
+#[account]
+#[derive(InitSpace)]
+pub struct LuckyPool {
+    pub config: Pubkey,
+    pub enabled: bool,
+    pub max_stake: u64,
+    pub bump: u8,
 }

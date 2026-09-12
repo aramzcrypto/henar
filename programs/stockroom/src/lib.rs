@@ -2,12 +2,16 @@
 use anchor_lang::prelude::*;
 pub mod contexts;
 pub mod kamino;
+pub mod lucky;
 pub mod oracle;
+pub mod pack_swap;
 pub mod packs;
 pub mod positions;
 pub mod state;
 pub mod tokens;
 use contexts::*;
+use lucky::*;
+use pack_swap::*;
 use positions::PositionTerms;
 use state::*;
 // Development-only placeholder. Deployment tooling replaces this with the generated program address.
@@ -201,6 +205,30 @@ pub mod stockroom {
     ) -> Result<()> {
         positions::settle_yield(ctx, amount, delivered)
     }
+    pub fn initialize_lucky(ctx: Context<InitializeLucky>) -> Result<()> {
+        lucky::initialize(ctx)
+    }
+    pub fn configure_lucky(ctx: Context<AdminLucky>, enabled: bool, max_stake: u64) -> Result<()> {
+        lucky::configure(ctx, enabled, max_stake)
+    }
+    pub fn withdraw_lucky_reserve(ctx: Context<AdminLucky>, amount: u64) -> Result<()> {
+        lucky::withdraw(ctx, amount)
+    }
+    pub fn open_lucky(ctx: Context<OpenLucky>, index: u64, nonce: [u8; 32]) -> Result<()> {
+        lucky::open(ctx, index, nonce)
+    }
+    pub fn resolve_lucky(ctx: Context<ResolveLucky>) -> Result<()> {
+        lucky::resolve(ctx)
+    }
+    pub fn bank_lucky(ctx: Context<OwnerLucky>) -> Result<()> {
+        lucky::bank(ctx)
+    }
+    pub fn roll_lucky(ctx: Context<RollLucky>, nonce: [u8; 32]) -> Result<()> {
+        lucky::rollover(ctx, nonce)
+    }
+    pub fn refund_lucky(ctx: Context<OwnerLucky>) -> Result<()> {
+        lucky::refund(ctx)
+    }
     pub fn buy_batch(ctx: Context<BuyBatch>, id: u64, count: u64, slippage_bps: u16) -> Result<()> {
         packs::buy(ctx, id, count, slippage_bps)
     }
@@ -230,6 +258,23 @@ pub mod stockroom {
         delivered: u64,
     ) -> Result<()> {
         packs::settle(ctx, delivered)
+    }
+    pub fn configure_pack_execution(
+        ctx: Context<ConfigurePackExecution>,
+        authority: Pubkey,
+        enabled: bool,
+        max_budget: u64,
+    ) -> Result<()> {
+        pack_swap::configure(ctx, authority, enabled, max_budget)
+    }
+    pub fn swap_pack<'info>(
+        ctx: Context<'_, '_, '_, 'info, SwapPack<'info>>,
+        quoted_output: u64,
+        minimum_output: u64,
+        quoted_at: i64,
+        route: Vec<u8>,
+    ) -> Result<()> {
+        pack_swap::swap(ctx, quoted_output, minimum_output, quoted_at, route)
     }
     pub fn refund_pack(ctx: Context<RefundPack>) -> Result<()> {
         packs::refund(ctx)

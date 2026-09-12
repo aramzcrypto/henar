@@ -1,3 +1,4 @@
+import { executePackSwap } from "./pack-swap";
 import { protocolLookupTables } from "../../src/lib/protocol/lookup";
 import {
   assertTransactionLimits,
@@ -94,56 +95,43 @@ export async function executeJob(
   let state: Accounts["position"] | null = null;
   if (job.kind === "pack") {
     let pack = await client.account.pack.fetch(job.address);
-    if (Number(pack.expiresAt) <= now) return;
+    if (
+      Number(pack.expiresAt) <= now &&
+      !(pack.lucky && "pending" in pack.status)
+    )
+      return;
     if ("pending" in pack.status) {
       const vrf = new Orao({ connection: c });
       const fulfilled = (
         await vrf.getRandomness(Buffer.from(pack.force))
       ).getFulfilledRandomness();
       if (!fulfilled) return;
-      await dispatch.instructions([
-        await client.methods
-          .resolvePack()
-          .accountsStrict({
+      const randomness = randomnessAccountAddress(Buffer.from(pack.force));
+      const pool = pda(programId, "lucky-pool");
+      const resolution = pack.lucky
+        ? client.methods.resolveLucky().accountsStrict({
+            cash: {
+              pack: job.address,
+              pool,
+              usdc: USDC_KEY,
+              poolCash: ata(pool),
+              packCash: ata(job.address),
+              tokenProgram: common.tokenProgram,
+            },
+            manifest: pack.manifest,
+            randomness,
+          })
+        : client.methods.resolvePack().accountsStrict({
             pack: job.address,
             manifest: pack.manifest,
-            randomness: randomnessAccountAddress(Buffer.from(pack.force)),
-          })
-          .instruction(),
-      ]);
+            randomness,
+          });
+      await dispatch.instructions([await resolution.instruction()]);
       pack = await client.account.pack.fetch(job.address);
     }
     if (!("selected" in pack.status)) return;
-    owner = pack.owner;
-    manifestKey = pack.manifest;
-    index = pack.stockIndex;
-    slippage = pack.slippageBps;
-    budget = 10000000n - big(pack.unitFee);
-    build = async (delivered, stockPrice, usdcPrice, hooks) => {
-      const manifest = await client.account.manifest.fetch(manifestKey),
-        spec = manifest.stocks[index];
-      return client.methods
-        .settlePack(integer(delivered))
-        .accountsStrict({
-          solver,
-          config: configKey,
-          pack: job.address,
-          manifest: manifestKey,
-          usdc: USDC_KEY,
-          packCash: ata(job.address),
-          solverCash: ata(solver),
-          treasury: config.treasury,
-          stockMint: spec.mint,
-          solverStock: ata(solver, spec.mint, spec.tokenProgram),
-          ownerStock: ata(owner, spec.mint, spec.tokenProgram),
-          stockProgram: spec.tokenProgram,
-          stockPrice,
-          usdcPrice,
-          tokenProgram: common.tokenProgram,
-        })
-        .remainingAccounts(hooks)
-        .instruction();
-    };
+    await executePackSwap(job.address, dispatch, maxUSDC);
+    return;
   } else {
     state = await client.account.position.fetch(job.address);
     if (!("active" in state.status)) return;
@@ -255,6 +243,8 @@ export async function executeJob(
       budget = raw - (raw * BigInt(state.tradeFeeBps)) / 10000n;
       if ("limit" in state.kind) limit = big(state.targetPrice);
     }
+    // Oracle-gated position execution is separate from the oracle-free pack path.
+    if (process.env.SOLVER_EXECUTE_POSITIONS !== "true") return;
     const current = state;
     build = async (delivered, stockPrice, usdcPrice, hooks) => {
       const manifest = await client.account.manifest.fetch(manifestKey),

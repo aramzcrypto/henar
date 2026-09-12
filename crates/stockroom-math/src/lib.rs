@@ -293,3 +293,52 @@ mod scaled_tests {
         assert!(scaled_price(100, (-1f64).to_bits()).is_err());
     }
 }
+
+/// Fixed V1 odds, in 100 equally likely buckets. Integer quarter multipliers
+/// preserve six-decimal USDC accounting; sub-base-unit remainders stay in reserve.
+pub fn lucky_payout(stake: u64, bucket: u8) -> Result<u64> {
+    if stake == 0 || bucket >= 100 {
+        return Err(MathError::InvalidAmount);
+    }
+    let quarters = match bucket {
+        0..=9 => 1,
+        10..=54 => 2,
+        55..=69 => 4,
+        70..=79 => 6,
+        _ => 8,
+    };
+    u64::try_from((stake as u128) * quarters / 4).map_err(|_| MathError::Overflow)
+}
+
+#[cfg(test)]
+mod lucky_tests {
+    use super::*;
+    #[test]
+    fn lucky_distribution_is_exact_and_conserves_escrow() {
+        let stake = 9_800_000;
+        let mut counts = [0; 5];
+        let mut total = 0u128;
+        for bucket in 0..100 {
+            let payout = lucky_payout(stake, bucket).unwrap();
+            let index = [stake / 4, stake / 2, stake, stake * 3 / 2, stake * 2]
+                .iter()
+                .position(|x| *x == payout)
+                .unwrap();
+            counts[index] += 1;
+            let returned_to_pool = 2 * stake - payout;
+            assert_eq!(payout + returned_to_pool, 2 * stake);
+            total += payout as u128;
+        }
+        assert_eq!(counts, [10, 45, 15, 10, 20]);
+        assert_eq!(total, stake as u128 * 95);
+    }
+    #[test]
+    fn lucky_rounding_and_overflow_fail_closed() {
+        assert_eq!(lucky_payout(5, 0).unwrap(), 1);
+        assert_eq!(lucky_payout(5, 79).unwrap(), 7);
+        assert!(lucky_payout(0, 0).is_err());
+        assert!(lucky_payout(1, 100).is_err());
+        assert!(lucky_payout(u64::MAX, 99).is_err());
+        assert_eq!(lucky_payout(u64::MAX, 55).unwrap(), u64::MAX);
+    }
+}

@@ -172,6 +172,33 @@ fn price_account(feed: [u8; 32], price: i64, publish: i64, full: bool) -> Solana
     data.extend(0u64.to_le_bytes());
     account(data, stockroom::oracle::PYTH_RECEIVER)
 }
+// Explicit local Jupiter fixture: real SPL transfers, not a live routing claim.
+fn mock_jupiter(_id: &Pubkey, a: &[AccountInfo], data: &[u8]) -> ProgramResult {
+    let spend = u64::from_le_bytes(data[8..16].try_into().unwrap());
+    let output = u64::from_le_bytes(data[16..24].try_into().unwrap());
+    let input =
+        spl_token::instruction::transfer(&spl_token::ID, a[1].key, a[2].key, a[0].key, &[], spend)?;
+    invoke_signed(
+        &input,
+        &[a[1].clone(), a[2].clone(), a[0].clone(), a[6].clone()],
+        &[],
+    )?;
+    let bump = Pubkey::find_program_address(&[b"mock-dex"], &stockroom::pack_swap::JUPITER).1;
+    let seeds = &[b"mock-dex".as_ref(), &[bump]];
+    let out = spl_token::instruction::transfer(
+        &spl_token::ID,
+        a[4].key,
+        a[3].key,
+        a[5].key,
+        &[],
+        output,
+    )?;
+    invoke_signed(
+        &out,
+        &[a[4].clone(), a[3].clone(), a[5].clone(), a[6].clone()],
+        &[seeds],
+    )
+}
 struct Fixture {
     fork_remaining: Vec<solana_sdk::instruction::AccountMeta>,
     fork_withdraw: Option<Vec<solana_sdk::instruction::AccountMeta>>,
@@ -330,6 +357,11 @@ impl Fixture {
         let mut pt = ProgramTest::new("stockroom", stockroom::ID, None);
         pt.set_compute_max_units(1_400_000);
         pt.prefer_bpf(false);
+        pt.add_program(
+            "jupiter_fixture",
+            stockroom::pack_swap::JUPITER,
+            processor!(mock_jupiter),
+        );
         if snapshot.is_none() {
             pt.add_program("kamino_fixture", KVAULT, processor!(mock_kamino));
         }
@@ -882,6 +914,14 @@ impl Fixture {
             created_at: 1000,
             expires_at: 4600,
             settled_at: 0,
+            lucky: false,
+            round: 0,
+            stake: 0,
+            budget: if source == PackSource::Purchased {
+                9_800_000
+            } else {
+                PACK_USDC
+            },
             bump,
         };
         self.ctx
@@ -1405,6 +1445,33 @@ async fn deployed_pyth_full_verification_is_consumed_by_stockroom() {
             solana_sdk::message::VersionedMessage::Legacy(m) => m.recent_blockhash = hash,
             solana_sdk::message::VersionedMessage::V0(m) => m.recent_blockhash = hash,
         }
+        // Current mainnet rent is lower than ProgramTest 2.3's Rent::default.
+        // Adapt ONLY local account funding; signed VAA bytes and verifier instructions stay intact.
+        let keys = original.message.static_account_keys().to_vec();
+        let instructions = match &mut original.message {
+            solana_sdk::message::VersionedMessage::Legacy(m) => &mut m.instructions,
+            solana_sdk::message::VersionedMessage::V0(m) => &mut m.instructions,
+        };
+        for ix in instructions {
+            if keys[ix.program_id_index as usize] == anchor_lang::system_program::ID {
+                if let Ok(solana_sdk::system_instruction::SystemInstruction::CreateAccount {
+                    lamports,
+                    space,
+                    owner,
+                }) = bincode::deserialize(&ix.data)
+                {
+                    let local_rent = Rent::default().minimum_balance(space as usize);
+                    ix.data = bincode::serialize(
+                        &solana_sdk::system_instruction::SystemInstruction::CreateAccount {
+                            lamports: lamports.max(local_rent),
+                            space,
+                            owner,
+                        },
+                    )
+                    .unwrap();
+                }
+            }
+        }
         let ephemeral: Vec<Keypair> = item["testSigners"]
             .as_array()
             .unwrap()
@@ -1535,4 +1602,676 @@ async fn multi_reserve_redemption_completes_and_incomplete_routes_roll_back() {
     let position: Position = f.state(p).await;
     assert_eq!(position.shares, 0);
     assert_eq!(position.principal_basis, 0);
+}
+
+impl Fixture {
+    fn lucky_pool(&mut self, reserve: u64, enabled: bool) -> Pubkey {
+        let (pool, bump) = Pubkey::find_program_address(&[b"lucky-pool"], &stockroom::ID);
+        self.ctx.set_account(
+            &pool,
+            &account(
+                serialized(&LuckyPool {
+                    config: self.config,
+                    enabled,
+                    max_stake: 20_000_000,
+                    bump,
+                }),
+                stockroom::ID,
+            )
+            .into(),
+        );
+        self.ctx.set_account(
+            &ata(&pool, &USDC),
+            &token_account(USDC, pool, reserve).into(),
+        );
+        pool
+    }
+    fn lucky_cash(&self, pack: Pubkey) -> accounts::LuckyCash {
+        let pool = Pubkey::find_program_address(&[b"lucky-pool"], &stockroom::ID).0;
+        accounts::LuckyCash {
+            pack,
+            pool,
+            usdc: USDC,
+            pool_cash: ata(&pool, &USDC),
+            pack_cash: ata(&pack, &USDC),
+            token_program: spl_token::ID,
+        }
+    }
+    fn lucky_owner(&self, pack: Pubkey, randomness: Pubkey, owner: Pubkey) -> accounts::OwnerLucky {
+        accounts::OwnerLucky {
+            cash: self.lucky_cash(pack),
+            owner,
+            config: self.config,
+            owner_cash: ata(&owner, &USDC),
+            randomness,
+        }
+    }
+    fn resolve_lucky_ix(&self, pack: Pubkey, randomness: Pubkey) -> Instruction {
+        Instruction {
+            program_id: stockroom::ID,
+            accounts: accounts::ResolveLucky {
+                cash: self.lucky_cash(pack),
+                manifest: self.manifest,
+                randomness,
+            }
+            .to_account_metas(None),
+            data: instruction::ResolveLucky {}.data(),
+        }
+    }
+    async fn fixture_lucky(&mut self, index: u64) -> Pubkey {
+        let key = self.fixture_pack(index, PackSource::Purchased);
+        let mut p: Pack = self.state(key).await;
+        p.lucky = true;
+        p.round = 1;
+        p.stake = 9_800_000;
+        p.budget = p.stake;
+        p.unit_fee = 0;
+        self.ctx
+            .set_account(&key, &account(serialized(&p), stockroom::ID).into());
+        self.ctx.set_account(
+            &ata(&key, &USDC),
+            &token_account(USDC, key, p.stake * 2).into(),
+        );
+        key
+    }
+}
+#[tokio::test]
+async fn lucky_escrow_resolution_bank_and_delivery_are_atomic() {
+    let mut f = Fixture::new().await;
+    let pool = f.lucky_pool(100_000_000, true);
+    let pack = f.fixture_lucky(70).await;
+    let random = f.randomness(f.owner.pubkey(), false);
+    assert!(!f.send(f.resolve_lucky_ix(pack, random), 0).await);
+    f.randomness(f.other.pubkey(), true);
+    assert!(!f.send(f.resolve_lucky_ix(pack, random), 0).await);
+    f.randomness(f.owner.pubkey(), true);
+    // The ordinary resolution path may never bypass Lucky's payout allocation.
+    assert!(!f.send(f.resolve_ix(pack, random), 0).await);
+    assert!(f.send(f.resolve_lucky_ix(pack, random), 0).await);
+    let p: Pack = f.state(pack).await;
+    assert_eq!(p.status, PackStatus::LuckyReady);
+    let bucket =
+        stockroom::packs::sample_domain(&[9; 64], 100, b"kani-lucky-payout-v1").unwrap() as u8;
+    assert_eq!(
+        p.budget,
+        stockroom_math::lucky_payout(p.stake, bucket).unwrap()
+    );
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, p.budget);
+    assert_eq!(
+        f.balance(ata(&pool, &USDC)).await,
+        100_000_000 + 2 * p.stake - p.budget
+    );
+    assert!(!f.send(f.resolve_lucky_ix(pack, random), 0).await);
+    assert!(!f.send(f.settle_ix(pack, 1_000_000), 2).await);
+    let bank = |f: &Fixture, owner| Instruction {
+        program_id: stockroom::ID,
+        accounts: f.lucky_owner(pack, random, owner).to_account_metas(None),
+        data: instruction::BankLucky {}.data(),
+    };
+    assert!(!f.send(bank(&f, f.other.pubkey()), 1).await);
+    // Pausing both products must not block banking already resolved funds.
+    let mut config: Config = f.state(f.config).await;
+    config.paused = true;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&config), stockroom::ID).into(),
+    );
+    let mut lp: LuckyPool = f.state(pool).await;
+    lp.enabled = false;
+    f.ctx
+        .set_account(&pool, &account(serialized(&lp), stockroom::ID).into());
+    assert!(f.send(bank(&f, f.owner.pubkey()), 0).await);
+    assert!(!f.send(bank(&f, f.owner.pubkey()), 0).await);
+    let before = f.balance(ata(&f.solver.pubkey(), &USDC)).await;
+    assert!(!f.send(f.settle_ix(pack, 1), 2).await);
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, p.budget);
+    assert!(f.send(f.settle_ix(pack, p.budget / 100), 2).await);
+    assert_eq!(
+        f.balance(ata(&f.solver.pubkey(), &USDC)).await - before,
+        p.budget
+    );
+    assert_eq!(f.balance(f.treasury).await, 0); // Fee was collected at opening, not banking.
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, 0);
+}
+#[tokio::test]
+async fn lucky_timeout_cannot_erase_a_fulfilled_loss() {
+    let mut f = Fixture::new().await;
+    let pool = f.lucky_pool(0, true);
+    let pack = f.fixture_lucky(71).await;
+    let random = f.randomness(f.owner.pubkey(), true);
+    f.ctx.set_sysvar(&Clock {
+        unix_timestamp: 5000,
+        ..Default::default()
+    });
+    let refund = Instruction {
+        program_id: stockroom::ID,
+        accounts: f
+            .lucky_owner(pack, random, f.owner.pubkey())
+            .to_account_metas(None),
+        data: instruction::RefundLucky {}.data(),
+    };
+    assert!(!f.send(refund, 0).await);
+    let bypass = Instruction {
+        program_id: stockroom::ID,
+        accounts: accounts::RefundPack {
+            owner: f.owner.pubkey(),
+            pack,
+            usdc: USDC,
+            owner_cash: ata(&f.owner.pubkey(), &USDC),
+            pack_cash: ata(&pack, &USDC),
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::RefundPack {}.data(),
+    };
+    assert!(!f.send(bypass, 0).await);
+    assert!(f.send(f.resolve_lucky_ix(pack, random), 0).await);
+    let p: Pack = f.state(pack).await;
+    assert_eq!(f.balance(ata(&pool, &USDC)).await, 2 * p.stake - p.budget);
+}
+#[tokio::test]
+async fn lucky_unfulfilled_timeout_restores_stake_and_reserve_once() {
+    let mut f = Fixture::new().await;
+    let pool = f.lucky_pool(0, false);
+    let pack = f.fixture_lucky(72).await;
+    let random = f.randomness(f.owner.pubkey(), false);
+    let refund = Instruction {
+        program_id: stockroom::ID,
+        accounts: f
+            .lucky_owner(pack, random, f.owner.pubkey())
+            .to_account_metas(None),
+        data: instruction::RefundLucky {}.data(),
+    };
+    assert!(!f.send(refund.clone(), 0).await);
+    f.ctx.set_sysvar(&Clock {
+        unix_timestamp: 5000,
+        ..Default::default()
+    });
+    let before = f.balance(ata(&f.owner.pubkey(), &USDC)).await;
+    assert!(f.send(refund.clone(), 0).await);
+    assert_eq!(
+        f.balance(ata(&f.owner.pubkey(), &USDC)).await - before,
+        9_800_000
+    );
+    assert_eq!(f.balance(ata(&pool, &USDC)).await, 9_800_000);
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, 0);
+    assert!(!f.send(refund, 0).await);
+    f.randomness(f.owner.pubkey(), true);
+    assert!(!f.send(f.resolve_lucky_ix(pack, random), 0).await);
+}
+
+#[tokio::test]
+#[ignore = "requires public mainnet ORAO snapshot; requests execute locally only"]
+async fn deployed_orao_lucky_reserves_before_open_and_allows_only_one_rollover() {
+    use orao_solana_vrf::state::{FulfilledRequest, RandomnessV2, RequestAccount};
+    let mut f = Fixture::setup(true).await;
+    let owner = f.owner.pubkey();
+    let pool = f.lucky_pool(9_799_999, true);
+    assert!(f.send(f.buy_ix(501, 1), 0).await);
+    let batch = f.batch(owner, 501);
+    let pack = Pubkey::find_program_address(
+        &[b"pack", batch.as_ref(), &0u64.to_le_bytes()],
+        &stockroom::ID,
+    )
+    .0;
+    let network = Pubkey::find_program_address(
+        &[orao_solana_vrf::CONFIG_ACCOUNT_SEED],
+        &orao_solana_vrf::ID,
+    )
+    .0;
+    let network_state: orao_solana_vrf::state::NetworkState = f.state(network).await;
+    let nonce = [91; 32];
+    let force = solana_sha256_hasher::hashv(&[
+        b"stockroom-v1-vrf",
+        stockroom::ID.as_ref(),
+        pack.as_ref(),
+        &nonce,
+    ])
+    .to_bytes();
+    let random = Pubkey::find_program_address(
+        &[orao_solana_vrf::RANDOMNESS_ACCOUNT_SEED, &force],
+        &orao_solana_vrf::ID,
+    )
+    .0;
+    let open = Instruction {
+        program_id: stockroom::ID,
+        accounts: accounts::OpenLucky {
+            base: accounts::OpenPack {
+                owner,
+                config: f.config,
+                batch,
+                pack,
+                usdc: USDC,
+                batch_cash: ata(&batch, &USDC),
+                pack_cash: ata(&pack, &USDC),
+                network,
+                orao_treasury: network_state.config.treasury,
+                randomness: random,
+                orao_program: orao_solana_vrf::ID,
+                token_program: spl_token::ID,
+                associated_token_program: spl_associated_token_account::ID,
+                system_program: anchor_lang::system_program::ID,
+            },
+            pool,
+            pool_cash: ata(&pool, &USDC),
+            treasury: f.treasury,
+        }
+        .to_account_metas(None),
+        data: instruction::OpenLucky { index: 0, nonce }.data(),
+    };
+    assert!(!f.send(open.clone(), 0).await); // One micro-USDC short: no fee/request/debit.
+    assert_eq!(f.balance(ata(&batch, &USDC)).await, 10_000_000);
+    assert_eq!(f.balance(f.treasury).await, 0);
+    f.lucky_pool(100_000_000, false);
+    assert!(!f.send(open.clone(), 0).await);
+    f.lucky_pool(100_000_000, true);
+    assert!(f.send(open.clone(), 0).await);
+    assert!(!f.send(open, 0).await);
+    let p: Pack = f.state(pack).await;
+    assert!(p.lucky);
+    assert_eq!(p.round, 1);
+    assert_eq!(p.unit_fee, 0);
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, 19_600_000);
+    assert_eq!(f.balance(ata(&pool, &USDC)).await, 90_200_000);
+    assert_eq!(f.balance(f.treasury).await, 200_000);
+    let request: RandomnessV2 = f.state(random).await;
+    assert_eq!(request.request.seed(), &force);
+    assert_eq!(request.request.client(), &owner);
+    assert!(request.fulfilled().is_none());
+    // Explicit fulfillment fixture; no claim that a live oracle fulfilled this request.
+    f.ctx.set_account(
+        &random,
+        &account(
+            serialized(&RandomnessV2 {
+                request: RequestAccount::Fulfilled(FulfilledRequest {
+                    client: owner,
+                    seed: force,
+                    randomness: [9; 64],
+                }),
+            }),
+            orao_solana_vrf::ID,
+        )
+        .into(),
+    );
+    assert!(f.send(f.resolve_lucky_ix(pack, random), 0).await);
+    let resolved: Pack = f.state(pack).await;
+    let nonce = [92; 32];
+    let force2 = solana_sha256_hasher::hashv(&[
+        b"kani-lucky-roll-v1",
+        stockroom::ID.as_ref(),
+        pack.as_ref(),
+        &[2],
+        &nonce,
+    ])
+    .to_bytes();
+    let random2 = Pubkey::find_program_address(
+        &[orao_solana_vrf::RANDOMNESS_ACCOUNT_SEED, &force2],
+        &orao_solana_vrf::ID,
+    )
+    .0;
+    let roll = Instruction {
+        program_id: stockroom::ID,
+        accounts: accounts::RollLucky {
+            base: f.lucky_owner(pack, random2, owner),
+            network,
+            orao_treasury: network_state.config.treasury,
+            orao_program: orao_solana_vrf::ID,
+            system_program: anchor_lang::system_program::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::RollLucky { nonce }.data(),
+    };
+    assert!(f.send(roll.clone(), 0).await);
+    let p2: Pack = f.state(pack).await;
+    assert_eq!(p2.round, 2);
+    assert_eq!(p2.stake, resolved.budget);
+    assert_eq!(p2.force, force2);
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, resolved.budget * 2);
+    assert_eq!(f.balance(f.treasury).await, 200_000);
+    f.ctx.set_account(
+        &random2,
+        &account(
+            serialized(&RandomnessV2 {
+                request: RequestAccount::Fulfilled(FulfilledRequest {
+                    client: owner,
+                    seed: force2,
+                    randomness: [8; 64],
+                }),
+            }),
+            orao_solana_vrf::ID,
+        )
+        .into(),
+    );
+    assert!(f.send(f.resolve_lucky_ix(pack, random2), 0).await);
+    assert!(!f.send(roll, 0).await);
+    let final_pack: Pack = f.state(pack).await;
+    assert_eq!(final_pack.status, PackStatus::LuckyReady);
+    assert_eq!(final_pack.stock_index, resolved.stock_index);
+    assert_eq!(
+        f.balance(ata(&pool, &USDC)).await
+            + f.balance(ata(&pack, &USDC)).await
+            + f.balance(f.treasury).await,
+        110_000_000
+    );
+}
+
+#[tokio::test]
+async fn pack_swap_is_atomic_bounded_authorized_and_delivers_before_settled() {
+    use solana_sdk::instruction::AccountMeta;
+    use stockroom::pack_swap::{PackExecution, JUPITER};
+    let mut f = Fixture::new().await;
+    let pack = f.fixture_pack(77, PackSource::Purchased);
+    let randomness = f.randomness(f.owner.pubkey(), true);
+    assert!(f.send(f.resolve_ix(pack, randomness), 0).await);
+    let (execution, bump) = Pubkey::find_program_address(&[b"pack-execution"], &stockroom::ID);
+    f.ctx.set_account(
+        &execution,
+        &account(
+            serialized(&PackExecution {
+                authority: f.solver.pubkey(),
+                enabled: true,
+                max_budget: 40_000_000,
+                bump,
+            }),
+            stockroom::ID,
+        )
+        .into(),
+    );
+    let dex = Pubkey::find_program_address(&[b"mock-dex"], &JUPITER).0;
+    f.ctx.set_account(
+        &dex,
+        &account(vec![], anchor_lang::system_program::ID).into(),
+    );
+    f.ctx
+        .set_account(&ata(&dex, &USDC), &token_account(USDC, dex, 0).into());
+    f.ctx.set_account(
+        &ata(&dex, &f.mint),
+        &token_account(f.mint, dex, 1_000_000).into(),
+    );
+    let build = |f: &Fixture, spend: u64, output: u64, quote: u64, minimum: u64, at: i64| {
+        let mut metas = accounts::SwapPack {
+            quote_authority: f.solver.pubkey(),
+            execution,
+            config: f.config,
+            pack,
+            manifest: f.manifest,
+            usdc: USDC,
+            pack_cash: ata(&pack, &USDC),
+            treasury: f.treasury,
+            stock_mint: f.mint,
+            owner_stock: ata(&f.owner.pubkey(), &f.mint),
+            stock_program: spl_token::ID,
+            token_program: spl_token::ID,
+            jupiter: JUPITER,
+        }
+        .to_account_metas(None);
+        metas.extend([
+            AccountMeta::new_readonly(pack, false),
+            AccountMeta::new(ata(&pack, &USDC), false),
+            AccountMeta::new(ata(&dex, &USDC), false),
+            AccountMeta::new(ata(&f.owner.pubkey(), &f.mint), false),
+            AccountMeta::new(ata(&dex, &f.mint), false),
+            AccountMeta::new_readonly(dex, false),
+            AccountMeta::new_readonly(spl_token::ID, false),
+        ]);
+        Instruction {
+            program_id: stockroom::ID,
+            accounts: metas,
+            data: instruction::SwapPack {
+                quoted_output: quote,
+                minimum_output: minimum,
+                quoted_at: at,
+                route: [
+                    [187, 100, 250, 204, 49, 196, 175, 20],
+                    spend.to_le_bytes(),
+                    output.to_le_bytes(),
+                ]
+                .concat(),
+            }
+            .data(),
+        }
+    };
+    let initial = f.balance(ata(&f.owner.pubkey(), &f.mint)).await;
+    for (spend, output, quote, min, at) in [
+        (9_800_001, 100_000, 100_000, 99_500, 1000), // fee overspend
+        (9_799_999, 100_000, 100_000, 99_500, 1000), // incomplete allocation
+        (9_800_000, 99_499, 100_000, 99_500, 1000),  // underdelivery after real transfers
+        (9_800_000, 100_000, 100_000, 1, 1000),      // excessive slippage
+        (9_800_000, 100_000, 100_000, 99_500, 969),  // stale quote
+        (9_800_000, 100_000, 100_000, 99_500, 1001), // future quote
+        (9_800_000, 0, 0, 0, 1000),
+    ] {
+        assert!(!f.send(build(&f, spend, output, quote, min, at), 2).await);
+        assert_eq!(f.balance(ata(&pack, &USDC)).await, PACK_USDC);
+        assert_eq!(f.balance(ata(&f.owner.pubkey(), &f.mint)).await, initial);
+        assert_eq!(f.balance(f.treasury).await, 0);
+        assert_eq!(f.state::<Pack>(pack).await.status, PackStatus::Selected);
+    }
+    let valid = build(&f, 9_800_000, 101_000, 100_000, 99_500, 1000);
+    let mut unauthorized = valid.clone();
+    unauthorized.accounts[0].pubkey = f.other.pubkey();
+    assert!(!f.send(unauthorized, 1).await);
+    let mut wrong_recipient = valid.clone();
+    wrong_recipient.accounts[9].pubkey = ata(&dex, &f.mint);
+    assert!(!f.send(wrong_recipient, 2).await);
+    let mut wrong_router = valid.clone();
+    wrong_router.accounts[12].pubkey = spl_token::ID;
+    assert!(!f.send(wrong_router, 2).await);
+    f.ctx.set_account(
+        &execution,
+        &account(
+            serialized(&PackExecution {
+                authority: f.solver.pubkey(),
+                enabled: false,
+                max_budget: 40_000_000,
+                bump,
+            }),
+            stockroom::ID,
+        )
+        .into(),
+    );
+    assert!(!f.send(valid.clone(), 2).await);
+    f.ctx.set_account(
+        &execution,
+        &account(
+            serialized(&PackExecution {
+                authority: f.solver.pubkey(),
+                enabled: true,
+                max_budget: 9_799_999,
+                bump,
+            }),
+            stockroom::ID,
+        )
+        .into(),
+    );
+    assert!(!f.send(valid.clone(), 2).await);
+    f.ctx.set_account(
+        &execution,
+        &account(
+            serialized(&PackExecution {
+                authority: f.solver.pubkey(),
+                enabled: true,
+                max_budget: 40_000_000,
+                bump,
+            }),
+            stockroom::ID,
+        )
+        .into(),
+    );
+    assert!(f.send(valid.clone(), 2).await);
+    let result = f.state::<Pack>(pack).await;
+    assert_eq!(result.status, PackStatus::Settled);
+    assert_eq!(result.units_received, 101_000); // All positive price improvement reaches owner.
+    assert_eq!(result.stock_value, 9_800_000);
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, 0);
+    assert_eq!(f.balance(f.treasury).await, 200_000);
+    assert_eq!(
+        f.balance(ata(&f.owner.pubkey(), &f.mint)).await,
+        initial + 101_000
+    );
+    assert!(!f.send(valid, 2).await);
+}
+
+#[tokio::test]
+#[ignore = "requires npm run packs:snapshot; uses captured mainnet Jupiter and issuer programs locally"]
+async fn deployed_jupiter_pack_swap_delivers_stock_without_pyth() {
+    use base64::Engine;
+    use solana_sdk::{
+        instruction::AccountMeta,
+        message::{v0, VersionedMessage},
+        signature::SeedDerivable,
+        transaction::VersionedTransaction,
+    };
+    let snap: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../.cache/pack-swap-snapshot.json"
+        ))
+        .expect("Generate the pack swap snapshot first"),
+    )
+    .unwrap();
+    let decode = |s: &str| base64::engine::general_purpose::STANDARD.decode(s).unwrap();
+    let mut pt = ProgramTest::new("stockroom", stockroom::ID, None);
+    pt.set_compute_max_units(1_400_000);
+    let owner = Keypair::from_seed(&[42; 32]).unwrap();
+    pt.add_account(
+        owner.pubkey(),
+        SolanaAccount {
+            lamports: 100_000_000_000,
+            owner: anchor_lang::system_program::ID,
+            ..Default::default()
+        },
+    );
+    let entries = snap["accounts"].as_array().unwrap();
+    for a in entries {
+        let mut entry = SolanaAccount {
+            lamports: a["lamports"].as_u64().unwrap(),
+            data: decode(a["data"].as_str().unwrap()),
+            owner: a["owner"].as_str().unwrap().parse().unwrap(),
+            executable: a["executable"].as_bool().unwrap(),
+            rent_epoch: 0,
+        };
+        if entry.executable && entry.owner == solana_sdk::bpf_loader_upgradeable::ID {
+            let data_key = Pubkey::new_from_array(entry.data[4..36].try_into().unwrap());
+            let data = entries
+                .iter()
+                .find(|x| x["address"].as_str().unwrap() == data_key.to_string())
+                .unwrap();
+            entry.data = decode(data["data"].as_str().unwrap())[45..].to_vec();
+            entry.owner = solana_sdk::bpf_loader::ID;
+            entry.lamports = 100_000_000_000;
+        }
+        pt.add_account(a["address"].as_str().unwrap().parse().unwrap(), entry);
+    }
+    let mut ctx = pt.start_with_context().await;
+    ctx.warp_to_slot(snap["slot"].as_u64().unwrap() + 1)
+        .unwrap();
+    ctx.set_sysvar(&Clock {
+        unix_timestamp: snap["timestamp"].as_i64().unwrap(),
+        slot: snap["slot"].as_u64().unwrap(),
+        epoch: snap["epoch"].as_u64().unwrap(),
+        ..Default::default()
+    });
+    let mut ix = vec![
+        solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(1_400_000),
+    ];
+    for item in snap["instructions"].as_array().unwrap() {
+        ix.push(Instruction {
+            program_id: item["programId"].as_str().unwrap().parse().unwrap(),
+            accounts: item["keys"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|k| AccountMeta {
+                    pubkey: k["pubkey"].as_str().unwrap().parse().unwrap(),
+                    is_signer: k["isSigner"].as_bool().unwrap(),
+                    is_writable: k["isWritable"].as_bool().unwrap(),
+                })
+                .collect(),
+            data: decode(item["data"].as_str().unwrap()),
+        });
+    }
+    // A test lookup table changes message encoding only; all route account state and binaries are captured.
+    let mut addresses = Vec::new();
+    for i in &ix {
+        for a in &i.accounts {
+            if !a.is_signer && !addresses.contains(&a.pubkey) {
+                addresses.push(a.pubkey);
+            }
+        }
+    }
+    let table_key = Pubkey::new_unique();
+    let table = solana_sdk::address_lookup_table::state::AddressLookupTable {
+        meta: Default::default(),
+        addresses: std::borrow::Cow::Owned(addresses.clone()),
+    }
+    .serialize_for_tests()
+    .unwrap();
+    ctx.set_account(
+        &table_key,
+        &account(table, solana_sdk::address_lookup_table::program::ID).into(),
+    );
+    let blockhash = ctx.banks_client.get_latest_blockhash().await.unwrap();
+    let message = v0::Message::try_compile(
+        &owner.pubkey(),
+        &ix,
+        &[
+            solana_sdk::address_lookup_table::AddressLookupTableAccount {
+                key: table_key,
+                addresses,
+            },
+        ],
+        blockhash,
+    )
+    .unwrap();
+    let tx = VersionedTransaction::try_new(VersionedMessage::V0(message), &[&owner]).unwrap();
+    assert!(bincode::serialize(&tx).unwrap().len() <= 1232);
+    let result = ctx
+        .banks_client
+        .process_transaction_with_metadata(tx)
+        .await
+        .unwrap();
+    if result.result.is_err() {
+        eprintln!("{:?} {:?}", result.result, result.metadata);
+    }
+    assert!(
+        result.result.is_ok(),
+        "Actual Jupiter CPI must settle without any Pyth accounts"
+    );
+    let key: Pubkey = snap["pack"].as_str().unwrap().parse().unwrap();
+    let p = ctx.banks_client.get_account(key).await.unwrap().unwrap();
+    let p = Pack::try_deserialize(&mut &p.data[..]).unwrap();
+    assert_eq!(p.status, PackStatus::Settled);
+    assert!(p.units_received >= snap["minimum"].as_str().unwrap().parse::<u64>().unwrap());
+    assert_eq!(p.stock_value, 9_800_000);
+    let destination = ctx
+        .banks_client
+        .get_account(snap["destination"].as_str().unwrap().parse().unwrap())
+        .await
+        .unwrap()
+        .unwrap();
+    let actual = u64::from_le_bytes(destination.data[64..72].try_into().unwrap());
+    assert_eq!(actual, p.units_received);
+    let cash = ctx
+        .banks_client
+        .get_account(ata(&key, &USDC))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        spl_token::state::Account::unpack(&cash.data)
+            .unwrap()
+            .amount,
+        0
+    );
+    let fee = ctx
+        .banks_client
+        .get_account(snap["treasury"].as_str().unwrap().parse().unwrap())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        spl_token::state::Account::unpack(&fee.data).unwrap().amount,
+        200_000
+    );
 }

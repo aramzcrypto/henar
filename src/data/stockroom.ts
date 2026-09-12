@@ -164,6 +164,295 @@ export type Stockroom = {
       ]
     },
     {
+      "name": "bankLucky",
+      "discriminator": [
+        192,
+        202,
+        67,
+        83,
+        10,
+        154,
+        152,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "cash",
+          "accounts": [
+            {
+              "name": "pack",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      112,
+                      97,
+                      99,
+                      107
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "pack.batch",
+                    "account": "pack"
+                  },
+                  {
+                    "kind": "account",
+                    "path": "pack.index",
+                    "account": "pack"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "pool",
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      108,
+                      117,
+                      99,
+                      107,
+                      121,
+                      45,
+                      112,
+                      111,
+                      111,
+                      108
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "usdc",
+              "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            },
+            {
+              "name": "poolCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "pool"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "packCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "pack"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "tokenProgram",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            }
+          ]
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "ownerCash",
+          "writable": true
+        },
+        {
+          "name": "randomness",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "buyBatch",
       "discriminator": [
         90,
@@ -919,6 +1208,270 @@ export type Stockroom = {
       "args": [
         {
           "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "configureLucky",
+      "discriminator": [
+        6,
+        120,
+        64,
+        118,
+        247,
+        77,
+        131,
+        46
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  117,
+                  99,
+                  107,
+                  121,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "poolCash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "name": "maxStake",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "configurePackExecution",
+      "discriminator": [
+        24,
+        9,
+        152,
+        200,
+        134,
+        100,
+        135,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "execution",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  99,
+                  107,
+                  45,
+                  101,
+                  120,
+                  101,
+                  99,
+                  117,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "enabled",
+          "type": "bool"
+        },
+        {
+          "name": "maxBudget",
           "type": "u64"
         }
       ]
@@ -2565,6 +3118,699 @@ export type Stockroom = {
       ]
     },
     {
+      "name": "initializeLucky",
+      "discriminator": [
+        210,
+        238,
+        130,
+        29,
+        193,
+        113,
+        151,
+        110
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  117,
+                  99,
+                  107,
+                  121,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "poolCash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "openLucky",
+      "discriminator": [
+        148,
+        231,
+        7,
+        19,
+        57,
+        137,
+        154,
+        129
+      ],
+      "accounts": [
+        {
+          "name": "base",
+          "accounts": [
+            {
+              "name": "owner",
+              "writable": true,
+              "signer": true,
+              "relations": [
+                "batch"
+              ]
+            },
+            {
+              "name": "config",
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      99,
+                      111,
+                      110,
+                      102,
+                      105,
+                      103
+                    ]
+                  }
+                ]
+              },
+              "relations": [
+                "batch"
+              ]
+            },
+            {
+              "name": "batch",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      98,
+                      97,
+                      116,
+                      99,
+                      104
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "batch.creator",
+                    "account": "packBatch"
+                  },
+                  {
+                    "kind": "account",
+                    "path": "batch.id",
+                    "account": "packBatch"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "pack",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      112,
+                      97,
+                      99,
+                      107
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "batch"
+                  },
+                  {
+                    "kind": "arg",
+                    "path": "index"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "usdc",
+              "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            },
+            {
+              "name": "batchCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "batch"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "packCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "pack"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "network",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      111,
+                      114,
+                      97,
+                      111,
+                      45,
+                      118,
+                      114,
+                      102,
+                      45,
+                      110,
+                      101,
+                      116,
+                      119,
+                      111,
+                      114,
+                      107,
+                      45,
+                      99,
+                      111,
+                      110,
+                      102,
+                      105,
+                      103,
+                      117,
+                      114,
+                      97,
+                      116,
+                      105,
+                      111,
+                      110
+                    ]
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    7,
+                    71,
+                    177,
+                    26,
+                    250,
+                    145,
+                    180,
+                    209,
+                    249,
+                    34,
+                    242,
+                    123,
+                    14,
+                    186,
+                    193,
+                    218,
+                    178,
+                    59,
+                    33,
+                    41,
+                    164,
+                    190,
+                    243,
+                    79,
+                    50,
+                    164,
+                    123,
+                    88,
+                    245,
+                    206,
+                    252,
+                    120
+                  ]
+                }
+              }
+            },
+            {
+              "name": "oraoTreasury",
+              "writable": true
+            },
+            {
+              "name": "randomness",
+              "writable": true
+            },
+            {
+              "name": "oraoProgram",
+              "address": "VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y"
+            },
+            {
+              "name": "tokenProgram",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            },
+            {
+              "name": "associatedTokenProgram",
+              "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+            },
+            {
+              "name": "systemProgram",
+              "address": "11111111111111111111111111111111"
+            }
+          ]
+        },
+        {
+          "name": "pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  117,
+                  99,
+                  107,
+                  121,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "poolCash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base.usdc",
+                "account": "openPack"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": "u64"
+        },
+        {
+          "name": "nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "openPack",
       "discriminator": [
         75,
@@ -3170,6 +4416,295 @@ export type Stockroom = {
       ]
     },
     {
+      "name": "refundLucky",
+      "discriminator": [
+        85,
+        197,
+        172,
+        178,
+        203,
+        237,
+        91,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "cash",
+          "accounts": [
+            {
+              "name": "pack",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      112,
+                      97,
+                      99,
+                      107
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "pack.batch",
+                    "account": "pack"
+                  },
+                  {
+                    "kind": "account",
+                    "path": "pack.index",
+                    "account": "pack"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "pool",
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      108,
+                      117,
+                      99,
+                      107,
+                      121,
+                      45,
+                      112,
+                      111,
+                      111,
+                      108
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "usdc",
+              "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            },
+            {
+              "name": "poolCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "pool"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "packCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "pack"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "tokenProgram",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            }
+          ]
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "ownerCash",
+          "writable": true
+        },
+        {
+          "name": "randomness",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "refundPack",
       "discriminator": [
         108,
@@ -3322,6 +4857,270 @@ export type Stockroom = {
       "args": []
     },
     {
+      "name": "resolveLucky",
+      "discriminator": [
+        207,
+        109,
+        68,
+        39,
+        10,
+        239,
+        121,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "cash",
+          "accounts": [
+            {
+              "name": "pack",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      112,
+                      97,
+                      99,
+                      107
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "pack.batch",
+                    "account": "pack"
+                  },
+                  {
+                    "kind": "account",
+                    "path": "pack.index",
+                    "account": "pack"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "pool",
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      108,
+                      117,
+                      99,
+                      107,
+                      121,
+                      45,
+                      112,
+                      111,
+                      111,
+                      108
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "usdc",
+              "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            },
+            {
+              "name": "poolCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "pool"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "packCash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "pack"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "tokenProgram",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            }
+          ]
+        },
+        {
+          "name": "manifest"
+        },
+        {
+          "name": "randomness"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "resolvePack",
       "discriminator": [
         238,
@@ -3369,6 +5168,402 @@ export type Stockroom = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "rollLucky",
+      "discriminator": [
+        224,
+        192,
+        132,
+        151,
+        247,
+        220,
+        18,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "base",
+          "accounts": [
+            {
+              "name": "cash",
+              "accounts": [
+                {
+                  "name": "pack",
+                  "writable": true,
+                  "pda": {
+                    "seeds": [
+                      {
+                        "kind": "const",
+                        "value": [
+                          112,
+                          97,
+                          99,
+                          107
+                        ]
+                      },
+                      {
+                        "kind": "account",
+                        "path": "pack.batch",
+                        "account": "pack"
+                      },
+                      {
+                        "kind": "account",
+                        "path": "pack.index",
+                        "account": "pack"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "pool",
+                  "pda": {
+                    "seeds": [
+                      {
+                        "kind": "const",
+                        "value": [
+                          108,
+                          117,
+                          99,
+                          107,
+                          121,
+                          45,
+                          112,
+                          111,
+                          111,
+                          108
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "usdc",
+                  "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                },
+                {
+                  "name": "poolCash",
+                  "writable": true,
+                  "pda": {
+                    "seeds": [
+                      {
+                        "kind": "account",
+                        "path": "pool"
+                      },
+                      {
+                        "kind": "const",
+                        "value": [
+                          6,
+                          221,
+                          246,
+                          225,
+                          215,
+                          101,
+                          161,
+                          147,
+                          217,
+                          203,
+                          225,
+                          70,
+                          206,
+                          235,
+                          121,
+                          172,
+                          28,
+                          180,
+                          133,
+                          237,
+                          95,
+                          91,
+                          55,
+                          145,
+                          58,
+                          140,
+                          245,
+                          133,
+                          126,
+                          255,
+                          0,
+                          169
+                        ]
+                      },
+                      {
+                        "kind": "account",
+                        "path": "usdc"
+                      }
+                    ],
+                    "program": {
+                      "kind": "const",
+                      "value": [
+                        140,
+                        151,
+                        37,
+                        143,
+                        78,
+                        36,
+                        137,
+                        241,
+                        187,
+                        61,
+                        16,
+                        41,
+                        20,
+                        142,
+                        13,
+                        131,
+                        11,
+                        90,
+                        19,
+                        153,
+                        218,
+                        255,
+                        16,
+                        132,
+                        4,
+                        142,
+                        123,
+                        216,
+                        219,
+                        233,
+                        248,
+                        89
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "packCash",
+                  "writable": true,
+                  "pda": {
+                    "seeds": [
+                      {
+                        "kind": "account",
+                        "path": "pack"
+                      },
+                      {
+                        "kind": "const",
+                        "value": [
+                          6,
+                          221,
+                          246,
+                          225,
+                          215,
+                          101,
+                          161,
+                          147,
+                          217,
+                          203,
+                          225,
+                          70,
+                          206,
+                          235,
+                          121,
+                          172,
+                          28,
+                          180,
+                          133,
+                          237,
+                          95,
+                          91,
+                          55,
+                          145,
+                          58,
+                          140,
+                          245,
+                          133,
+                          126,
+                          255,
+                          0,
+                          169
+                        ]
+                      },
+                      {
+                        "kind": "account",
+                        "path": "usdc"
+                      }
+                    ],
+                    "program": {
+                      "kind": "const",
+                      "value": [
+                        140,
+                        151,
+                        37,
+                        143,
+                        78,
+                        36,
+                        137,
+                        241,
+                        187,
+                        61,
+                        16,
+                        41,
+                        20,
+                        142,
+                        13,
+                        131,
+                        11,
+                        90,
+                        19,
+                        153,
+                        218,
+                        255,
+                        16,
+                        132,
+                        4,
+                        142,
+                        123,
+                        216,
+                        219,
+                        233,
+                        248,
+                        89
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "tokenProgram",
+                  "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                }
+              ]
+            },
+            {
+              "name": "owner",
+              "writable": true,
+              "signer": true
+            },
+            {
+              "name": "config",
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      99,
+                      111,
+                      110,
+                      102,
+                      105,
+                      103
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "ownerCash",
+              "writable": true
+            },
+            {
+              "name": "randomness",
+              "writable": true
+            }
+          ]
+        },
+        {
+          "name": "network",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  111,
+                  45,
+                  118,
+                  114,
+                  102,
+                  45,
+                  110,
+                  101,
+                  116,
+                  119,
+                  111,
+                  114,
+                  107,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  117,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                7,
+                71,
+                177,
+                26,
+                250,
+                145,
+                180,
+                209,
+                249,
+                34,
+                242,
+                123,
+                14,
+                186,
+                193,
+                218,
+                178,
+                59,
+                33,
+                41,
+                164,
+                190,
+                243,
+                79,
+                50,
+                164,
+                123,
+                88,
+                245,
+                206,
+                252,
+                120
+              ]
+            }
+          }
+        },
+        {
+          "name": "oraoTreasury",
+          "writable": true
+        },
+        {
+          "name": "oraoProgram",
+          "address": "VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "setPaused",
@@ -4008,6 +6203,411 @@ export type Stockroom = {
       ]
     },
     {
+      "name": "swapPack",
+      "discriminator": [
+        122,
+        75,
+        30,
+        230,
+        10,
+        113,
+        64,
+        63
+      ],
+      "accounts": [
+        {
+          "name": "quoteAuthority",
+          "signer": true
+        },
+        {
+          "name": "execution",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  99,
+                  107,
+                  45,
+                  101,
+                  120,
+                  101,
+                  99,
+                  117,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "pack",
+            "manifest"
+          ]
+        },
+        {
+          "name": "pack",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pack.batch",
+                "account": "pack"
+              },
+              {
+                "kind": "account",
+                "path": "pack.index",
+                "account": "pack"
+              }
+            ]
+          }
+        },
+        {
+          "name": "manifest"
+        },
+        {
+          "name": "usdc",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "packCash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pack"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "stockMint"
+        },
+        {
+          "name": "ownerStock",
+          "writable": true
+        },
+        {
+          "name": "stockProgram"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "jupiter",
+          "address": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
+        }
+      ],
+      "args": [
+        {
+          "name": "quotedOutput",
+          "type": "u64"
+        },
+        {
+          "name": "minimumOutput",
+          "type": "u64"
+        },
+        {
+          "name": "quotedAt",
+          "type": "i64"
+        },
+        {
+          "name": "route",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "withdrawLuckyReserve",
+      "discriminator": [
+        177,
+        111,
+        43,
+        6,
+        109,
+        85,
+        125,
+        124
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  117,
+                  99,
+                  107,
+                  121,
+                  45,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "poolCash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "withdrawPrincipal",
       "discriminator": [
         6,
@@ -4620,6 +7220,19 @@ export type Stockroom = {
       ]
     },
     {
+      "name": "luckyPool",
+      "discriminator": [
+        146,
+        24,
+        131,
+        82,
+        209,
+        113,
+        47,
+        55
+      ]
+    },
+    {
       "name": "manifest",
       "discriminator": [
         139,
@@ -4669,6 +7282,19 @@ export type Stockroom = {
         42,
         147,
         254
+      ]
+    },
+    {
+      "name": "packExecution",
+      "discriminator": [
+        95,
+        157,
+        31,
+        179,
+        39,
+        51,
+        53,
+        50
       ]
     },
     {
@@ -4967,6 +7593,34 @@ export type Stockroom = {
       }
     },
     {
+      "name": "luckyPool",
+      "docs": [
+        "Only unallocated house capital lives here. Every accepted roll moves its",
+        "entire maximum liability into the pack ATA, beyond admin withdrawal authority."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          },
+          {
+            "name": "maxStake",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "manifest",
       "type": {
         "kind": "struct",
@@ -5179,6 +7833,22 @@ export type Stockroom = {
             "type": "i64"
           },
           {
+            "name": "lucky",
+            "type": "bool"
+          },
+          {
+            "name": "round",
+            "type": "u8"
+          },
+          {
+            "name": "stake",
+            "type": "u64"
+          },
+          {
+            "name": "budget",
+            "type": "u64"
+          },
+          {
             "name": "bump",
             "type": "u8"
           }
@@ -5254,6 +7924,30 @@ export type Stockroom = {
       }
     },
     {
+      "name": "packExecution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          },
+          {
+            "name": "maxBudget",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "packSource",
       "type": {
         "kind": "enum",
@@ -5283,6 +7977,9 @@ export type Stockroom = {
           },
           {
             "name": "refunded"
+          },
+          {
+            "name": "luckyReady"
           }
         ]
       }

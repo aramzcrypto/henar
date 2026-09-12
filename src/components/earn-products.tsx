@@ -3,6 +3,7 @@ import { AppSelect } from "./app-select";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { LuckyMode, type OpeningMode } from "./lucky-mode";
 import { batchPackQuote, giftDraft } from "@/lib/pack-actions";
 import {
   Info,
@@ -816,6 +817,7 @@ export function PacksPage({
   config = live
     ? { yieldShareBps: live.yieldShareBps, packFeeBps: live.packFeeBps }
     : config;
+  const [openingMode, setOpeningMode] = useState<OpeningMode>("random");
   const [giftBatch, setGiftBatch] = useState("");
   const sealed = live?.batches.filter((b) => BigInt(b.remaining) > 0n) ?? [];
   const chosenBatch = sealed.find((b) => b.address === giftBatch) ?? sealed[0];
@@ -824,35 +826,11 @@ export function PacksPage({
   const [review, setReview] = useState(false);
   const [quantity, setQuantity] = useState("1");
   const [customQuantity, setCustomQuantity] = useState(false);
-  const openingArtworkReady = false; // Enable after a verified transparent open asset is installed.
-  const [previewState, setPreviewState] = useState<
-    "closed" | "opening" | "open"
-  >("closed");
-  const animationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [giftReview, setGiftReview] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [giftQuantity, setGiftQuantity] = useState("1");
   const [message, setMessage] = useState("");
-  useEffect(
-    () => () => {
-      if (animationTimer.current) clearTimeout(animationTimer.current);
-    },
-    [],
-  );
-  function previewOpening() {
-    if (animationTimer.current) clearTimeout(animationTimer.current);
-    if (previewState === "open") {
-      setPreviewState("closed");
-      return;
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setPreviewState("open");
-      return;
-    }
-    setPreviewState("opening");
-    animationTimer.current = setTimeout(() => setPreviewState("open"), 650);
-  }
   let gift = null;
   let giftError = "";
   try {
@@ -867,10 +845,9 @@ export function PacksPage({
     setReview(false);
     setGiftOpen(false);
     setGiftReview(false);
+    setOpeningMode("random");
     setRecipient("");
     setMessage("");
-    setPreviewState("closed");
-    if (animationTimer.current) clearTimeout(animationTimer.current);
   }, [owner]);
   let quote = null;
   let quantityError = "";
@@ -899,7 +876,7 @@ export function PacksPage({
       <h1 className="sr-only">Packs</h1>
       <section className="backpack-offer" aria-label="Stock Pack">
         <div className="backpack-stage backpack-render-stage">
-          <div className={`backpack-render ${previewState}`}>
+          <div className="backpack-render closed">
             <Image
               className="closed-backpack"
               src="/art/backpack-closed.png"
@@ -909,47 +886,36 @@ export function PacksPage({
               priority
               unoptimized
             />
-            {openingArtworkReady && (
-              <Image
-                className="open-backpack"
-                src="/art/backpack-open.png"
-                alt="Unzipped red backpack, animation preview"
-                width={1280}
-                height={1280}
-                unoptimized
-              />
-            )}
             <span className="backpack-flash" aria-hidden="true" />
           </div>
           <span className="backpack-state-label" aria-live="polite">
             <LockKeyhole size={12} />
-            {previewState === "closed"
-              ? "Sealed"
-              : previewState === "opening"
-                ? "Opening preview"
-                : "Unsealed · Preview"}
+            Sealed
           </span>
-          <button
-            className="backpack-preview-button"
-            disabled={!openingArtworkReady || previewState === "opening"}
-            title={
-              !openingArtworkReady
-                ? "Opening artwork is awaiting background cleanup"
-                : undefined
-            }
-            onClick={previewOpening}
-          >
-            {previewState === "open" ? "Reset preview" : "Preview opening"}
-          </button>
-          <span className="backpack-preview-note">
-            {openingArtworkReady
-              ? "Animation only · No pack consumed"
-              : "Opening artwork pending"}
-          </span>
+          <details className="pack-execution-details">
+            <summary>How unpacking works</summary>
+            <p>
+              Unpack selects a stock using verifiable randomness. Kani requests
+              a Jupiter quote, and the contract swaps your allocation into your
+              wallet before the reveal.
+            </p>
+            <p>
+              Kani chooses the quote. The contract checks the stock, recipient,
+              exact spend, quote expiry and minimum received. There is no
+              independent price oracle. Network and randomness fees are
+              separate.
+            </p>
+            <p>
+              If execution fails, your unspent allocation stays in escrow for
+              retry or recovery after the deadline. Onchain activity is public
+              before the visual reveal.
+            </p>
+          </details>
         </div>
         <div className="backpack-purchase">
           <div className="backpack-product-tag">
-            <Backpack size={14} /> Backpack Securities <span>Random</span>
+            <Backpack size={14} /> Backpack Securities{" "}
+            <span>{openingMode === "lucky" ? "Lucky" : "Random"}</span>
           </div>
           <h2>Stock Pack</h2>
           <div className="backpack-offer-meta">
@@ -966,6 +932,12 @@ export function PacksPage({
           <div className="backpack-price">
             {quote ? `$${formatUnits(quote.price, 6)}` : "—"} <span>USDC</span>
           </div>
+          <LuckyMode
+            mode={openingMode}
+            onChange={setOpeningMode}
+            stake={quote ? quote.stockValue / quote.quantity : 9_800_000n}
+            enabled={!!live?.luckyPool?.enabled}
+          />
           <div className="pack-quantity-selector">
             <span>
               Quantity <small>10 USDC each</small>
@@ -1006,7 +978,13 @@ export function PacksPage({
             )}
           </div>
           <div className="backpack-price-details">
-            <Detail label="Stock allocation">
+            <Detail
+              label={
+                openingMode === "lucky"
+                  ? "Budget before Lucky outcome"
+                  : "Stock allocation"
+              }
+            >
               {quote ? money(quote.stockValue) : "—"} USDC
             </Detail>
             <Detail label={`Protocol fee · ${percent(config.packFeeBps)}`}>
@@ -1098,13 +1076,13 @@ export function PacksPage({
       <section className="backpack-inventory" id="sealed-packs">
         <div className="backpack-inventory-heading">
           <h2>
-            Your sealed packs <span>{live?.summary.sealed ?? "—"}</span>
+            Your packs <span>{live?.summary.sealed ?? "—"}</span>
           </h2>
           <Link href="/stockfolio">
             Stockfolio <ArrowUpRight size={14} />
           </Link>
         </div>
-        <ProtocolInventory />
+        <ProtocolInventory openingMode={openingMode} />
         <div className="pack-inventory-actions">
           <button
             className="secondary"
@@ -1266,6 +1244,13 @@ export function PacksPage({
           <Detail label="Stock allocation">
             {quote ? money(quote.stockValue) : "—"} USDC
           </Detail>
+          {openingMode === "lucky" && (
+            <p className="lucky-mode-note">
+              This purchase creates refundable sealed packs. Lucky odds and fees
+              are confirmed separately when opening; availability depends on
+              reserves.
+            </p>
+          )}
           <Detail label="Selection odds">
             Equal · 1 in {candidates.length}
           </Detail>

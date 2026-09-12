@@ -3,12 +3,28 @@ import { PublicKey } from "@solana/web3.js";
 import { z } from "zod";
 import { protocolContext } from "@/lib/protocol/context";
 import { displayStockUnits } from "@/lib/protocol/pricing";
-import { jsonAccount } from "@/lib/protocol/client";
+import { jsonAccount, pda, ata } from "@/lib/protocol/client";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const ctx = await protocolContext();
     const { client, config, programId } = ctx;
+    const poolKey = pda(programId, "lucky-pool");
+    const [pool, execution] = await Promise.all([
+      client.account.luckyPool.fetchNullable(poolKey),
+      client.account.packExecution.fetchNullable(
+        pda(programId, "pack-execution"),
+      ),
+    ]);
+    const luckyPool = pool
+      ? {
+          enabled: pool.enabled && !config.paused,
+          reserve: (await ctx.c.getTokenAccountBalance(ata(poolKey))).value
+            .amount,
+          maxStake: pool.maxStake.toString(),
+          address: poolKey.toBase58(),
+        }
+      : undefined;
     const ownerString = new URL(request.url).searchParams.get("owner");
     const owner = ownerString ? new PublicKey(ownerString) : null;
     const [positions, batches, packs] = owner
@@ -73,6 +89,14 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         available: true,
+        luckyPool,
+        packExecution: execution
+          ? {
+              enabled: execution.enabled && !config.paused,
+              authority: execution.authority.toBase58(),
+              maxBudget: execution.maxBudget.toString(),
+            }
+          : undefined,
         paused: config.paused,
         programId: programId.toBase58(),
         vault: config.vault.toBase58(),

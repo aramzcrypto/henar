@@ -177,13 +177,16 @@ pub fn refund_batch(ctx: Context<RefundBatch>, count: u64) -> Result<()> {
     emit_activity(batch.owner, batch.key(), 13, total, count)
 }
 pub fn open(ctx: Context<OpenPack>, index: u64, nonce: [u8; 32]) -> Result<()> {
-    require!(!ctx.accounts.config.paused, StockroomError::Paused);
-    let batch = &mut ctx.accounts.batch;
+    open_accounts(ctx.accounts, index, nonce, ctx.bumps.pack)
+}
+pub fn open_accounts(a: &mut OpenPack, index: u64, nonce: [u8; 32], pack_bump: u8) -> Result<()> {
+    require!(!a.config.paused, StockroomError::Paused);
+    let batch = &mut a.batch;
     require!(
         batch.remaining > 0 && batch.next_open == index,
         StockroomError::State
     );
-    let pack_key = ctx.accounts.pack.key();
+    let pack_key = a.pack.key();
     let force = hashv(&[
         b"stockroom-v1-vrf",
         crate::ID.as_ref(),
@@ -193,25 +196,18 @@ pub fn open(ctx: Context<OpenPack>, index: u64, nonce: [u8; 32]) -> Result<()> {
     .to_bytes();
     let expected =
         Pubkey::find_program_address(&[RANDOMNESS_ACCOUNT_SEED, &force], &orao_solana_vrf::ID).0;
-    require_keys_eq!(
-        ctx.accounts.randomness.key(),
-        expected,
-        StockroomError::Randomness
-    );
+    require_keys_eq!(a.randomness.key(), expected, StockroomError::Randomness);
     // Never accept an existing/pre-fulfilled request. Successful request and escrow debit are atomic.
-    require!(
-        ctx.accounts.randomness.data_is_empty(),
-        StockroomError::Randomness
-    );
+    require!(a.randomness.data_is_empty(), StockroomError::Randomness);
     orao_solana_vrf::cpi::request_v2(
         CpiContext::new(
-            ctx.accounts.orao_program.to_account_info(),
+            a.orao_program.to_account_info(),
             orao_solana_vrf::cpi::accounts::RequestV2 {
-                payer: ctx.accounts.owner.to_account_info(),
-                network_state: ctx.accounts.network.to_account_info(),
-                treasury: ctx.accounts.orao_treasury.to_account_info(),
-                request: ctx.accounts.randomness.to_account_info(),
-                system_program: ctx.accounts.system_program.to_account_info(),
+                payer: a.owner.to_account_info(),
+                network_state: a.network.to_account_info(),
+                treasury: a.orao_treasury.to_account_info(),
+                request: a.randomness.to_account_info(),
+                system_program: a.system_program.to_account_info(),
             },
         ),
         force,
@@ -226,9 +222,9 @@ pub fn open(ctx: Context<OpenPack>, index: u64, nonce: [u8; 32]) -> Result<()> {
         bump.as_ref(),
     ];
     tokens::pay(
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.batch_cash.to_account_info(),
-        ctx.accounts.pack_cash.to_account_info(),
+        a.token_program.to_account_info(),
+        a.batch_cash.to_account_info(),
+        a.pack_cash.to_account_info(),
         batch.to_account_info(),
         PACK_USDC,
         Some(seeds),
@@ -236,11 +232,11 @@ pub fn open(ctx: Context<OpenPack>, index: u64, nonce: [u8; 32]) -> Result<()> {
     batch.remaining = math(stockroom_math::sub(batch.remaining, 1))?;
     batch.next_open = math(stockroom_math::add(batch.next_open, 1))?;
     let now = Clock::get()?.unix_timestamp;
-    let pack = &mut ctx.accounts.pack;
+    let pack = &mut a.pack;
     ***pack = Pack {
         owner: batch.owner,
         batch: batch.key(),
-        config: ctx.accounts.config.key(),
+        config: a.config.key(),
         manifest: batch.manifest,
         index,
         force,
@@ -254,25 +250,27 @@ pub fn open(ctx: Context<OpenPack>, index: u64, nonce: [u8; 32]) -> Result<()> {
         stock_value: 0,
         created_at: now,
         expires_at: now
-            .checked_add(ctx.accounts.config.pack_timeout as i64)
+            .checked_add(a.config.pack_timeout as i64)
             .ok_or(StockroomError::Math)?,
         settled_at: 0,
-        bump: ctx.bumps.pack,
+        lucky: false,
+        round: 0,
+        stake: 0,
+        budget: math(stockroom_math::sub(PACK_USDC, batch.unit_fee))?,
+        bump: pack_bump,
     };
     emit_activity(pack.owner, pack.key(), 14, PACK_USDC, 1)
 }
 /// Rejection sampling removes modulo bias. Domain-separated expansion is deterministic onchain.
 pub fn sample(randomness: &[u8; 64], n: usize) -> Result<usize> {
-    require!(n > 0 && n <= MAX_STOCKS, StockroomError::Manifest);
+    sample_domain(randomness, n, b"stockroom-selection-v1")
+}
+pub fn sample_domain(randomness: &[u8; 64], n: usize, domain: &[u8]) -> Result<usize> {
+    require!(n > 0 && n <= 100, StockroomError::Manifest);
     let divisor = n as u64;
     let threshold = divisor.wrapping_neg() % divisor;
     for counter in 0u32..64 {
-        let bytes = hashv(&[
-            b"stockroom-selection-v1",
-            randomness,
-            &counter.to_le_bytes(),
-        ])
-        .to_bytes();
+        let bytes = hashv(&[domain, randomness, &counter.to_le_bytes()]).to_bytes();
         let value = u64::from_le_bytes(
             bytes[..8]
                 .try_into()
@@ -286,6 +284,7 @@ pub fn sample(randomness: &[u8; 64], n: usize) -> Result<usize> {
 }
 pub fn resolve(ctx: Context<ResolvePack>) -> Result<()> {
     let p = &mut ctx.accounts.pack;
+    require!(!p.lucky, StockroomError::State);
     if p.status == PackStatus::Selected {
         return Ok(());
     }
@@ -342,7 +341,7 @@ pub fn settle<'info>(
         &ctx.accounts.stock_mint,
         ctx.accounts.stock_program.key(),
     )?;
-    let budget = math(stockroom_math::sub(PACK_USDC, p.unit_fee))?;
+    let budget = p.budget;
     let minimum = oracle::minimum(
         &ctx.accounts.config,
         spec,
@@ -401,6 +400,7 @@ pub fn settle<'info>(
 }
 pub fn refund(ctx: Context<RefundPack>) -> Result<()> {
     let p = &mut ctx.accounts.pack;
+    require!(!p.lucky, StockroomError::State);
     require!(
         matches!(p.status, PackStatus::Pending | PackStatus::Selected),
         StockroomError::State
