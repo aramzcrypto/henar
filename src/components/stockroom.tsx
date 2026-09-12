@@ -12,6 +12,8 @@ import { VersionedTransaction } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import {
   ArrowUpRight,
+  Minus,
+  Plus,
   ArrowLeftRight,
   Sprout,
   ArrowDown,
@@ -959,9 +961,6 @@ export function Stockroom({
               )}
               {mode === "dca" && (
                 <div className="advanced-order">
-                  <h2 className="schedule-title">
-                    <Repeat2 size={17} /> Schedule
-                  </h2>
                   <div className="schedule-fields">
                     <label>
                       Every
@@ -977,18 +976,51 @@ export function Stockroom({
                         ]}
                       />
                     </label>
-                    <label>
-                      Over
-                      <input
-                        aria-label="Number of purchases"
-                        type="number"
-                        min="2"
-                        max="365"
-                        value={installments}
-                        onChange={(e) => setInstallments(e.target.value)}
-                      />
+                    <div className="dca-count-row">
+                      <label htmlFor="dca-purchases">Over</label>
+                      <div className="dca-count-control">
+                        <button
+                          type="button"
+                          aria-label="Fewer purchases"
+                          disabled={
+                            !Number.isInteger(Number(installments)) ||
+                            Number(installments) <= 2
+                          }
+                          onClick={() =>
+                            setInstallments(
+                              String(Math.max(2, Number(installments) - 1)),
+                            )
+                          }
+                        >
+                          <Minus size={15} />
+                        </button>
+                        <input
+                          id="dca-purchases"
+                          aria-label="Number of purchases"
+                          type="number"
+                          min="2"
+                          max="365"
+                          value={installments}
+                          onChange={(e) => setInstallments(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          aria-label="More purchases"
+                          disabled={
+                            !Number.isInteger(Number(installments)) ||
+                            Number(installments) >= 365
+                          }
+                          onClick={() =>
+                            setInstallments(
+                              String(Math.min(365, Number(installments) + 1)),
+                            )
+                          }
+                        >
+                          <Plus size={15} />
+                        </button>
+                      </div>
                       <span>purchases</span>
-                    </label>
+                    </div>
                   </div>
                   <Row label="Budget per purchase">{perPurchase} USDC</Row>
                 </div>
@@ -996,7 +1028,7 @@ export function Stockroom({
               <details
                 className="fee-disclosure"
                 key={review?.transaction ?? "no-quote"}
-                open={mode === "market" || !!review}
+                open={!!review}
               >
                 <summary>
                   <span>

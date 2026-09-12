@@ -5013,71 +5013,7 @@ footer a {
   height: 40px;
   margin: 8px 0 0;
 }
-@media (min-width: 1100px) {
-  .page-trade main:has(.ticket-dca) {
-    padding-top: 44px;
-  }
-  .trading-desk:has(.ticket-dca) {
-    width: min(960px, calc(100vw - 310px));
-    transform: translateX(60px);
-  }
-  .ticket-dca {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
-    column-gap: 32px;
-    row-gap: 12px;
-    align-items: start;
-  }
-  .ticket-dca > .ticket-toolbar {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    margin-bottom: 12px;
-  }
-  .ticket-dca > .pay-panel {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .ticket-dca > .receive-panel {
-    grid-column: 1;
-    grid-row: 3;
-    margin: 0;
-  }
-  .ticket-dca > .advanced-order {
-    grid-column: 2;
-    grid-row: 2 / 4;
-    margin: 0;
-    border: 0;
-    border-radius: 14px;
-    padding: 24px;
-    min-height: 100%;
-  }
-  .ticket-dca > .fee-disclosure {
-    grid-column: 2;
-    grid-row: 4 / 6;
-    margin: 0;
-  }
-  .ticket-dca > .trade-purchase-action {
-    grid-column: 1;
-    grid-row: 4;
-    margin: 4px 0 0;
-  }
-  .ticket-dca > .trade-purchase-action .primary {
-    margin: 0;
-  }
-  .ticket-dca > .execution-caption {
-    grid-column: 1;
-    grid-row: 5;
-    margin: 4px 0 0;
-  }
-  .ticket-dca > .ticket-activity {
-    grid-column: 1 / -1;
-    margin-top: 24px;
-  }
-  .ticket-dca > .notice,
-  .ticket-dca > .protocol-positions {
-    grid-column: 1 / -1;
-  }
-}
+
 @media (max-width: 600px) {
   .page-trade .target-field {
     padding: 16px;
@@ -5101,86 +5037,8 @@ footer a {
   height: 44px;
   line-height: 32px;
 }
-/* One workspace anchor for every order type; switching only changes controls. */
-@media (min-width: 1100px) {
-  .page-trade main,
-  .page-trade main:has(.ticket-limit),
-  .page-trade main:has(.ticket-dca) {
-    padding-top: 44px;
-  }
-  .trading-desk,
-  .trading-desk:has(.ticket-limit),
-  .trading-desk:has(.ticket-dca) {
-    width: min(960px, calc(100vw - 310px));
-    transform: translateX(60px);
-  }
-  .ticket-market {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
-    column-gap: 32px;
-    row-gap: 12px;
-    align-items: start;
-  }
-  .ticket-market > .ticket-toolbar {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    margin-bottom: 12px;
-  }
-  .ticket-market > .pay-panel {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .ticket-market > .receive-panel {
-    grid-column: 1;
-    grid-row: 3;
-    margin: 0;
-  }
-  .ticket-market > .direction {
-    grid-column: 1;
-    grid-row: 3;
-    justify-self: center;
-    margin: 0;
-    transform: translateY(-27px);
-    z-index: 2;
-  }
-  .ticket-market > .estimate-caption {
-    grid-column: 1;
-    grid-row: 4;
-    padding-top: 0;
-  }
-  .ticket-market > .fee-disclosure {
-    grid-column: 2;
-    grid-row: 2 / 6;
-    margin: 0;
-    padding: 24px;
-    background: #14171c;
-    border-radius: 14px;
-  }
-  .ticket-market > .fee-disclosure .trade-details {
-    padding-bottom: 0;
-  }
-  .ticket-market > .trade-purchase-action {
-    grid-column: 1;
-    grid-row: 5;
-    margin: 0;
-  }
-  .ticket-market > .trade-purchase-action .primary {
-    margin: 0;
-  }
-  .ticket-market > .execution-caption {
-    grid-column: 1;
-    grid-row: 6;
-    margin: 4px 0 0;
-  }
-  .ticket-market > .ticket-activity {
-    grid-column: 1 / -1;
-    margin-top: 24px;
-  }
-  .ticket-market > .notice,
-  .ticket-market > .protocol-positions {
-    grid-column: 1 / -1;
-  }
-}
+
+
 @media (min-width: 1100px) {
   .ticket-limit {
     row-gap: 12px;
@@ -5213,3 +5071,35 @@ footer a {
   .app-select-heading button { display: grid; place-items: center; width: 36px; height: 36px; background: #292d38; color: #b9becb; border: 0; border-radius: 50%; }
   .app-select-options > button { min-height: 52px; font-size: 16px; padding: 14px; }
 }
+
+/* Compact Market/DCA tickets expand into the Limit workspace. */
+@media (min-width: 1100px) {
+  .page-trade main { padding-top: 44px; }
+  .trading-desk { width: 560px; transform: translateX(0); transition: width 280ms ease, transform 280ms ease; }
+  .trading-desk:has(.ticket-limit) { width: min(960px, calc(100vw - 310px)); transform: translateX(60px); }
+  .ticket-market, .ticket-dca { display: block; }
+  .ticket-limit > .advanced-order { animation: reveal-order-details 240ms ease both; }
+}
+@keyframes reveal-order-details { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+.page-trade .ticket-dca > .advanced-order { padding: 0; margin-top: 20px; border: 0; background: transparent; }
+.page-trade .ticket-dca .schedule-fields { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 0 0 18px; padding: 0; }
+.page-trade .ticket-dca .schedule-fields > label { display: flex; flex-direction: row; align-items: center; gap: 14px; margin: 0; padding: 0; background: transparent; border: 0; border-radius: 0; font-size: 14px; color: #a7abb6; }
+.page-trade .ticket-dca .schedule-fields .app-select { width: 110px; }
+.page-trade .ticket-dca .schedule-fields .app-select-trigger { margin: 0; height: 40px; min-height: 40px; padding: 8px 12px; border-radius: 8px; background: #1d2028; font-size: 15px; line-height: 24px; }
+.dca-count-row { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #a7abb6; }
+.dca-count-control { display: flex; align-items: center; background: #1d2028; border-radius: 8px; height: 40px; }
+.dca-count-control > button { display: grid; place-items: center; width: 32px; height: 40px; border: 0; background: transparent; color: #bfc4ff; }
+.dca-count-control > button:disabled { opacity: .3; }
+.page-trade .ticket-dca .schedule-fields .dca-count-control input { width: 42px; margin: 0; padding: 0; height: 40px; font-size: 15px; text-align: center; line-height: 24px; appearance: textfield; }
+.page-trade .ticket-dca > .advanced-order > .detail-row { margin: 0; padding: 0 0 6px; font-size: 12px; }
+@media (max-width: 600px) {
+  .page-trade .ticket-dca .schedule-fields { flex-direction: column; align-items: stretch; gap: 14px; }
+  .page-trade .ticket-dca .schedule-fields > label { justify-content: space-between; }
+  .dca-count-row > label { margin-right: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trading-desk { transition: none; }
+  .ticket-limit > .advanced-order { animation: none; }
+}
+.page-trade .ticket-dca .schedule-fields .dca-count-row > label { padding: 0; background: transparent; border: 0; border-radius: 0; font-size: 14px; }
+@media (min-width: 1100px) { .ticket-market > .ticket-toolbar, .ticket-dca > .ticket-toolbar { margin-bottom: 24px; } }
