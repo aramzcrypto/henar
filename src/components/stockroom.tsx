@@ -1,4 +1,5 @@
 "use client";
+import { AppSelect } from "./app-select";
 import { TokenLogo } from "@/components/token-logo";
 import Link from "next/link";
 import Image from "next/image";
@@ -964,26 +965,17 @@ export function Stockroom({
                   <div className="schedule-fields">
                     <label>
                       Every
-                      <select
-                        aria-label="Purchase frequency"
+                      <AppSelect
+                        label="Purchase frequency"
                         value={frequency}
-                        onChange={(e) => setFrequency(e.target.value)}
-                      >
-                        {["Hourly", "Daily", "Weekly", "Monthly"].map((f) => (
-                          <option key={f} value={f}>
-                            {
-                              (
-                                {
-                                  Hourly: "Hour",
-                                  Daily: "Day",
-                                  Weekly: "Week",
-                                  Monthly: "Month",
-                                } as Record<string, string>
-                              )[f]
-                            }
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setFrequency}
+                        options={[
+                          { value: "Hourly", label: "Hour" },
+                          { value: "Daily", label: "Day" },
+                          { value: "Weekly", label: "Week" },
+                          { value: "Monthly", label: "Month" },
+                        ]}
+                      />
                     </label>
                     <label>
                       Over
@@ -1452,14 +1444,15 @@ export function Stockroom({
               </div>
               <label className="catalog-sort">
                 <span className="sr-only">Sort assets</span>
-                <select
-                  aria-label="Sort assets"
+                <AppSelect
+                  label="Sort assets"
                   value={stockSort}
-                  onChange={(e) => setStockSort(e.target.value)}
-                >
-                  <option value="name">Name A–Z</option>
-                  <option value="symbol">Symbol A–Z</option>
-                </select>
+                  onChange={setStockSort}
+                  options={[
+                    { value: "name", label: "Name A–Z" },
+                    { value: "symbol", label: "Symbol A–Z" },
+                  ]}
+                />
               </label>
             </div>
             <div className="selector-columns">

@@ -1,4 +1,5 @@
 "use client";
+import { AppSelect } from "./app-select";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -620,16 +621,15 @@ export function EarnPage({
           {action === "Withdraw" && earningPositions.length > 1 && (
             <label>
               Position
-              <select
+              <AppSelect
+                label="Position"
                 value={chosenPosition?.address ?? ""}
-                onChange={(e) => setPositionId(e.target.value)}
-              >
-                {earningPositions.map((p) => (
-                  <option key={p.address} value={p.address}>
-                    {p.address.slice(0, 6)} · {display(p.principalBasis)} USDC
-                  </option>
-                ))}
-              </select>
+                onChange={setPositionId}
+                options={earningPositions.map((p) => ({
+                  value: p.address,
+                  label: `${p.address.slice(0, 6)} · ${display(p.principalBasis)} USDC`,
+                }))}
+              />
             </label>
           )}
           {chosenPosition && action === "Deposit" && (
@@ -1201,16 +1201,15 @@ export function PacksPage({
               {sealed.length > 1 && (
                 <label>
                   From
-                  <select
+                  <AppSelect
+                    label="Pack batch"
                     value={chosenBatch?.address ?? ""}
-                    onChange={(e) => setGiftBatch(e.target.value)}
-                  >
-                    {sealed.map((b) => (
-                      <option key={b.address} value={b.address}>
-                        {b.address.slice(0, 6)} · {b.remaining} packs
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setGiftBatch}
+                    options={sealed.map((b) => ({
+                      value: b.address,
+                      label: `${b.address.slice(0, 6)} · ${b.remaining} packs`,
+                    }))}
+                  />
                 </label>
               )}
               <Detail label="Sealed packs">{gift?.quantity.toString()}</Detail>
