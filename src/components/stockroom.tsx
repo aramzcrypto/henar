@@ -1108,9 +1108,13 @@ export function Stockroom({
                             mode === "limit"
                               ? parseUnits(target, 6).toString()
                               : "0",
-                          expiresAt: String(
-                            Math.floor(Date.now() / 1000) + expiry * 86400,
-                          ),
+                          expiresAt:
+                            mode === "limit"
+                              ? String(
+                                  Math.floor(Date.now() / 1000) +
+                                    expiry * 86400,
+                                )
+                              : undefined,
                           steps: Number(installments),
                           interval:
                             frequency === "Hourly"
