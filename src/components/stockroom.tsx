@@ -1,4 +1,5 @@
 "use client";
+import { StockReceipts } from "./stock-receipts";
 import { KaniBrand } from "./kani-brand";
 import { AppSelect } from "./app-select";
 import { TokenLogo } from "@/components/token-logo";
@@ -36,17 +37,11 @@ import {
   Crosshair,
   Info,
   Star,
-  LayoutGrid,
 } from "lucide-react";
 import { useProtocol } from "./protocol-provider";
-import { ProtocolPositions, ProtocolInventory } from "./protocol-inventory";
+import { ProtocolPositions } from "./protocol-inventory";
 import { stocks, USDC } from "@/lib/registry";
-import {
-  EarnPage,
-  PacksPage,
-  ProductSummary,
-  Collections,
-} from "./earn-products";
+import { EarnPage, PacksPage, ProductSummary } from "./earn-products";
 import { percent, type ProductConfig } from "@/lib/product-config";
 import { StockLogo as Logo } from "@/components/stock-logo";
 import { utils } from "@coral-xyz/anchor";
@@ -626,10 +621,10 @@ export function Stockroom({
             { path: "trade", label: "Trade", icon: ArrowLeftRight },
             { path: "earn", label: "Earn", icon: Sprout },
             { path: "packs", label: "Packs", icon: Box },
-            { path: "portfolio", label: "Portfolio", icon: Wallet },
+            { path: "stockfolio", label: "Stockfolio", icon: Wallet },
           ].map(({ path, label, icon: Icon }) => {
             const active =
-              page === path || (page === "collection" && path === "portfolio");
+              page === path || (page === "portfolio" && path === "stockfolio");
             return (
               <Link
                 key={path}
@@ -652,11 +647,7 @@ export function Stockroom({
         </div>
       </header>
       <main>
-        {(page === "portfolio" || page === "collection") && (
-          <h1 className="sr-only">
-            {page === "collection" ? "Collection" : "Portfolio"}
-          </h1>
-        )}
+        {page === "portfolio" && <h1 className="sr-only">Stockfolio</h1>}
         {page === "trade" && (
           <div className="trading-desk">
             <aside className="order-rail" aria-label="Order type">
@@ -1248,39 +1239,11 @@ export function Stockroom({
           />
         )}
         {page === "packs" && <PacksPage config={config} owner={owner} />}
-        {(page === "portfolio" || page === "collection") && (
+        {page === "portfolio" && (
           <>
-            {page === "portfolio" && (
-              <>
-                <ProductSummary
-                  balances={owner && !balanceError ? balances : null}
-                />
-                <ProtocolPositions />
-                <ProtocolInventory />
-              </>
-            )}
-            {page === "collection" && (
-              <Collections
-                balances={owner && !balanceError ? balances : null}
-              />
-            )}
-            <div className="portfolio-top" id="stock-holdings">
-              <div>
-                <span className="eyebrow">TOTAL STOCK VALUE</span>
-                <div className="total-value">
-                  — <span>USD</span>
-                </div>
-                <p>Pricing unavailable</p>
-              </div>
-              <Link
-                className="secondary"
-                href={page === "collection" ? "/portfolio" : "/collection"}
-              >
-                <LayoutGrid size={15} />
-                {page === "collection" ? "View portfolio" : "View collection"}
-                <ArrowUpRight size={15} />
-              </Link>
-            </div>
+            <ProductSummary
+              balances={owner && !balanceError ? balances : null}
+            />
             {!owner ? (
               <div className="portfolio-empty">
                 <Wallet size={30} />
@@ -1304,13 +1267,9 @@ export function Stockroom({
                 Loading onchain balances…
               </div>
             ) : (
-              <section className="holdings">
+              <section className="holdings" id="stock-holdings">
                 <div className="section-heading">
-                  <h2>
-                    {page === "collection"
-                      ? "Your collection"
-                      : "Stock holdings"}
-                  </h2>
+                  <h2>Your stocks</h2>
                   <button
                     className="icon-button"
                     onClick={() => setRefresh((v) => v + 1)}
@@ -1363,20 +1322,7 @@ export function Stockroom({
                 )}
               </section>
             )}
-            <div className="portfolio-sections">
-              {["Active yield orders", "Pack history", "Recent activity"].map(
-                (t) => (
-                  <section key={t}>
-                    <h2>{t}</h2>
-                    <p>
-                      {t === "Recent activity"
-                        ? "View this session’s transactions in Trade."
-                        : "Coming soon"}
-                    </p>
-                  </section>
-                ),
-              )}
-            </div>
+            <StockReceipts owner={owner} />
           </>
         )}
       </main>

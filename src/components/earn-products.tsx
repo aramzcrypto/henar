@@ -17,10 +17,10 @@ import {
   X,
 } from "lucide-react";
 import { formatUnits, parseUnits } from "@/lib/amount";
-import { categories, percent, type ProductConfig } from "@/lib/product-config";
+import { percent, type ProductConfig } from "@/lib/product-config";
 import { type EarnPreferences } from "@/lib/earn-accounting";
 import { stocks } from "@/lib/registry";
-import { packCandidates, backpackPackCandidates } from "@/lib/pack-catalog";
+import { backpackPackCandidates } from "@/lib/pack-catalog";
 import { EarnHistory } from "./earn-history";
 import { useProtocol } from "./protocol-provider";
 import { ProtocolInventory, ProtocolPositions } from "./protocol-inventory";
@@ -1100,8 +1100,8 @@ export function PacksPage({
           <h2>
             Your sealed packs <span>{live?.summary.sealed ?? "—"}</span>
           </h2>
-          <Link href="/collection">
-            Collection <ArrowUpRight size={14} />
+          <Link href="/stockfolio">
+            Stockfolio <ArrowUpRight size={14} />
           </Link>
         </div>
         <ProtocolInventory />
@@ -1338,46 +1338,5 @@ export function ProductSummary({ balances }: { balances: Balances | null }) {
         </Link>
       ))}
     </div>
-  );
-}
-export function Collections({ balances }: { balances: Balances | null }) {
-  return (
-    <section className="category-collections">
-      <div className="section-heading">
-        <h2>Collection progress</h2>
-        <span>Current supported holdings</span>
-      </div>
-      <div>
-        {categories.map((category) => {
-          const candidates = packCandidates(category);
-          const total = new Set(candidates.map((stock) => stock.underlying))
-            .size;
-          const owned = balances
-            ? new Set(
-                candidates
-                  .filter(
-                    (stock) => BigInt(balances[stock.mint]?.amount ?? "0") > 0n,
-                  )
-                  .map((stock) => stock.underlying),
-              ).size
-            : null;
-          return (
-            <article key={category}>
-              <span>{category}</span>
-              <strong>
-                {owned === null ? "—" : owned} <small>/ {total}</small>
-              </strong>
-              <div className="progress-track">
-                <span
-                  style={{
-                    width: `${owned === null || !total ? 0 : (owned / total) * 100}%`,
-                  }}
-                />
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </section>
   );
 }
