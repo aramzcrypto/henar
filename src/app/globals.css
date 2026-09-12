@@ -5103,3 +5103,9 @@ footer a {
 }
 .page-trade .ticket-dca .schedule-fields .dca-count-row > label { padding: 0; background: transparent; border: 0; border-radius: 0; font-size: 14px; }
 @media (min-width: 1100px) { .ticket-market > .ticket-toolbar, .ticket-dca > .ticket-toolbar { margin-bottom: 24px; } }
+
+.kani-mark { flex-shrink: 0; }
+.kani-wordmark { white-space: nowrap; font-size: 22px; font-weight: 650; letter-spacing: -.7px; }
+.kani-wordmark > span { font-weight: 450; color: #aeb3c0; }
+@media (max-width: 600px) { .kani-wordmark { font-size: 19px; } .kani-mark { width: 25px; height: 25px; } }
+.issuer-logo[src$="ondo.svg"] { filter: brightness(0) invert(1); }

@@ -8,7 +8,7 @@ export const viewport: Viewport = {
   themeColor: "#0c0e10",
 };
 export const metadata: Metadata = {
-  title: "Stockroom · Stocks, on your terms",
+  title: "Kani Markets · Stocks, on your terms",
   description: "Trade and hold tokenized stocks on Solana.",
 };
 export default function RootLayout({

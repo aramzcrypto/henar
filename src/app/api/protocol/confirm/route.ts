@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         keys.get(ix.programIdIndex)?.equals(programId),
       )
     )
-      throw new Error("Transaction does not match Stockroom and this wallet.");
+      throw new Error("Transaction does not match Kani Markets and this wallet.");
     return NextResponse.json({ confirmed: true, signature, slot: tx.slot });
   } catch {
     return NextResponse.json(

@@ -327,7 +327,7 @@ export function EarnPage({
             <span>
               Variable APY{" "}
               <EarnInfo label="About variable APY">
-                Vault APY before Stockroom’s yield share. Variable, not
+                Vault APY before Kani Markets’ yield share. Variable, not
                 guaranteed. Rates are provided by Kamino.
               </EarnInfo>
             </span>

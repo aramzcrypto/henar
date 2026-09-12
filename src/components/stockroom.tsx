@@ -1,4 +1,5 @@
 "use client";
+import { KaniBrand } from "./kani-brand";
 import { AppSelect } from "./app-select";
 import { TokenLogo } from "@/components/token-logo";
 import Link from "next/link";
@@ -21,7 +22,6 @@ import {
   ChevronDown,
   Check,
   ShieldCheck,
-  Layers3,
   Wallet,
   Box,
   RefreshCw,
@@ -618,11 +618,8 @@ export function Stockroom({
   return (
     <div className={`app page-${page}`}>
       <header className="app-header">
-        <Link href="/" className="brand">
-          <span className="brand-icon">
-            <Layers3 size={23} />
-          </span>
-          stockroom
+        <Link href="/" className="brand" aria-label="Kani Markets home">
+          <KaniBrand />
         </Link>
         <nav aria-label="Main navigation">
           {[
@@ -1391,7 +1388,7 @@ export function Stockroom({
           <a href={stock.disclosures} target="_blank" rel="noreferrer">
             Disclosures <ArrowUpRight size={12} />
           </a>
-          <span>Stockroom</span>
+          <span>Kani Markets</span>
         </div>
       </footer>
       {picker && (
