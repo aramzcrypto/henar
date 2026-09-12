@@ -1,0 +1,33 @@
+[package]
+name = "stockroom"
+version = "0.1.0"
+edition = "2021"
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "stockroom"
+[features]
+default = []
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "orao-solana-vrf/idl-build"]
+[dependencies]
+anchor-lang = { version = "=0.32.1", features = ["init-if-needed"] }
+anchor-spl = { version = "=0.32.1", features = ["token", "token_2022", "associated_token"] }
+orao-solana-vrf = { version = "=0.7.0", default-features = false, features = ["cpi"] }
+kvault-interface = "=0.1.0"
+stockroom-math = { path = "../../crates/stockroom-math" }
+
+solana-sha256-hasher = { version = "2.3", features = ["sha2"] }
+
+[dev-dependencies]
+solana-program-test = "=2.3.13"
+solana-sdk = "=2.3.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+bytemuck = { version = "1", features = ["derive"] }
+
+solana-program = "=2.3.0"
+serde_json = "1"
+base64 = "0.22"
+bincode = "1.3"

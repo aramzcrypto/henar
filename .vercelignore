@@ -1,0 +1,17 @@
+.secrets/**
+.env*
+.cache/**
+target/**
+.anchor/**
+solver-state/**
+**/*.keypair.json
+node_modules/**
+.git/**
+services/**
+programs/**
+crates/**
+scripts/**
+tests/**
+Cargo.lock
+Cargo.toml
+Anchor.toml

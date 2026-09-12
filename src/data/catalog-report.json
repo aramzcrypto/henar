@@ -1,0 +1,107 @@
+{
+  "retrievedAt": "2026-09-12T12:45:47.104696+00:00",
+  "sources": {
+    "xstocks": {
+      "url": "https://xstocks.com/products",
+      "sha256": "c89860cbdae10898ac62ec0845d125215028ee32c4094da341049bdd5f579d33"
+    },
+    "ondo-mints": {
+      "url": "https://raw.githubusercontent.com/ondoprotocol/gm-solana-simulator/main/constants.rs",
+      "sha256": "a74513434acc4c0343e0c24a44f6fce01580952b49a7440daaaa918f47e93c99"
+    },
+    "ondo-metadata": {
+      "url": "https://raw.githubusercontent.com/ondoprotocol/ondo-global-markets-token-list/main/tokenlist.json",
+      "sha256": "6a8982213ac841afd52057a41972eb80add4ba02f971aced28af300545e50783"
+    },
+    "backpack": {
+      "url": "https://api.backpack.exchange/api/v1/assets",
+      "sha256": "18cf10d5dbdbd59f72ac809859839549a0e879d2c5bd322f2954dd1b24a63137"
+    }
+  },
+  "counts": {
+    "xStocks": 711,
+    "Ondo": 432,
+    "Backpack": 43
+  },
+  "total": 1186,
+  "logos": 1186,
+  "missingLogos": [],
+  "excluded": [
+    {
+      "provider": "xStocks",
+      "ticker": "SOXLx",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "xStocks",
+      "ticker": "JPSTx",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "xStocks",
+      "ticker": "TQQQx",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "xStocks",
+      "ticker": "BITXx",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "BIRDon",
+      "reason": "Issuer metadata missing"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "HYBDon",
+      "reason": "Issuer metadata missing"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "NEARon",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "ONDSon",
+      "reason": "Invalid Solana public key"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "PSQon",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "SOXLon",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "SOXSon",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "SQQQon",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "TQQQon",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "UCTTon",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Ondo",
+      "ticker": "YEARon",
+      "reason": "Leveraged or inverse product"
+    }
+  ],
+  "policy": "Issuer-published Solana addresses; Backpack requires both deposit and withdrawal enabled. Leveraged/inverse products excluded. Live routes unverified."
+}

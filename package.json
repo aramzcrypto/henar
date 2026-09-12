@@ -1,0 +1,70 @@
+{
+  "name": "stockroom",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "contracts:build": "bash scripts/build-contracts.sh",
+    "protocol:preflight": "node --env-file-if-exists=.env.local --import tsx scripts/protocol-preflight.ts",
+    "solver:check": "node --env-file-if-exists=.env.local --import tsx services/solver/index.ts --once",
+    "solver:start": "node --env-file-if-exists=.env.local --import tsx services/solver/index.ts --execute",
+    "manifest:prepare": "node --env-file-if-exists=.env.local --import tsx scripts/prepare-manifest.ts",
+    "mainnet:snapshot": "node --env-file-if-exists=.env.local --import tsx scripts/snapshot-mainnet.ts",
+    "mainnet:plan": "node --env-file-if-exists=.env.local --import tsx scripts/bootstrap-mainnet.ts",
+    "mainnet:setup": "node --env-file-if-exists=.env.local --import tsx scripts/bootstrap-mainnet.ts --execute",
+    "mainnet:pause": "node --env-file-if-exists=.env.local --import tsx scripts/protocol-pause.ts --execute",
+    "mainnet:unpause": "node --env-file-if-exists=.env.local --import tsx scripts/protocol-pause.ts --unpause --execute",
+    "program:address": "node --env-file-if-exists=.env.local --import tsx scripts/set-program-address.ts",
+    "mainnet:cost": "node --env-file-if-exists=.env.local --import tsx scripts/deployment-plan.ts",
+    "treasury:plan": "node --env-file-if-exists=.env.local --import tsx scripts/treasury-accounts.ts",
+    "treasury:setup": "node --env-file-if-exists=.env.local --import tsx scripts/treasury-accounts.ts --execute",
+    "mainnet:status": "node --env-file-if-exists=.env.local --import tsx scripts/testing-status.ts",
+    "mainnet:routes": "node --env-file-if-exists=.env.local --import tsx scripts/check-mainnet-routes.ts",
+    "mainnet:packets": "node --env-file-if-exists=.env.local --import tsx scripts/check-mainnet-packets.ts",
+    "mainnet:lookup:plan": "node --env-file-if-exists=.env.local --import tsx scripts/setup-lookup-table.ts",
+    "mainnet:lookup:setup": "node --env-file-if-exists=.env.local --import tsx scripts/setup-lookup-table.ts --execute"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.32.1",
+    "@kamino-finance/klend-sdk": "12.0.0",
+    "@orao-network/solana-vrf": "0.8.0",
+    "@pythnetwork/pyth-solana-receiver": "0.16.0",
+    "@solana/spl-token": "0.4.15",
+    "@solana/wallet-adapter-react": "0.15.40",
+    "@solana/wallet-adapter-react-ui": "0.9.40",
+    "@solana/web3.js": "1.99.0",
+    "buffer": "6.0.3",
+    "lucide-react": "0.468.0",
+    "next": "15.5.25",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "3.25.76",
+    "@pythnetwork/solana-utils": "0.6.0",
+    "decimal.js": "10.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "15.5.25",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "prettier": "3.6.2"
+  },
+  "overrides": {
+    "jito-ts": {
+      "@solana/web3.js": "$@solana/web3.js"
+    }
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

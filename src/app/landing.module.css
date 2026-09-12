@@ -1,0 +1,257 @@
+.page {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: #0d0e10;
+}
+.header {
+  height: 96px;
+  padding: 0 5%;
+  justify-content: space-between;
+  gap: 24px;
+}
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #b4b6be;
+}
+.navLink:hover {
+  color: #fff;
+}
+.main {
+  flex: 1;
+  width: min(100% - 48px, 1040px);
+  margin: 0 auto;
+  padding: 74px 0 64px;
+  text-align: center;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a5a8b2;
+  margin-bottom: 28px;
+}
+.eyebrow > span {
+  width: 5px;
+  height: 5px;
+  background: #bbc4ff;
+  border-radius: 50%;
+}
+.main h1 {
+  font-size: clamp(46px, 6.7vw, 88px);
+  line-height: 1.09;
+  font-weight: 500;
+  letter-spacing: -0.064em;
+}
+.main h1 > span {
+  color: #bbc4ff;
+}
+.description {
+  margin: 27px auto 29px;
+  font-size: 15px;
+  line-height: 1.85;
+  color: #93969f;
+}
+.cta {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  min-height: 50px;
+  padding: 0 25px;
+  border-radius: 8px;
+  background: #bbc4ff;
+  color: #141723;
+  font-size: 13px;
+  font-weight: 600;
+}
+.cta:hover {
+  background: #d2d8ff;
+}
+.stockStrip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 13px;
+  margin-top: 30px;
+  color: #91949e;
+  font-size: 11px;
+}
+.logos {
+  display: flex;
+  padding-left: 8px;
+}
+.logos img {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #0d0e10;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+  margin-left: -8px;
+}
+.preview {
+  margin: 65px auto 0;
+  width: min(100%, 800px);
+  text-align: left;
+  border: 1px solid #292b31;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #121417;
+}
+.previewTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 26px;
+  border-bottom: 1px solid #26282e;
+  color: #8f929c;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+.soon {
+  letter-spacing: 0;
+  color: #bcc2dc;
+  font-size: 10px;
+}
+.flow {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+}
+.flow > div {
+  padding: 25px 26px 29px;
+}
+.flow > div + div {
+  border-left: 1px solid #26282e;
+}
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #727782;
+  font-size: 11px;
+  margin-bottom: 25px;
+  font-variant-numeric: tabular-nums;
+}
+.flow h2 {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.flow p {
+  color: #8d909a;
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+.yieldStep {
+  background: #181b24;
+}
+.yieldStep h2,
+.yieldStep .step {
+  color: #bbc4ff;
+}
+.footer {
+  width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 5%;
+  padding: 23px 0;
+  border-top: 1px solid #24262b;
+  font-size: 10px;
+  color: #777c87;
+}
+.footer > div {
+  display: flex;
+  gap: 27px;
+  font-size: 12px;
+  color: #b3b6be;
+}
+.footer > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+@media (max-width: 640px) {
+  .header {
+    height: 76px;
+    padding: 0 24px;
+  }
+  .header :global(.brand) {
+    font-size: 21px;
+  }
+  .main {
+    padding: 50px 0 40px;
+  }
+  .main h1 {
+    font-size: clamp(38px, 9.5vw, 60px);
+  }
+  .eyebrow {
+    font-size: 9px;
+    margin-bottom: 25px;
+  }
+  .description {
+    font-size: 13px;
+    max-width: 305px;
+    margin-top: 23px;
+  }
+  .preview {
+    margin-top: 46px;
+  }
+  .previewTop {
+    padding: 17px 18px;
+    font-size: 8px;
+    gap: 8px;
+  }
+  .flow {
+    grid-template-columns: 1fr;
+  }
+  .flow > div {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    column-gap: 10px;
+  }
+  .flow > div + div {
+    border-left: 0;
+    border-top: 1px solid #26282e;
+  }
+  .step {
+    grid-row: span 2;
+    margin: 4px 0 0;
+    align-items: flex-start;
+  }
+  .step svg {
+    display: none;
+  }
+  .flow p {
+    margin-top: 4px;
+  }
+  .footer {
+  width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    gap: 15px;
+    padding: 25px 0;
+  }
+  .footer > span {
+    width: 100%;
+  }
+  .footer > div {
+    gap: 20px;
+  }
+  .footer > a {
+    display: none;
+  }
+}

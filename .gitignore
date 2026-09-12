@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.env*
+!.env.example
+*.tsbuildinfo
+.vercel/
+.cache/
+target/
+.anchor/
+*.keypair.json
+solver-state/
+
+.secrets/
+.vercel
+.DS_Store
+*.log
