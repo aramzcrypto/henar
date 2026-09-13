@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -38,6 +39,11 @@ const labels = {
   xstocks: "xStocks",
   backpack: "Backpack Securities",
   ondo: "Ondo",
+} as const;
+const providerLogos = {
+  xstocks: "/logos/issuers/xstocks.svg",
+  backpack: "/logos/issuers/backpack.svg",
+  ondo: "/logos/issuers/ondo.svg",
 } as const;
 
 function value(
@@ -307,104 +313,151 @@ function OnchainTable({
         {" · "}Net quotes · Provider and Henar fees included · Network fees
         excluded · Unquoted routes not ranked
       </div>
-      <div className="onchain-table-wrap">
-        <table className="onchain-table">
-          <thead>
-            <tr>
-              <th>Representation</th>
-              <th>Buy $1k</th>
-              <th>Sell ~$1k</th>
-              <th>Ref.</th>
-              <th>Premium</th>
-              <th>Spread</th>
-              <th>Liquidity</th>
-              <th>24h volume</th>
-              <th>Impact $1k</th>
-              <th>$10k</th>
-              <th>$50k</th>
-              <th>Status</th>
-              <th>Acquire</th>
-              <th>Redeem</th>
-              <th>Earn</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.representations.map((row) => {
-              const badges = [
-                data.bestBuy === row.representationId && "BEST BUY",
-                data.bestSell === row.representationId && "BEST SELL",
-                data.bestRoute?.representationId === row.representationId &&
-                  "BEST QUOTED $10K",
-              ].filter(Boolean);
-              return (
-                <tr key={row.representationId}>
-                  <td>
-                    <div className="representation-name">
-                      <strong>{labels[row.provider]}</strong>
-                      <span>
-                        {row.tokenSymbol} · <Mint value={row.mint} />
+      <section className="issuer-comparison" aria-label="Issuer comparison">
+        <div className="issuer-comparison-head">
+          <span>Issuer</span>
+          <span>Token</span>
+          <span>Reference</span>
+          <span>Liquidity</span>
+          <span>Access</span>
+          <span>Redemption</span>
+        </div>
+        {data.representations.map((row) => {
+          const representation = equity.representations.find(
+            (item) => item.id === row.representationId,
+          );
+          const access = [
+            row.marketStatus === "active" && "DEX",
+            data.capabilities[row.representationId]?.tradeCapabilities.rfq &&
+              "RFQ",
+            data.capabilities[row.representationId]?.tradeCapabilities
+              .primaryMint && "Mint",
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <div className="issuer-comparison-row" key={row.representationId}>
+              <span className="issuer-name">
+                <Image
+                  src={providerLogos[row.provider]}
+                  alt=""
+                  width={22}
+                  height={22}
+                />
+                <strong>{labels[row.provider]}</strong>
+              </span>
+              <strong className="issuer-token">{row.tokenSymbol}</strong>
+              <span data-label="Reference">{value(row.referencePrice)}</span>
+              <span data-label="Liquidity">
+                {value(row.liquidityUsd, "compact")}
+              </span>
+              <span data-label="Access">{access || "Unavailable"}</span>
+              <span data-label="Redemption">
+                {representation?.redemptionModel ?? "Unavailable"}
+              </span>
+            </div>
+          );
+        })}
+      </section>
+      <details className="execution-details">
+        <summary>Advanced execution data</summary>
+        <div className="onchain-table-wrap">
+          <table className="onchain-table">
+            <thead>
+              <tr>
+                <th>Representation</th>
+                <th>Buy $1k</th>
+                <th>Sell ~$1k</th>
+                <th>Ref.</th>
+                <th>Premium</th>
+                <th>Spread</th>
+                <th>Liquidity</th>
+                <th>24h volume</th>
+                <th>Impact $1k</th>
+                <th>$10k</th>
+                <th>$50k</th>
+                <th>Status</th>
+                <th>Acquire</th>
+                <th>Issuer redemption</th>
+                <th>Earn</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.representations.map((row) => {
+                const representation = equity.representations.find(
+                  (item) => item.id === row.representationId,
+                );
+                const badges = [
+                  data.bestBuy === row.representationId && "BEST BUY",
+                  data.bestSell === row.representationId && "BEST SELL",
+                  data.bestRoute?.representationId === row.representationId &&
+                    "BEST QUOTED $10K",
+                ].filter(Boolean);
+                return (
+                  <tr key={row.representationId}>
+                    <td>
+                      <div className="representation-name">
+                        <strong>{labels[row.provider]}</strong>
+                        <span>
+                          {row.tokenSymbol} · <Mint value={row.mint} />
+                        </span>
+                        {badges.map((badge) => (
+                          <i key={badge as string}>{badge}</i>
+                        ))}
+                      </div>
+                    </td>
+                    <td>{value(row.executableBuyPrice)}</td>
+                    <td>{value(row.executableSellPrice)}</td>
+                    <td>{value(row.referencePrice)}</td>
+                    <td>{value(row.premiumDiscountPct, "percent")}</td>
+                    <td>{value(row.spreadPct, "percent")}</td>
+                    <td title={row.liquiditySources.join(" · ")}>
+                      {value(row.liquidityUsd, "compact")}
+                    </td>
+                    <td title={row.liquiditySources.join(" · ")}>
+                      {value(row.volume24hUsd, "compact")}
+                    </td>
+                    <td>{value(row.priceImpactPct["1000"], "percent")}</td>
+                    <td>{value(row.priceImpactPct["10000"], "percent")}</td>
+                    <td>{value(row.priceImpactPct["50000"], "percent")}</td>
+                    <td>
+                      <span
+                        className={`route-status ${row.marketStatus}`}
+                        title={`${row.executionSources.join(" · ")}${row.quoteAsOf ? ` · quoted ${new Date(row.quoteAsOf).toLocaleTimeString()}` : ""}`}
+                      >
+                        <i />
+                        {row.marketStatus === "active"
+                          ? `${row.executionSources.length} source${row.executionSources.length === 1 ? "" : "s"}`
+                          : "Unavailable"}
                       </span>
-                      {badges.map((badge) => (
-                        <i key={badge as string}>{badge}</i>
-                      ))}
-                    </div>
-                  </td>
-                  <td>{value(row.executableBuyPrice)}</td>
-                  <td>{value(row.executableSellPrice)}</td>
-                  <td>{value(row.referencePrice)}</td>
-                  <td>{value(row.premiumDiscountPct, "percent")}</td>
-                  <td>{value(row.spreadPct, "percent")}</td>
-                  <td title={row.liquiditySources.join(" · ")}>
-                    {value(row.liquidityUsd, "compact")}
-                  </td>
-                  <td title={row.liquiditySources.join(" · ")}>
-                    {value(row.volume24hUsd, "compact")}
-                  </td>
-                  <td>{value(row.priceImpactPct["1000"], "percent")}</td>
-                  <td>{value(row.priceImpactPct["10000"], "percent")}</td>
-                  <td>{value(row.priceImpactPct["50000"], "percent")}</td>
-                  <td>
-                    <span
-                      className={`route-status ${row.marketStatus}`}
-                      title={`${row.executionSources.join(" · ")}${row.quoteAsOf ? ` · quoted ${new Date(row.quoteAsOf).toLocaleTimeString()}` : ""}`}
-                    >
-                      <i />
-                      {row.marketStatus === "active"
-                        ? `${row.executionSources.length} source${row.executionSources.length === 1 ? "" : "s"}`
-                        : "Unavailable"}
-                    </span>
-                  </td>
-                  <td>
-                    {[
-                      row.marketStatus === "active" && "DEX",
-                      data.capabilities[row.representationId]?.tradeCapabilities
-                        .rfq && "RFQ",
-                      data.capabilities[row.representationId]?.tradeCapabilities
-                        .primaryMint && "Mint",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "—"}
-                  </td>
-                  <td>
-                    {data.capabilities[row.representationId]?.tradeCapabilities
-                      .primaryRedeem
-                      ? "Account required"
-                      : "Unverified / unavailable"}
-                  </td>
-                  <td>
-                    {data.earn.opportunities
-                      .filter(
-                        (o) => o.representationId === row.representationId,
-                      )
-                      .map((o) => o.protocol)
-                      .join(" · ") || "None verified"}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+                    <td>
+                      {[
+                        row.marketStatus === "active" && "DEX",
+                        data.capabilities[row.representationId]
+                          ?.tradeCapabilities.rfq && "RFQ",
+                        data.capabilities[row.representationId]
+                          ?.tradeCapabilities.primaryMint && "Mint",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "—"}
+                    </td>
+                    <td>{representation?.redemptionModel ?? "Unavailable"}</td>
+                    <td>
+                      {data.earn.opportunities
+                        .filter(
+                          (o) => o.representationId === row.representationId,
+                        )
+                        .map((o) => o.protocol)
+                        .join(" · ") || "None verified"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
       <CompanyRoutes data={data} />
       <CompanyEarn equity={equity} data={data} />
       <div className="representation-terms">
@@ -824,17 +877,26 @@ export function MarketDetail({
             <SourceLine sourceUrl={research.profile.sourceUrl} />
           </article>
           <article>
-            <span>ONCHAIN COVERAGE</span>
-            <h2>
-              {equity.representations.length} issuer representation
-              {equity.representations.length === 1 ? "" : "s"}
-            </h2>
-            <p>
-              Henar groups these at the economic-exposure layer. Their legal
-              rights and token mechanics remain provider-specific.
-            </p>
+            <span>ISSUERS & TICKERS</span>
+            <h2>{equity.representations.length} verified options</h2>
+            <div className="company-issuer-list">
+              {equity.representations.map((representation) => (
+                <div key={representation.id}>
+                  <span>
+                    <Image
+                      src={providerLogos[representation.provider]}
+                      alt=""
+                      width={24}
+                      height={24}
+                    />
+                    <strong>{labels[representation.provider]}</strong>
+                  </span>
+                  <b>{representation.tokenSymbol}</b>
+                </div>
+              ))}
+            </div>
             <button onClick={() => setTab("Onchain")}>
-              <Route size={15} /> Compare execution
+              <Route size={15} /> Compare issuers
             </button>
           </article>
         </div>

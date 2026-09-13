@@ -189,6 +189,10 @@ export async function summarizeEquities(
           representations.map((representation) => representation.provider),
         ),
       ],
+      representationSymbols: representations.map((representation) => ({
+        provider: representation.provider,
+        tokenSymbol: representation.tokenSymbol,
+      })),
       price: primary?.referencePrice ?? primary?.price ?? null,
       priceChange24hPct: primary?.priceChange24h ?? null,
       onchainVolume24hUsd: sumAvailable(

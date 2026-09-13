@@ -1,17 +1,27 @@
-# Kani Markets · Stockroom
+# Henar
 
-Solana stock trading, USDC yield, and sealed Stock Packs. The application, Anchor program, and settlement worker are implemented for integration testing. **Stockroom is not deployed or enabled on mainnet. No funded mainnet transaction has been validated.**
+Henar is a unified market for tokenized equities on Solana. It groups verified representations of the same company into one market, compares execution and issuer details, and connects trading with yield-powered stock accumulation.
 
-Public Solana hackathon submission. The app currently retains the Stockroom interface branding.
+- [Live application](https://henarapp.vercel.app)
+- [Markets](https://henarapp.vercel.app/markets)
 
-- [Live application](https://kanimarkets.vercel.app)
-- [Source repository](https://github.com/aramzcrypto/kani-markets)
+## Products
 
-The website is publicly hosted; the custom Solana program remains undeployed pending funding and Pyth access.
+- **Markets** — Browse 1,339 companies and ETFs across 2,212 verified xStocks, Backpack Securities, and Ondo representations. Company pages show issuer-specific tickers, live onchain activity, research, and redemption terms.
+- **Trade** — Compare supported routes for market swaps, create yield-bearing limit orders, and schedule DCA purchases.
+- **Earn** — Deposit USDC into a pinned Kamino strategy and direct generated yield toward stocks or Packs.
+- **Packs** — Buy or earn sealed stock packs with onchain settlement and ORAO randomness.
+- **Stockfolio** — Read wallet holdings, protocol positions, sealed packs, and confirmed opening receipts.
 
-## Run
+## Submission status
 
-Node 22:
+The website is a public development preview. Market discovery and data integrations are live where a verified source is available. The custom Anchor program and settlement worker are implemented for integration testing but are not enabled for public mainnet deposits. Missing quotes, balances, APY, or issuer capabilities are shown as unavailable rather than estimated.
+
+The candidate V1 contract manifest contains 39 Backpack stocks with matched execution requirements. Catalog membership does not guarantee liquidity, issuer eligibility, redemption access, or an executable route.
+
+## Run locally
+
+Use Node.js 22:
 
 ```sh
 npm ci
@@ -19,20 +29,21 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The interface works without credentials and shows unavailable services instead of invented APY, balances, orders or pack receipts. Server-only credentials go in `.env.local`; command-line scripts also load `.env.local` automatically. Never put private keys in the frontend, Vercel, git, or chat.
+Server credentials belong in `.env.local`. Private keys must never be placed in the frontend, Vercel environment, repository, or chat.
 
-## Implementation
+## Architecture
 
-- Market trades use Jupiter Swap V2 `/build`, wallet signatures, simulation, exact fee review and confirmation polling. Payment tokens may be any routable Solana token; receiving stocks come from the issuer registry.
-- Earn deposits USDC into a pinned Kamino vault under each position's PDA authority. It tracks principal, vault shares, yield, protocol fees and allocated yield separately with integer accounting. Yield destinations are Packs or Stocks. APY, TVL and charts come from Kamino's actual metrics.
-- Limit and DCA orders deposit USDC, earn while waiting, and permit owner cancellation. Settlement validates fresh, fully verified Pyth prices and actual stock delivery before releasing payment.
-- Stock Packs cost 10 USDC. Purchased packs reserve a 2% fee; earned packs use 10 USDC of net yield with no additional opening fee. The configured yield share is 10%. Sealed batches support purchases, gifts with a message, opening and refunds. ORAO randomness determines the selected stock onchain. No NFTs are minted.
-- The worker can deliver inventory or combine a Jupiter swap and settlement atomically. It journals signatures before submission, reconciles uncertain transactions, retries with backoff, and publishes a health file.
-- Portfolio reads actual token accounts, protocol positions, sealed batches and opening receipts. Scaled Token-2022 holdings use RPC UI quantities; settlement receipts record the multiplier at acquisition.
+- Next.js application and server routes
+- Anchor program for positions, DCA, Packs, and settlement controls
+- Jupiter and independent route adapters for execution discovery
+- Kamino vault integration for USDC yield
+- ORAO randomness for Pack selection
+- Exact integer accounting for token amounts and fees
+- Wallet-bound authorization, transaction simulation, route validation, and admission limits
 
-The broad Market catalog has 1,186 issuer listings. The candidate V1 contract manifest has **39 Backpack stocks** with matched Pyth feeds; DNUT, HTZ and SPHR are excluded because no unambiguous feed was found. Listing/manifest membership does not guarantee liquidity, transferable eligibility or an executable quote.
+The onchain program keeps its original internal `stockroom` identifier. This is an implementation name and does not affect the Henar product identity.
 
-## Validation and release
+## Validation
 
 ```sh
 npm run lint
@@ -40,15 +51,8 @@ npm run typecheck
 npm test
 npm run build
 npm run contracts:build
-npm run mainnet:plan
-npm run mainnet:cost
-npm run protocol:preflight
 ```
 
-`contracts:build` builds the SBF executable and generated IDL, checks SBF stack diagnostics, and runs arithmetic and program-runtime tests. Additional ignored tests run against snapshots of deployed Kamino/ORAO/Pyth programs. Test wallets and snapshots are never broadcast.
+The repository also contains release checks for protocol configuration, routes, transaction size, treasury accounts, and deployment planning. See [validation evidence](docs/VALIDATION.md), [mainnet setup](docs/MAINNET.md), and [security review](docs/SECURITY_REVIEW_RETEST_2026-09-13.md).
 
-See [mainnet setup](docs/MAINNET.md), [validation evidence](docs/VALIDATION.md), and [accounting and execution](docs/EARN-PACKS.md). Missing credentials are only one part of release: deployed-binary verification, authenticated oracle verification, liquidity checks and funded end-to-end transactions must pass before public activation.
-
-## Refresh catalogs
-
-`python3 scripts/import-stock-catalog.py` refreshes issuer-published listings and logos. `npm run manifest:prepare` prepares a candidate Backpack/Pyth mapping; review it before uploading a new immutable manifest. Existing positions and packs retain their original manifest. Oracle ratios describe underlying exposure; they are not guessed from DEX ticker matches.
+The current review and test evidence supports a hackathon preview. A funded public launch still requires deployed-binary verification, capped rollout testing, operational monitoring, and an independent smart-contract audit.

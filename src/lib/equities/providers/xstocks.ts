@@ -11,7 +11,7 @@ export function adaptXStocks(entry: CatalogEntry) {
     providerLabel: "xStocks",
     issuer: "Backed Assets (JE) Limited",
     issuerUrl: "https://xstocks.com/",
-    redemptionModel: null,
+    redemptionModel: "Cash value or underlying · Eligibility required",
     dividendTreatment: null,
     transferRestrictions: null,
     corporateActionMechanism: null,

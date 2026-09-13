@@ -11,7 +11,7 @@ export function adaptOndo(entry: CatalogEntry) {
     providerLabel: "Ondo",
     issuer: "Ondo Global Markets (BVI) Limited",
     issuerUrl: "https://ondo.finance/ondo-stocks",
-    redemptionModel: null,
+    redemptionModel: "Stablecoin cash value · Eligibility required",
     dividendTreatment: null,
     transferRestrictions: null,
     corporateActionMechanism: null,

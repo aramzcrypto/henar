@@ -5649,7 +5649,7 @@ footer a {
   display: grid;
   grid-template-columns:
     minmax(260px, 1.75fr)
-    0.75fr 1.05fr 0.72fr 0.78fr 0.72fr 20px;
+    0.75fr minmax(300px, 1.55fr) 0.78fr 0.72fr 20px;
   align-items: center;
   gap: 18px;
 }
@@ -5738,12 +5738,29 @@ footer a {
   gap: 5px;
 }
 .market-providers i {
-  padding: 4px 7px;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 8px 4px 6px;
+  border: 1px solid #292c31;
+  border-radius: 7px;
   background: #1c1e22;
   color: #989ba3;
   font-size: 9px;
   font-style: normal;
+}
+.market-providers img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+.market-providers b {
+  padding-left: 6px;
+  border-left: 1px solid #33363c;
+  color: #e0e1e4;
+  font-size: 9px;
+  font-weight: 600;
 }
 .market-providers i[data-provider="backpack"] {
   color: #f27a89;
@@ -6064,7 +6081,7 @@ footer a {
 .overview-table-head,
 .overview-market-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.5fr) 0.7fr 0.65fr 1fr 0.7fr 0.7fr 16px;
+  grid-template-columns: minmax(200px, 1.3fr) 0.65fr 0.6fr minmax(280px, 1.5fr) 0.65fr 0.65fr 16px;
   align-items: center;
   gap: 14px;
   padding: 0 16px;
@@ -6212,6 +6229,46 @@ footer a {
   border-radius: 12px;
   background: #121416;
 }
+.issuer-comparison {
+  overflow: hidden;
+  margin: 18px 0 12px;
+  border-radius: 12px;
+  background: #121416;
+}
+.issuer-comparison-head,
+.issuer-comparison-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.1fr) 0.55fr 0.75fr 0.75fr 0.75fr minmax(230px, 1.5fr);
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+}
+.issuer-comparison-head {
+  min-height: 42px;
+  color: #676a72;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.issuer-comparison-row {
+  min-height: 72px;
+  border-top: 1px solid #202226;
+  color: #b7b9bf;
+  font-size: 11px;
+}
+.issuer-name { display: flex; align-items: center; gap: 10px; }
+.issuer-name img,
+.company-issuer-list img { object-fit: contain; }
+.issuer-name strong,
+.issuer-token { color: #ececef; font-weight: 560; }
+.execution-details { margin-top: 10px; }
+.execution-details > summary {
+  padding: 13px 4px;
+  color: #898c94;
+  cursor: pointer;
+  font-size: 11px;
+}
+.execution-details[open] > summary { color: #d6d7da; }
 .onchain-table {
   width: 100%;
   min-width: 1320px;
@@ -6366,6 +6423,20 @@ footer a {
   color: #d5d6da;
   font-size: 11px;
 }
+.company-issuer-list { display: grid; gap: 8px; }
+.company-issuer-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 0 14px;
+  border: 1px solid #26292e;
+  border-radius: 9px;
+  background: #17191c;
+}
+.company-issuer-list > div > span { display: flex; align-items: center; gap: 10px; }
+.company-issuer-list strong { color: #d7d8dc; font-size: 12px; font-weight: 520; }
+.company-issuer-list b { color: #f0f0f2; font-size: 12px; font-weight: 600; }
 .research-unavailable {
   display: grid;
   min-height: 320px;
@@ -6501,7 +6572,7 @@ footer a {
   }
   .overview-table-head,
   .overview-market-row {
-    grid-template-columns: minmax(210px, 1.5fr) 0.7fr 0.65fr 0.9fr 16px;
+    grid-template-columns: minmax(190px, 1.2fr) 0.65fr 0.55fr minmax(260px, 1.4fr) 16px;
   }
   .overview-table-head > :nth-child(5),
   .overview-table-head > :nth-child(6),
@@ -6513,7 +6584,7 @@ footer a {
     display: none;
   }
   .market-row {
-    grid-template-columns: minmax(220px, 1.5fr) 0.8fr 1fr 20px;
+    grid-template-columns: minmax(200px, 1.3fr) 0.7fr minmax(280px, 1.4fr) 20px;
   }
   .market-row .market-metric {
     display: none;
@@ -6584,7 +6655,6 @@ footer a {
     gap: 8px;
     padding: 0 12px;
   }
-  .overview-market-row .market-providers,
   .overview-market-row > :nth-child(5),
   .overview-market-row > :nth-child(6) {
     display: none;
@@ -6621,9 +6691,37 @@ footer a {
   .market-row:hover {
     background: transparent;
   }
-  .market-providers {
-    display: none;
+  .market-row .market-providers,
+  .overview-market-row .market-providers {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-left: 42px;
   }
+  .market-row .market-providers { display: flex; }
+  .market-row .market-row-arrow { grid-column: 3; grid-row: 1; }
+  .overview-market-row {
+    grid-template-columns: minmax(0, 1fr) auto auto 14px;
+    min-height: 98px;
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+  .overview-market-row .market-providers { display: flex; }
+  .issuer-comparison-head { display: none; }
+  .issuer-comparison-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    padding: 16px;
+  }
+  .issuer-token { text-align: right; }
+  .issuer-comparison-row > span[data-label]::before {
+    display: block;
+    margin-bottom: 3px;
+    color: #666972;
+    content: attr(data-label);
+    font-size: 8px;
+    text-transform: uppercase;
+  }
+  .issuer-comparison-row > span[data-label="Redemption"] { grid-column: 1 / -1; }
   .market-company {
     gap: 10px;
   }

@@ -61,6 +61,23 @@ test("provider adapters reject data attributed to the wrong public source", () =
   assert.throws(() => adaptXStocks(entry), /Invalid xStocks catalog source/);
 });
 
+test("verified equity representations disclose issuer redemption models", () => {
+  const nvidia = equityForTicker("NVDA")!;
+  assert.deepEqual(
+    Object.fromEntries(
+      nvidia.representations.map((item) => [
+        item.provider,
+        item.redemptionModel,
+      ]),
+    ),
+    {
+      backpack: "1:1 security entitlement · Account required",
+      xstocks: "Cash value or underlying · Eligibility required",
+      ondo: "Stablecoin cash value · Eligibility required",
+    },
+  );
+});
+
 test("research and corporate actions stay explicitly unavailable without verified records", () => {
   const research = researchForEquity();
   for (const section of Object.values(research)) {
@@ -141,6 +158,13 @@ test("market overview intersects Jupiter activity with exact verified mints", as
     assert.deepEqual(
       overview.items.map((item) => item.ticker),
       ["NVDA"],
+    );
+    assert.deepEqual(
+      overview.items[0].representationSymbols,
+      nvidia.representations.map(({ provider, tokenSymbol }) => ({
+        provider,
+        tokenSymbol,
+      })),
     );
     assert.equal(overview.totalVolume24hUsd, 150);
   } finally {

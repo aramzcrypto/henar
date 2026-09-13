@@ -12,7 +12,7 @@ export function adaptBackpack(entry: CatalogEntry) {
     issuer: "Backpack Securities",
     issuerUrl:
       "https://learn.backpack.exchange/blog/introducing-backpack-securities",
-    redemptionModel: "Convertible 1:1 through Backpack Securities",
+    redemptionModel: "1:1 security entitlement · Account required",
     dividendTreatment:
       "Reinvested into additional tokenized shares where applicable",
     transferRestrictions: null,

@@ -148,6 +148,10 @@ export type LiveRepresentation = {
 export type EquitySummary = Omit<Equity, "representations"> & {
   representationCount: number;
   providers: EquityProvider[];
+  representationSymbols: {
+    provider: EquityProvider;
+    tokenSymbol: string;
+  }[];
   price: number | null;
   priceChange24hPct: number | null;
   onchainVolume24hUsd: number | null;

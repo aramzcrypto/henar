@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -45,6 +46,11 @@ const providerLabels = {
   backpack: "Backpack",
   ondo: "Ondo",
 } as const;
+const providerLogos = {
+  xstocks: "/logos/issuers/xstocks.svg",
+  backpack: "/logos/issuers/backpack.svg",
+  ondo: "/logos/issuers/ondo.svg",
+} as const;
 const views = [
   ["ticker", "All"],
   ["most-traded", "Most traded"],
@@ -83,10 +89,12 @@ function changeLabel(value: number | null) {
 
 function ProviderPills({ equity }: { equity: EquitySummary }) {
   return (
-    <span className="market-providers">
-      {equity.providers.map((provider) => (
-        <i key={provider} data-provider={provider}>
-          {providerLabels[provider]}
+    <span className="market-providers" aria-label="Issuers and token tickers">
+      {equity.representationSymbols.map(({ provider, tokenSymbol }) => (
+        <i key={`${provider}:${tokenSymbol}`} data-provider={provider}>
+          <Image src={providerLogos[provider]} alt="" width={14} height={14} />
+          <span>{providerLabels[provider]}</span>
+          <b>{tokenSymbol}</b>
         </i>
       ))}
     </span>
@@ -128,10 +136,6 @@ function EquityRow({ equity }: { equity: EquitySummary }) {
         </small>
       </span>
       <ProviderPills equity={equity} />
-      <span className="market-metric">
-        <strong>{equity.representationCount}</strong>
-        <small>representations</small>
-      </span>
       <span className="market-metric">
         <strong>{money(equity.onchainVolume24hUsd, true)}</strong>
         <small>24h volume</small>
@@ -264,7 +268,7 @@ function OverviewTable({ items }: { items: EquitySummary[] }) {
         <span>Company</span>
         <span>Price</span>
         <span>Change</span>
-        <span>Providers</span>
+        <span>Issuers & tickers</span>
         <span>Volume</span>
         <span>Liquidity</span>
         <span />
@@ -604,8 +608,7 @@ export function MarketsPage({
             <div className="market-list-head">
               <span>Company</span>
               <span>Reference</span>
-              <span>Providers</span>
-              <span>Coverage</span>
+              <span>Issuers & tickers</span>
               <span>24h volume</span>
               <span>Liquidity</span>
               <span />
