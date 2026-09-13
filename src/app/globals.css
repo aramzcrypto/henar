@@ -738,11 +738,19 @@ main {
 .status-message,
 .transaction-link {
   font-size: 11px;
-  color: var(--accent-text);
   margin: 10px 0;
   display: flex;
   align-items: center;
   gap: 7px;
+}
+.status-message { color: #a2a8b9; }
+.status-message[data-transaction-tone="pending"] { color: #efa85f; }
+.status-message[data-transaction-tone="confirmed"] { color: #52cf91; }
+.transaction-link { color: #aeb7d0; }
+.primary[data-transaction-tone="pending"]:disabled {
+  border-color: rgba(239, 168, 95, 0.32);
+  background: rgba(239, 168, 95, 0.11);
+  color: #efa85f;
 }
 footer {
   width: 100%;

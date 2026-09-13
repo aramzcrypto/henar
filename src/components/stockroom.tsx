@@ -434,7 +434,14 @@ export function Stockroom({
           signal: controller.signal,
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) {
+          if (response.status === 429 || response.status >= 500) {
+            // Keep the last good estimate while a provider briefly recovers.
+            // The signed review below always requests fresh execution terms.
+            return;
+          }
+          throw new Error(data.error);
+        }
         if (!controller.signal.aborted) setEstimate(data);
       } catch (error) {
         if (!controller.signal.aborted)
@@ -716,6 +723,14 @@ export function Stockroom({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
+  const transactionTone =
+    status === "Purchase confirmed"
+      ? "confirmed"
+      : status === "Confirm in your wallet" ||
+          status.includes("awaiting confirmation") ||
+          status.startsWith("Confirmation pending")
+        ? "pending"
+        : "neutral";
   const [signature, setSignature] = useState("");
   const [now, setNow] = useState(0);
   const generation = useRef(0);
@@ -762,7 +777,7 @@ export function Stockroom({
     const refreshQuote = () => {
       if (!document.hidden && !operation.current) setQuoteRefresh((n) => n + 1);
     };
-    const timer = window.setInterval(refreshQuote, 6_000);
+    const timer = window.setInterval(refreshQuote, 12_000);
     document.addEventListener("visibilitychange", refreshQuote);
     return () => {
       window.clearInterval(timer);
@@ -1453,7 +1468,11 @@ export function Stockroom({
                 </div>
               )}
               {status && (
-                <p role="status" className="status-message">
+                <p
+                  role="status"
+                  className="status-message"
+                  data-transaction-tone={transactionTone}
+                >
                   {status}
                 </p>
               )}
@@ -1535,6 +1554,7 @@ export function Stockroom({
                 ) : (
                   <button
                     className="primary"
+                    data-transaction-tone={busy ? transactionTone : undefined}
                     disabled={busy || !wallet.signTransaction}
                     onClick={review && !expired ? buy : getQuote}
                   >

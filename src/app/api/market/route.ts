@@ -35,6 +35,7 @@ import { parseUnits } from "@/lib/amount";
 import { buildSchema, marketAmounts } from "@/lib/market";
 import { MARKET_FEE_BPS, tradeFee } from "@/lib/trade-fee";
 import { consumeQuoteBudget, verifyQuoteAccess } from "@/lib/wallet-access-server";
+import { fetchWithTransientRetry } from "@/lib/http-retry";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
@@ -192,15 +193,17 @@ export async function POST(request: Request) {
         wrapAndUnwrapSol: "true",
         useSharedAccounts: "false",
       });
-      const res = await fetch(`https://api.jup.ag/swap/v2/build?${params}`, {
-        headers: { "x-api-key": jupiterKey },
-        cache: "no-store",
-        signal: AbortSignal.timeout(15000),
-      });
+      const res = await fetchWithTransientRetry(() =>
+        fetch(`https://api.jup.ag/swap/v2/build?${params}`, {
+          headers: { "x-api-key": jupiterKey },
+          cache: "no-store",
+          signal: AbortSignal.timeout(15000),
+        }),
+      );
       if (!res.ok)
         throw new Error(
           res.status === 429
-            ? "Quote service is busy. Try again shortly."
+            ? "Live route is temporarily unavailable. Please retry."
             : "No executable route is available.",
         );
       const build = buildSchema.parse(await res.json());
