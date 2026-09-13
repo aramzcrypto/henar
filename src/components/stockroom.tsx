@@ -1,6 +1,8 @@
 "use client";
+import { productAvailable } from "@/lib/protocol/access";
 import { StockReceipts } from "./stock-receipts";
-import { KaniBrand } from "./kani-brand";
+import { HenarBrand } from "./henar-brand";
+import { RewardsMenu } from "./rewards-menu";
 import { AppSelect } from "./app-select";
 import { TokenLogo } from "@/components/token-logo";
 import Link from "next/link";
@@ -12,6 +14,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { Buffer } from "buffer";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import {
   ArrowUpRight,
   Minus,
@@ -24,6 +27,8 @@ import {
   Check,
   ShieldCheck,
   Wallet,
+  User,
+  LogOut,
   Box,
   RefreshCw,
   Search,
@@ -37,6 +42,7 @@ import {
   Crosshair,
   Info,
   Star,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { useProtocol } from "./protocol-provider";
 import { ProtocolPositions } from "./protocol-inventory";
@@ -55,6 +61,12 @@ import {
   type PaymentToken,
 } from "@/lib/payment-tokens";
 import type { MarketReview } from "@/lib/market";
+import { quoteAuthorization } from "@/lib/wallet-access-client";
+import { validateMarketTransaction } from "@/lib/market-transaction";
+import { inspectRouteWallet } from "@/lib/wallet-route-state";
+import { PublicKey } from "@solana/web3.js";
+import { unpackMint } from "@solana/spl-token";
+import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 const WalletButton = dynamic(
   () =>
     import("@solana/wallet-adapter-react-ui").then((m) => m.WalletMultiButton),
@@ -65,6 +77,106 @@ const WalletButton = dynamic(
     ),
   },
 );
+
+function HeaderWallet() {
+  const wallet = useWallet();
+  const { setVisible } = useWalletModal();
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  if (!wallet.publicKey) {
+    return (
+      <button
+        className="wallet-adapter-button wallet-adapter-button-trigger header-wallet-connect"
+        onClick={() => setVisible(true)}
+      >
+        <Wallet size={14} />
+        {!wallet.publicKey && !wallet.connecting ? "Connect" : "Connecting…"}
+      </button>
+    );
+  }
+
+  const base58 = wallet.publicKey.toBase58();
+  const shortened = base58.slice(0, 4) + "…" + base58.slice(-4);
+  const walletName = wallet.wallet?.adapter.name ?? "Solana wallet";
+
+  return (
+    <div className="wallet-adapter-dropdown header-wallet" ref={dropdownRef}>
+      <button
+        className="wallet-adapter-button wallet-adapter-button-trigger header-wallet-button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        <span className="header-wallet-avatar">
+          <Wallet size={13} />
+          <i />
+        </span>
+        <span className="header-wallet-address">{shortened}</span>
+        <ChevronDown
+          className="header-wallet-chevron"
+          size={13}
+          aria-hidden="true"
+        />
+      </button>
+      {open && (
+        <ul
+          className="wallet-adapter-dropdown-list wallet-adapter-dropdown-list-active header-wallet-menu"
+          role="menu"
+        >
+          <li className="header-wallet-summary" role="none">
+            <span>{walletName}</span>
+            <small>
+              {base58.slice(0, 8)}…{base58.slice(-6)}
+            </small>
+          </li>
+          <li role="none">
+            <Link
+              href="/stockfolio"
+              className="wallet-adapter-dropdown-list-item"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span className="header-wallet-menu-icon">
+                <User size={14} />
+              </span>
+              <span>Stockfolio</span>
+              <ArrowRight size={12} />
+            </Link>
+          </li>
+          <li role="none">
+            <button
+              onClick={() => {
+                setOpen(false);
+                wallet.disconnect();
+              }}
+              className="wallet-adapter-dropdown-list-item header-wallet-disconnect"
+              role="menuitem"
+            >
+              <span className="header-wallet-menu-icon">
+                <LogOut size={14} />
+              </span>
+              <span>Disconnect</span>
+            </button>
+          </li>
+        </ul>
+      )}
+    </div>
+  );
+}
 type Balances = Record<
   string,
   { amount: string; decimals: number; uiAmount?: string }
@@ -83,6 +195,26 @@ function Row({
     </div>
   );
 }
+
+function usdEstimate(amount: string, unitPrice: number | null) {
+  if (!amount || unitPrice === null || !Number.isFinite(unitPrice)) return null;
+  try {
+    const value = new Decimal(amount).mul(unitPrice);
+    if (!value.isFinite() || value.isNegative()) return null;
+    const numeric = value.toNumber();
+    if (numeric > 0 && numeric < 0.01)
+      return `$${value.toSignificantDigits(3).toFixed()}`;
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: numeric < 1 ? 4 : 2,
+    }).format(numeric);
+  } catch {
+    return null;
+  }
+}
+
 export function Stockroom({
   page,
   config,
@@ -105,10 +237,22 @@ export function Stockroom({
   useEffect(() => {
     const mint = new URLSearchParams(window.location.search).get("stock");
     const selected = stocks.find((s) => s.mint === mint);
-    if (selected) setStock(selected);
+    if (selected) {
+      setStock(selected);
+      setMarketReceive({
+        mint: selected.mint,
+        symbol: selected.ticker,
+        name: selected.name,
+        decimals: 9,
+        logo: selected.logo,
+        provider: selected.provider,
+      });
+    }
   }, []);
   const tradeFeeBps =
-    mode === "market" ? 25 : (protocol.data?.tradeFeeBps ?? 25);
+    mode === "market"
+      ? MARKET_FEE_BPS
+      : (protocol.data?.tradeFeeBps ?? MARKET_FEE_BPS);
   const [amount, setAmount] = useState("100");
   const [marketPayment, setMarketPayment] =
     useState<PaymentToken>(PAYMENT_USDC);
@@ -125,36 +269,112 @@ export function Stockroom({
     return () => c.abort();
   }, [stock.mint]);
   const funding = paymentForMode(mode, marketPayment);
-  const [selling, setSelling] = useState(false);
-  const isSelling = mode === "market" && selling;
   const stockToken = {
     mint: stock.mint,
     symbol: stock.ticker,
     name: stock.name,
     decimals: stockDecimals,
     logo: stock.logo,
+    provider: stock.provider,
   };
-  const payment = isSelling ? stockToken : funding;
-  const receive = isSelling ? funding : stockToken;
+  const [marketReceive, setMarketReceive] = useState<PaymentToken>(() => ({
+    mint: stocks[0].mint,
+    symbol: stocks[0].ticker,
+    name: stocks[0].name,
+    decimals: 9,
+    logo: stocks[0].logo,
+    provider: stocks[0].provider,
+  }));
+  useEffect(() => {
+    setMarketReceive((current) =>
+      current.mint === stock.mint
+        ? {
+            mint: stock.mint,
+            symbol: stock.ticker,
+            name: stock.name,
+            decimals: stockDecimals,
+            logo: stock.logo,
+            provider: stock.provider,
+          }
+        : current,
+    );
+  }, [stock.mint, stock.name, stock.provider, stock.ticker, stock.logo, stockDecimals]);
+  const payment = mode === "market" ? marketPayment : funding;
+  const receive = mode === "market" ? marketReceive : stockToken;
+  const paymentStock = stocks.find((candidate) => candidate.mint === payment.mint);
+  const receiveStock = stocks.find((candidate) => candidate.mint === receive.mint);
+  const disclosureStock = receiveStock ?? paymentStock;
   const [receiveAmount, setReceiveAmount] = useState("");
+  const [review, setReview] = useState<MarketReview | null>(null);
   const [editingOutput, setEditingOutput] = useState(false);
   const [estimate, setEstimate] = useState<{
     input: string;
     output: string;
+    executionSource?: string;
+    quoteProvider?: string;
+    route?: { venue: string; pool: string | null; percent: number | null }[];
+    alternatives?: number;
+    candidates?: {
+      source: string;
+      quoteProvider: string;
+      providerFeeBps: number;
+      providerFeeAmount: string;
+      output: string;
+      minimumOutput: string;
+      priceImpactPct: string | null;
+      route: { venue: string; pool: string | null; percent: number | null }[];
+      transactionAvailable: boolean;
+    }[];
+    quotedAt?: string;
+    expiresAt?: string | null;
+    feeBps?: number;
   } | null>(null);
+  const [quoteRefresh, setQuoteRefresh] = useState(0);
   const [estimateError, setEstimateError] = useState("");
   const [estimating, setEstimating] = useState(false);
   const displayedAmount = editingOutput ? (estimate?.input ?? "") : amount;
   const displayedOutput = editingOutput
     ? receiveAmount
     : (estimate?.output ?? "");
+  const [receiveUsdPrice, setReceiveUsdPrice] = useState<number | null>(null);
+  useEffect(() => {
+    setReceiveUsdPrice(null);
+    if (mode !== "market") return;
+    if (receive.mint === USDC) {
+      setReceiveUsdPrice(1);
+      return;
+    }
+    const controller = new AbortController();
+    fetch(`/api/market/estimate?mint=${encodeURIComponent(receive.mint)}`, {
+      signal: controller.signal,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (
+          !controller.signal.aborted &&
+          typeof data.price === "number" &&
+          Number.isFinite(data.price) &&
+          data.price > 0
+        )
+          setReceiveUsdPrice(data.price);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [mode, receive.mint]);
+  const displayedOutputValue = review
+    ? formatUnits(review.outAmount, review.decimals)
+    : displayedOutput;
+  const outputUnitPrice =
+    mode === "limit" && /^\d+(\.\d+)?$/.test(target)
+      ? Number(target)
+      : receiveUsdPrice;
+  const displayedOutputUsd = usdEstimate(displayedOutputValue, outputUnitPrice);
   function editInput(value: string) {
     setEditingOutput(false);
     setEstimate(null);
     setAmount(value);
   }
   useEffect(() => {
-    setEstimate(null);
     setEstimateError("");
     const value = editingOutput ? receiveAmount : amount;
     if (!value || !/^\d+(\.\d+)?$/.test(value) || new Decimal(value).lte(0)) {
@@ -235,17 +455,57 @@ export function Stockroom({
     target,
     stockDecimals,
     tradeFeeBps,
+    quoteRefresh,
   ]);
   const [paymentPicker, setPaymentPicker] = useState(false);
+  const [assetPickerSide, setAssetPickerSide] = useState<"input" | "output">(
+    "input",
+  );
+  const [assetClass, setAssetClass] = useState<"all" | "crypto" | "stocks">(
+    "all",
+  );
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [resolvingPayment, setResolvingPayment] = useState(false);
   const paymentLookup = useRef(0);
-  function choosePayment(token: PaymentToken) {
+  function openAssetPicker(side: "input" | "output") {
+    setAssetPickerSide(side);
+    setPaymentSearch("");
+    setPaymentError("");
+    setPaymentPicker(true);
+  }
+  async function choosePayment(candidate: PaymentToken) {
+    let token = candidate;
+    if (candidate.decimals < 0) {
+      setResolvingPayment(true);
+      try {
+        const response = await fetch(
+          `/api/payment-token?mint=${encodeURIComponent(candidate.mint)}`,
+        );
+        const verified = await response.json();
+        if (!response.ok) throw new Error(verified.error);
+        token = { ...candidate, decimals: verified.decimals };
+      } catch (error) {
+        setPaymentError(
+          error instanceof Error ? error.message : "Asset unavailable.",
+        );
+        return;
+      } finally {
+        setResolvingPayment(false);
+      }
+    }
     setEditingOutput(false);
     setEstimate(null);
     setReceiveAmount("");
-    setMarketPayment(token);
+    if (assetPickerSide === "input") {
+      if (token.mint === marketReceive.mint) setMarketReceive(marketPayment);
+      setMarketPayment(token);
+    } else {
+      if (token.mint === marketPayment.mint) setMarketPayment(marketReceive);
+      setMarketReceive(token);
+    }
+    const selectedStock = stocks.find((entry) => entry.mint === token.mint);
+    if (selectedStock) setStock(selectedStock);
     setAmount("");
     setPaymentPicker(false);
     setPaymentSearch("");
@@ -262,7 +522,7 @@ export function Stockroom({
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      if (request === paymentLookup.current) choosePayment(data);
+      if (request === paymentLookup.current) await choosePayment(data);
     } catch (e) {
       if (request === paymentLookup.current)
         setPaymentError(e instanceof Error ? e.message : "Token unavailable.");
@@ -386,35 +646,62 @@ export function Stockroom({
       .catch(() => {});
     return () => controller.abort();
   }, [metadataMints]);
+  const verifiedStockAssets: PaymentToken[] = stocks.map((entry) => ({
+    mint: entry.mint,
+    symbol: entry.ticker,
+    name: entry.name,
+    decimals:
+      balances?.[entry.mint]?.decimals ??
+      (entry.mint === stock.mint ? stockDecimals : -1),
+    logo: entry.logo,
+    provider: entry.provider,
+  }));
+  const walletAssets: PaymentToken[] = Object.entries(balances ?? {})
+    .filter(
+      ([mint, entry]) =>
+        !commonPayments.some((token) => token.mint === mint) &&
+        !stocks.some((entry) => entry.mint === mint) &&
+        BigInt(entry.amount) > 0n,
+    )
+    .map(([mint, entry]) => ({
+      mint,
+      decimals: entry.decimals,
+      symbol: paymentMetadata[mint]?.symbol ?? paymentLabel(mint),
+      name: paymentMetadata[mint]?.name ?? "Wallet token",
+      logo: paymentMetadata[mint]?.logo,
+    }));
   const availablePayments: PaymentToken[] = [
     ...commonPayments,
-    ...Object.entries(balances ?? {})
-      .filter(
-        ([mint, entry]) =>
-          !commonPayments.some((t) => t.mint === mint) &&
-          BigInt(entry.amount) > 0n,
-      )
-      .map(([mint, entry]) => ({
-        mint,
-        decimals: entry.decimals,
-        symbol: paymentMetadata[mint]?.symbol ?? paymentLabel(mint),
-        name:
-          paymentMetadata[mint]?.name ??
-          stocks.find((s) => s.mint === mint)?.ticker ??
-          "Wallet token",
-        logo:
-          paymentMetadata[mint]?.logo ??
-          stocks.find((s) => s.mint === mint)?.logo,
-      })),
+    ...walletAssets,
+    ...verifiedStockAssets,
   ];
-  const paymentOptions = availablePayments.filter((t) =>
-    `${t.symbol} ${t.name} ${t.mint}`
-      .toLowerCase()
-      .includes(paymentSearch.toLowerCase()),
+  const oppositeMint =
+    assetPickerSide === "input" ? marketReceive.mint : marketPayment.mint;
+  const paymentOptions = availablePayments
+    .filter((token) => {
+      const isStock = !!token.provider;
+      return (
+        token.mint !== oppositeMint &&
+        (assetClass === "all" ||
+          (assetClass === "stocks" ? isStock : !isStock)) &&
+        `${token.symbol} ${token.name} ${token.provider ?? ""} ${token.mint}`
+          .toLowerCase()
+          .includes(paymentSearch.toLowerCase())
+      );
+    })
+    .sort((a, b) => {
+      const aHeld = BigInt(balances?.[a.mint]?.amount ?? "0") > 0n ? 1 : 0;
+      const bHeld = BigInt(balances?.[b.mint]?.amount ?? "0") > 0n ? 1 : 0;
+      return bHeld - aHeld || a.name.localeCompare(b.name);
+    });
+  const heldPaymentOptions = paymentOptions.filter(
+    (token) => BigInt(balances?.[token.mint]?.amount ?? "0") > 0n,
   );
+  const catalogPaymentOptions = paymentOptions
+    .filter((token) => BigInt(balances?.[token.mint]?.amount ?? "0") === 0n)
+    .slice(0, 80);
   const [balanceError, setBalanceError] = useState("");
   const [refresh, setRefresh] = useState(0);
-  const [review, setReview] = useState<MarketReview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
@@ -459,6 +746,18 @@ export function Stockroom({
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [review]);
+  useEffect(() => {
+    if (mode !== "market" || review) return;
+    const refreshQuote = () => {
+      if (!document.hidden && !operation.current) setQuoteRefresh((n) => n + 1);
+    };
+    const timer = window.setInterval(refreshQuote, 6_000);
+    document.addEventListener("visibilitychange", refreshQuote);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshQuote);
+    };
+  }, [mode, review, payment.mint, receive.mint]);
   useEffect(() => {
     if (!picker && !settings && !paymentPicker) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -509,9 +808,14 @@ export function Stockroom({
     setError("");
     setReview(null);
     try {
+      const authorization = await quoteAuthorization(owner, wallet.signMessage);
+      if (token !== generation.current) return;
       const res = await fetch("/api/market", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authorization,
+        },
         body: JSON.stringify({
           owner,
           mint: receive.mint,
@@ -556,6 +860,47 @@ export function Stockroom({
         Buffer.from(review.transaction, "base64"),
       );
       setStatus("Checking transaction…");
+      const tables = await Promise.all(
+        tx.message.addressTableLookups.map(async (lookup) => {
+          const result = await connection.getAddressLookupTable(
+            lookup.accountKey,
+          );
+          if (!result.value)
+            throw new Error("Routing table unavailable. Nothing was signed.");
+          return result.value;
+        }),
+      );
+      const checked = validateMarketTransaction(
+        tx,
+        review,
+        {
+          owner,
+          inputMint: payment.mint,
+          outputMint: receive.mint,
+          inputDecimals: payment.decimals,
+          outputDecimals: receive.decimals,
+          amount: parseUnits(displayedAmount, payment.decimals),
+        },
+        tables,
+      );
+      const mints = await connection.getMultipleAccountsInfo([
+        new PublicKey(payment.mint),
+        new PublicKey(receive.mint),
+      ]);
+      for (const [i, mintAddress, tokenProgram, decimals] of [
+        [0, payment.mint, review.inputProgram, payment.decimals],
+        [1, receive.mint, review.outputProgram, receive.decimals],
+      ] as const) {
+        const info = mints[i];
+        if (
+          !info ||
+          info.owner.toBase58() !== tokenProgram ||
+          unpackMint(new PublicKey(mintAddress), info, info.owner).decimals !==
+            decimals
+        )
+          throw new Error("Token details changed. Nothing was signed.");
+      }
+      await inspectRouteWallet(connection, checked.instructions, checked.terms);
       const sim = await connection.simulateTransaction(tx, {
         sigVerify: false,
       });
@@ -613,18 +958,17 @@ export function Stockroom({
   return (
     <div className={`app page-${page}`}>
       <header className="app-header">
-        <Link href="/" className="brand" aria-label="Kani Markets home">
-          <KaniBrand />
+        <Link href="/" className="brand" aria-label="Henar home">
+          <HenarBrand />
         </Link>
         <nav aria-label="Main navigation">
           {[
+            { path: "markets", label: "Markets", icon: ChartNoAxesCombined },
             { path: "trade", label: "Trade", icon: ArrowLeftRight },
             { path: "earn", label: "Earn", icon: Sprout },
             { path: "packs", label: "Packs", icon: Box },
-            { path: "stockfolio", label: "Stockfolio", icon: Wallet },
           ].map(({ path, label, icon: Icon }) => {
-            const active =
-              page === path || (page === "portfolio" && path === "stockfolio");
+            const active = page === path;
             return (
               <Link
                 key={path}
@@ -639,15 +983,16 @@ export function Stockroom({
           })}
         </nav>
         <div className="header-right">
+          <RewardsMenu />
           <span className="network">
             <i />
             Solana
           </span>
-          <WalletButton />
+          <HeaderWallet />
         </div>
       </header>
       <main>
-        {page === "portfolio" && <h1 className="sr-only">Stockfolio</h1>}
+        {page === "portfolio" && <h1 className="sr-only">Portfolio</h1>}
         {page === "trade" && (
           <div className="trading-desk">
             <aside className="order-rail" aria-label="Order type">
@@ -682,14 +1027,16 @@ export function Stockroom({
             </aside>
             <section
               className={`ticket ticket-${mode}`}
-              aria-label={`${mode === "dca" ? "DCA" : mode === "limit" ? "Limit" : "Market"} stock purchase`}
+              aria-label={`${mode === "dca" ? "DCA stock purchase" : mode === "limit" ? "Limit stock purchase" : "Market asset swap"}`}
             >
               <div className="ticket-toolbar">
                 <h1>
                   {mode === "market"
-                    ? isSelling
-                      ? "Sell stock"
-                      : "Buy stock"
+                    ? receiveStock
+                      ? `Buy ${receive.symbol}`
+                      : paymentStock
+                        ? `Sell ${payment.symbol}`
+                        : "Swap assets"
                     : mode === "limit"
                       ? "Buy at your price"
                       : "Build your position"}
@@ -771,9 +1118,7 @@ export function Stockroom({
                       className="token-chip"
                       aria-label="Select payment token"
                       disabled={busy}
-                      onClick={() =>
-                        isSelling ? setPicker(true) : setPaymentPicker(true)
-                      }
+                      onClick={() => openAssetPicker("input")}
                     >
                       <TokenLogo token={payment} />
                       {payment.symbol}
@@ -834,13 +1179,14 @@ export function Stockroom({
               <button
                 type="button"
                 className="direction"
-                aria-label="Switch buying and selling"
+                aria-label="Switch input and output assets"
                 disabled={busy || mode !== "market"}
                 title={
                   mode === "market" ? "Switch assets" : "Yield orders use USDC"
                 }
                 onClick={() => {
-                  setSelling(!selling);
+                  setMarketPayment(receive);
+                  setMarketReceive(payment);
                   editInput(displayedOutput);
                   setReceiveAmount("");
                 }}
@@ -853,34 +1199,39 @@ export function Stockroom({
                     {mode === "limit" ? "Quantity to buy" : "Receive"}
                   </span>
                   <span className="issuer-label">
-                    {isSelling ? funding.name : stock.provider}
+                    {receive.provider ?? "Crypto"}
                   </span>
                 </div>
                 <div className="ticket-amount">
-                  <input
-                    aria-label={`${receive.symbol} receive amount`}
-                    inputMode="decimal"
-                    placeholder="0.00"
-                    value={
-                      review
-                        ? formatUnits(review.outAmount, review.decimals)
-                        : displayedOutput
-                    }
-                    disabled={busy || mode === "dca"}
-                    onChange={(e) => {
-                      setReview(null);
-                      setEditingOutput(true);
-                      setEstimate(null);
-                      setReceiveAmount(e.target.value);
-                    }}
-                  />
+                  <div className="ticket-number-stack">
+                    <input
+                      aria-label={`${receive.symbol} receive amount`}
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={displayedOutputValue}
+                      disabled={busy || mode === "dca"}
+                      onChange={(e) => {
+                        setReview(null);
+                        setEditingOutput(true);
+                        setEstimate(null);
+                        setReceiveAmount(e.target.value);
+                      }}
+                    />
+                    {displayedOutputUsd && (
+                      <small className="ticket-usd-value">
+                        ≈ {displayedOutputUsd}
+                      </small>
+                    )}
+                  </div>
                   <button
                     className="token-chip"
                     onClick={() =>
-                      isSelling ? setPaymentPicker(true) : setPicker(true)
+                      mode === "market"
+                        ? openAssetPicker("output")
+                        : setPicker(true)
                     }
                     disabled={busy}
-                    aria-label="Select stock"
+                    aria-label="Select receive asset"
                   >
                     <TokenLogo token={receive} />
                     <strong>{receive.symbol}</strong>
@@ -896,16 +1247,6 @@ export function Stockroom({
                   </span>
                 </div>
               </div>
-              {mode === "market" && (
-                <div className="estimate-caption" aria-live="polite">
-                  {estimating
-                    ? "Updating estimate…"
-                    : estimateError ||
-                      (estimate
-                        ? "Estimated · Final amounts shown at review"
-                        : "")}
-                </div>
-              )}
               {mode === "limit" && (
                 <div className="advanced-order">
                   <div className="expiry-options">
@@ -1030,7 +1371,7 @@ export function Stockroom({
                 <div className="trade-details">
                   <Row label={`Protocol fee · ${percent(tradeFeeBps)}`}>
                     {review
-                      ? `${formatUnits(review.protocolFee, review.feeDecimals)} ${review.feeMint === stock.mint ? stock.ticker : funding.symbol}`
+                      ? `${formatUnits(review.protocolFee, review.feeDecimals)} ${review.feeMint === payment.mint ? payment.symbol : receive.symbol}`
                       : mode === "market"
                         ? "Available with quote"
                         : `${fee} USDC`}
@@ -1039,6 +1380,18 @@ export function Stockroom({
                   <Row label="Price impact">
                     {review ? `${Number(review.priceImpactPct) * 100}%` : "—"}
                   </Row>
+                  {review?.route.routePlan.length ? (
+                    <Row label="Execution route">
+                      {[
+                        ...new Set(
+                          review.route.routePlan.map(
+                            (step) => step.swapInfo.label ?? "Liquidity venue",
+                          ),
+                        ),
+                      ].join(" · ")}{" "}
+                      via Jupiter
+                    </Row>
+                  ) : null}
                   {review ? (
                     <>
                       <Row label="Minimum received">
@@ -1051,6 +1404,11 @@ export function Stockroom({
                       <Row label="Account funding">
                         {formatUnits(review.rent, 9)} SOL
                       </Row>
+                      {BigInt(review.feeAccountRent ?? "0") > 0n && (
+                        <Row label="Includes protocol account setup">
+                          {formatUnits(review.feeAccountRent!, 9)} SOL
+                        </Row>
+                      )}
                       <Row label="Quote expires">
                         {Math.max(
                           0,
@@ -1105,7 +1463,10 @@ export function Stockroom({
                     disabled={
                       !owner ||
                       !protocol.data ||
-                      protocol.data.paused ||
+                      !productAvailable(
+                        protocol.data,
+                        mode === "limit" ? 2 : 4,
+                      ) ||
                       protocol.busy ||
                       !protocol.data.stocks.some((s) => s.mint === stock.mint)
                     }
@@ -1171,18 +1532,96 @@ export function Stockroom({
                       : !wallet.signTransaction
                         ? "Wallet cannot sign"
                         : review && !expired
-                          ? `${isSelling ? "Sell" : "Buy"} ${stock.ticker}`
+                          ? `Swap ${payment.symbol} for ${receive.symbol}`
                           : expired
                             ? "Refresh quote"
-                            : isSelling
-                              ? "Review sell"
-                              : "Review buy"}
+                            : "Review swap"}
                   </button>
                 )}
               </div>
+              {mode === "market" && (
+                <section className="live-quotes" aria-label="Live execution quotes">
+                  <div className="live-quotes-head">
+                    <div>
+                      <span className="quote-live-dot" aria-hidden="true" />
+                      <strong>Best quote</strong>
+                      <span className="quote-count">
+                        {estimate?.alternatives
+                          ? `${estimate.alternatives} routes`
+                          : "Live routes"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={estimating ? "quote-refresh spinning" : "quote-refresh"}
+                      onClick={() => setQuoteRefresh((n) => n + 1)}
+                      disabled={estimating}
+                      aria-label="Refresh quotes"
+                    >
+                      <RefreshCw size={13} />
+                      {estimating ? "Updating" : "Live"}
+                    </button>
+                  </div>
+                  {estimate?.candidates?.length ? (
+                    <div
+                      className="quote-list"
+                      key={`${estimate.candidates[0].source}-${estimate.candidates[0].output}`}
+                      aria-live="polite"
+                    >
+                      {estimate.candidates.slice(0, 3).map((candidate, index) => {
+                        const venues = Array.from(
+                          new Set(candidate.route.map((step) => step.venue)),
+                        ).slice(0, 2);
+                        const source = `${candidate.source[0].toUpperCase()}${candidate.source.slice(1)}`;
+                        return (
+                          <div
+                            className={index === 0 ? "quote-row best" : "quote-row"}
+                            key={`${candidate.source}-${candidate.quoteProvider}`}
+                          >
+                            <span className={`quote-source quote-source-${candidate.source}`}>
+                              {candidate.source.slice(0, 1).toUpperCase()}
+                            </span>
+                            <div className="quote-route">
+                              <strong>{source}</strong>
+                              <span>
+                                {venues.length ? venues.join(" · ") : "Direct route"}
+                                {candidate.providerFeeBps > 0
+                                  ? ` · ${percent(candidate.providerFeeBps)} provider fee`
+                                  : ""}
+                              </span>
+                            </div>
+                            {index === 0 && <span className="best-badge">Best</span>}
+                            <div className="quote-output">
+                              <strong>
+                                {new Decimal(candidate.output).toSignificantDigits(8).toFixed()} {receive.symbol}
+                              </strong>
+                              {usdEstimate(candidate.output, receiveUsdPrice) && (
+                                <small>
+                                  ≈ {usdEstimate(candidate.output, receiveUsdPrice)}
+                                </small>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="quote-empty">
+                      {estimateError || (estimating ? "Comparing live routes…" : "Enter an amount to compare routes")}
+                    </div>
+                  )}
+                  <div className="quote-fee-note">
+                    Ranked after provider fees · Net of Henar&apos;s {percent(tradeFeeBps)} fee
+                  </div>
+                </section>
+              )}
               <div className="execution-caption">
-                <ShieldCheck size={12} /> Self-custody <span>·</span> Routed by
-                Jupiter
+                <ShieldCheck size={12} /> Self-custody <span>·</span>{" "}
+                {review
+                  ? "Execution route locked for review"
+                  : mode === "market"
+                    ? "Live multi-source comparison"
+                    : "Onchain order"}
               </div>
               <ProtocolPositions />
               <section className="ticket-activity">
@@ -1249,7 +1688,11 @@ export function Stockroom({
                 <Wallet size={30} />
                 <h2>Connect your wallet</h2>
                 <p>Your stocks will appear here.</p>
-                <WalletButton />
+                <WalletButton>
+                  {!wallet.publicKey && !wallet.connecting
+                    ? "Connect wallet"
+                    : undefined}
+                </WalletButton>
               </div>
             ) : balanceError ? (
               <div className="notice error-message">
@@ -1331,10 +1774,17 @@ export function Stockroom({
           <span /> Solana mainnet
         </span>
         <div>
-          <a href={stock.disclosures} target="_blank" rel="noreferrer">
-            Disclosures <ArrowUpRight size={12} />
-          </a>
-          <span>Kani Markets</span>
+          <Link href="/docs">Docs</Link>
+          {disclosureStock && (
+            <a
+              href={disclosureStock.disclosures}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Disclosures <ArrowUpRight size={12} />
+            </a>
+          )}
+          <span>Henar</span>
         </div>
       </footer>
       {picker && (
@@ -1545,12 +1995,12 @@ export function Stockroom({
             <div className="selector-header">
               <Search size={20} />
               <h2 id="payment-title" className="sr-only">
-                Payment token
+                Select {assetPickerSide === "input" ? "input" : "output"} asset
               </h2>
               <input
                 autoFocus
-                aria-label="Search payment tokens"
-                placeholder="Search wallet tokens or paste a mint"
+                aria-label="Search assets"
+                placeholder="Search crypto, stocks, or paste a mint"
                 value={paymentSearch}
                 onChange={(e) => {
                   setPaymentSearch(e.target.value);
@@ -1569,11 +2019,38 @@ export function Stockroom({
                 <X size={20} />
               </button>
             </div>
-            <div className="payment-selector-note">
-              Pay with any token with an available route.
+            <div className="asset-class-tabs" aria-label="Asset class">
+              {[
+                ["all", "All assets"],
+                ["crypto", "Crypto"],
+                ["stocks", "Stocks & ETFs"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  aria-pressed={assetClass === value}
+                  className={assetClass === value ? "active" : ""}
+                  onClick={() =>
+                    setAssetClass(value as "all" | "crypto" | "stocks")
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="selector-columns asset-selector-columns">
+              <span>
+                Asset <span className="result-count">{paymentOptions.length.toLocaleString()}</span>
+              </span>
+              <span>Balance</span>
             </div>
             <div className="selector-results">
-              {paymentOptions.map((token) => (
+              {heldPaymentOptions.length > 0 && (
+                <div className="selector-section-label">
+                  <span>Your assets</span>
+                  <span>Available balance</span>
+                </div>
+              )}
+              {heldPaymentOptions.map((token) => (
                 <div key={token.mint} className="selector-row">
                   <button
                     className="asset-choice"
@@ -1584,20 +2061,49 @@ export function Stockroom({
                       <span>
                         <strong>{token.symbol}</strong>
                         <small>
-                          {token.name} · {token.mint.slice(0, 4)}…
+                          {token.name}
+                          {token.provider ? ` · ${token.provider}` : ""} · {token.mint.slice(0, 4)}…
                           {token.mint.slice(-4)}
                         </small>
                       </span>
                     </span>
                     <span className="selector-balance">
-                      {balances
+                      {balances?.[token.mint]
                         ? formatUnits(
-                            balances[token.mint]?.amount ?? "0",
-                            token.decimals,
+                            balances[token.mint].amount,
+                            balances[token.mint].decimals,
                             6,
                           )
                         : "—"}
                     </span>
+                  </button>
+                </div>
+              ))}
+              {catalogPaymentOptions.length > 0 && heldPaymentOptions.length > 0 && (
+                <div className="selector-section-label catalog-label">
+                  <span>Explore</span>
+                  <span />
+                </div>
+              )}
+              {catalogPaymentOptions.map((token) => (
+                <div key={token.mint} className="selector-row">
+                  <button
+                    className="asset-choice"
+                    disabled={resolvingPayment}
+                    onClick={() => choosePayment(token)}
+                  >
+                    <span className="asset">
+                      <TokenLogo token={token} />
+                      <span>
+                        <strong>{token.symbol}</strong>
+                        <small>
+                          {token.name}
+                          {token.provider ? ` · ${token.provider}` : ""} · {token.mint.slice(0, 4)}…
+                          {token.mint.slice(-4)}
+                        </small>
+                      </span>
+                    </span>
+                    <span className="selector-balance">—</span>
                   </button>
                 </div>
               ))}
@@ -1626,7 +2132,7 @@ export function Stockroom({
               </div>
             )}
             <div className="selector-footer">
-              <span>Market orders</span>
+              <span>Exact verified Solana mints</span>
               <span>Solana</span>
             </div>
           </section>
@@ -1654,15 +2160,21 @@ export function Stockroom({
             </div>
             <Row label="Network">Solana mainnet</Row>
             <Row label="Slippage tolerance">0.50% · fixed</Row>
-            <Row label="Market protocol fee">0.25%</Row>
+            <Row label="Market protocol fee">0.15%</Row>
             <Row label="Routing">Jupiter</Row>
             <p>
               Network fees and account funding are shown with your executable
               quote.
             </p>
-            <a href={stock.disclosures} target="_blank" rel="noreferrer">
-              Read asset disclosures <ArrowUpRight size={14} />
-            </a>
+            {disclosureStock && (
+              <a
+                href={disclosureStock.disclosures}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Read asset disclosures <ArrowUpRight size={14} />
+              </a>
+            )}
           </section>
         </div>
       )}

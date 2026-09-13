@@ -9,5 +9,5 @@ export function safeError(
     const secret = process.env[name];
     if (secret) message = message.split(secret).join("[redacted]");
   }
-  return message.slice(0, 500);
+  return message.trim().slice(0, 500) || fallback;
 }

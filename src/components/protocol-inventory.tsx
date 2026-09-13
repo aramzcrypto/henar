@@ -71,6 +71,9 @@ export function ProtocolInventory({
           </div>
         );
       })}
+      {data.packs.length > 0 && (
+        <p className="protocol-inventory-label">Opened packs &amp; deliveries</p>
+      )}
       {data.packs.map((p) => {
         const complete = "settled" in p.status;
         const ready = "luckyReady" in p.status;

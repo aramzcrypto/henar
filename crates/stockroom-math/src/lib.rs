@@ -250,6 +250,13 @@ mod tests {
 /// Apply a Token-2022 Scaled UI Amount multiplier using its exact IEEE-754 bits.
 /// No floating point arithmetic participates in custody or settlement amounts.
 pub fn scaled_price(price: u64, bits: u64) -> Result<u64> {
+    scaled_price_round(price, bits, true)
+}
+/// A maximum execution price rounds down, so rounding cannot relax a user's limit.
+pub fn scaled_price_floor(price: u64, bits: u64) -> Result<u64> {
+    scaled_price_round(price, bits, false)
+}
+fn scaled_price_round(price: u64, bits: u64, round_up: bool) -> Result<u64> {
     if bits >> 63 != 0 {
         return Err(MathError::InvalidPrice);
     }
@@ -277,7 +284,7 @@ pub fn scaled_price(price: u64, bits: u64) -> Result<u64> {
             return Err(MathError::InvalidPrice);
         }
         let divisor = 1u128 << (-shift);
-        value / divisor + u128::from(value % divisor != 0)
+        value / divisor + u128::from(round_up && value % divisor != 0)
     };
     u64::try_from(result).map_err(|_| MathError::Overflow)
 }
@@ -289,6 +296,7 @@ mod scaled_tests {
         assert_eq!(scaled_price(100_000_000, 1.5f64.to_bits()), Ok(150_000_000));
         assert_eq!(scaled_price(100_000_000, 0.5f64.to_bits()), Ok(50_000_000));
         assert_eq!(scaled_price(1, 1.5f64.to_bits()), Ok(2));
+        assert_eq!(scaled_price_floor(1, 1.5f64.to_bits()), Ok(1));
         assert!(scaled_price(100, f64::NAN.to_bits()).is_err());
         assert!(scaled_price(100, (-1f64).to_bits()).is_err());
     }
@@ -301,10 +309,10 @@ pub fn lucky_payout(stake: u64, bucket: u8) -> Result<u64> {
         return Err(MathError::InvalidAmount);
     }
     let quarters = match bucket {
-        0..=9 => 1,
-        10..=54 => 2,
-        55..=69 => 4,
-        70..=79 => 6,
+        0..=3 => 1,
+        4..=23 => 2,
+        24..=87 => 4,
+        88..=95 => 6,
         _ => 8,
     };
     u64::try_from((stake as u128) * quarters / 4).map_err(|_| MathError::Overflow)
@@ -329,13 +337,13 @@ mod lucky_tests {
             assert_eq!(payout + returned_to_pool, 2 * stake);
             total += payout as u128;
         }
-        assert_eq!(counts, [10, 45, 15, 10, 20]);
+        assert_eq!(counts, [4, 20, 64, 8, 4]);
         assert_eq!(total, stake as u128 * 95);
     }
     #[test]
     fn lucky_rounding_and_overflow_fail_closed() {
         assert_eq!(lucky_payout(5, 0).unwrap(), 1);
-        assert_eq!(lucky_payout(5, 79).unwrap(), 7);
+        assert_eq!(lucky_payout(5, 95).unwrap(), 7);
         assert!(lucky_payout(0, 0).is_err());
         assert!(lucky_payout(1, 100).is_err());
         assert!(lucky_payout(u64::MAX, 99).is_err());

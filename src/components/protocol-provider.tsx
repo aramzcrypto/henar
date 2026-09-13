@@ -10,6 +10,7 @@ import {
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { Buffer } from "buffer";
+import { validateProtocolTransaction, type ProtocolIntent } from "@/lib/protocol-transaction";
 import { X } from "lucide-react";
 import type { PreparedAction, ProtocolView } from "@/lib/protocol/view";
 import { awaitConfirmation } from "@/lib/protocol/confirmation";
@@ -34,10 +35,12 @@ type RequestAction = {
 };
 type ProtocolContext = {
   data: ProtocolView | null;
-  refresh: () => Promise<void>;
+  refresh: (fresh?: boolean) => Promise<void>;
   run: (action: RequestAction) => void;
   busy: boolean;
   error: string;
+  loading: boolean;
+  loadError: string;
 };
 const Context = createContext<ProtocolContext>({
   data: null,
@@ -45,6 +48,8 @@ const Context = createContext<ProtocolContext>({
   run: () => {},
   busy: false,
   error: "",
+  loading: true,
+  loadError: "",
 });
 export const useProtocol = () => useContext(Context);
 export function ProtocolProvider({ children }: { children: React.ReactNode }) {
@@ -52,6 +57,8 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
     { connection } = useConnection(),
     owner = wallet.publicKey?.toBase58();
   const [data, setData] = useState<ProtocolView | null>(null),
+    [loading, setLoading] = useState(true),
+    [loadError, setLoadError] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [prepared, setPrepared] = useState<PreparedAction | null>(null),
@@ -59,30 +66,68 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null),
     generation = useRef(0),
     activeOwner = useRef(owner);
+  const intent = useRef<ProtocolIntent | null>(null);
   activeOwner.current = owner;
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(
-        `/api/protocol${owner ? `?owner=${owner}` : ""}`,
-        { cache: "no-store" },
-      );
-      const value = await res.json();
-      if (activeOwner.current === owner)
-        setData(value.available ? value : null);
-    } catch {
-      if (activeOwner.current === owner) setData(null);
-    }
-  }, [owner]);
+  const inFlight = useRef<{
+    owner: string | undefined;
+    promise: Promise<void>;
+  } | null>(null);
+  const refresh = useCallback(
+    async (fresh = false) => {
+      if (inFlight.current && inFlight.current.owner === owner)
+        return inFlight.current.promise;
+      const task = (async () => {
+        setLoading(true);
+        try {
+          const params = new URLSearchParams();
+          if (owner) params.set("owner", owner);
+          if (fresh) params.set("fresh", "1");
+          const res = await fetch(`/api/protocol?${params}`, {
+            signal: AbortSignal.timeout(20000),
+          });
+          const value = await res.json();
+          if (!res.ok || !value.available)
+            throw new Error("Connection unavailable");
+          if (activeOwner.current === owner) {
+            setData(value);
+            setLoadError("");
+          }
+        } catch {
+          if (activeOwner.current === owner)
+            setLoadError(
+              "Live connection interrupted. Retry to refresh your balance.",
+            );
+        } finally {
+          if (activeOwner.current === owner) setLoading(false);
+        }
+      })();
+      inFlight.current = { owner, promise: task };
+      try {
+        await task;
+      } finally {
+        if (inFlight.current?.promise === task) inFlight.current = null;
+      }
+    },
+    [owner],
+  );
   useEffect(() => {
     generation.current++;
     setPrepared(null);
     setData(null);
+    setLoadError("");
     setError("");
     setSignature("");
     setBusy(false);
-    void refresh();
-    const timer = setInterval(() => void refresh(), 5000);
-    return () => clearInterval(timer);
+    const updateVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    updateVisible();
+    const timer = setInterval(updateVisible, 15000);
+    document.addEventListener("visibilitychange", updateVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", updateVisible);
+    };
   }, [refresh]);
   const visible = busy || !!prepared || !!error || !!signature;
   useEffect(() => {
@@ -113,7 +158,12 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error);
-        if (current === generation.current) setPrepared(result);
+        if (current === generation.current) {
+          const stockIndex = action.stockMint ? data?.stocks.findIndex(s => s.mint === action.stockMint) : action.stockIndex;
+          if (stockIndex === -1) throw new Error("Stock is not in the active catalog. Review again.");
+          intent.current = { ...action, stockIndex };
+          setPrepared(result);
+        }
       } catch (e) {
         if (current === generation.current)
           setError(
@@ -123,7 +173,7 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
         if (current === generation.current) setBusy(false);
       }
     },
-    [owner, busy],
+    [owner, busy, data?.stocks],
   );
   async function sign() {
     if (!prepared || !wallet.signTransaction || !owner || busy) return;
@@ -139,6 +189,14 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
       );
       if (transaction.message.staticAccountKeys[0]?.toBase58() !== owner)
         throw new Error("Wallet changed. Review again.");
+      if (!intent.current) throw new Error("Review the action again.");
+      const tables = await Promise.all(transaction.message.addressTableLookups.map(async lookup => {
+        const table = await connection.getAddressLookupTable(lookup.accountKey);
+        if (!table.value) throw new Error("Routing table unavailable. Nothing was signed.");
+        return table.value;
+      }));
+      if (current !== generation.current) return;
+      validateProtocolTransaction(transaction, owner, intent.current, tables);
       const signed = await wallet.signTransaction(transaction);
       if (current !== generation.current) return;
       sent = utils.bytes.bs58.encode(signed.signatures[0]);
@@ -162,7 +220,7 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
           "Transaction submitted; verification is pending. Check its status before retrying.",
         );
       if (current === generation.current) {
-        await refresh();
+        await refresh(true);
         if (
           ["open", "openLucky", "bankLucky", "rollLucky"].includes(
             String(prepared.review.action),
@@ -190,7 +248,9 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
     setSignature("");
   }
   return (
-    <Context.Provider value={{ data, refresh, run, busy, error }}>
+    <Context.Provider
+      value={{ data, refresh, run, busy, error, loading, loadError }}
+    >
       {children}
       {visible && (
         <dialog

@@ -472,6 +472,7 @@ export type Stockroom = {
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -666,6 +667,7 @@ export type Stockroom = {
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -951,6 +953,7 @@ export type Stockroom = {
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1208,6 +1211,61 @@ export type Stockroom = {
       "args": [
         {
           "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "configureAccess",
+      "discriminator": [
+        67,
+        51,
+        26,
+        174,
+        192,
+        82,
+        74,
+        208
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "products",
+          "type": "u8"
+        },
+        {
+          "name": "pilotOwner",
+          "type": "pubkey"
+        },
+        {
+          "name": "admissionLimit",
           "type": "u64"
         }
       ]
@@ -1583,6 +1641,7 @@ export type Stockroom = {
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1881,6 +1940,7 @@ export type Stockroom = {
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -2169,6 +2229,7 @@ export type Stockroom = {
             },
             {
               "name": "config",
+              "writable": true,
               "pda": {
                 "seeds": [
                   {
@@ -2486,6 +2547,27 @@ export type Stockroom = {
       ],
       "accounts": [
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "batch"
+          ]
+        },
+        {
           "name": "owner",
           "writable": true,
           "signer": true,
@@ -2783,6 +2865,7 @@ export type Stockroom = {
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -5626,6 +5709,27 @@ export type Stockroom = {
       ],
       "accounts": [
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "position"
+          ]
+        },
+        {
           "name": "owner",
           "signer": true,
           "relations": [
@@ -5698,6 +5802,32 @@ export type Stockroom = {
         219
       ],
       "accounts": [
+        {
+          "name": "execution",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  99,
+                  107,
+                  45,
+                  101,
+                  120,
+                  101,
+                  99,
+                  117,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
         {
           "name": "solver",
           "signer": true
@@ -5911,6 +6041,7 @@ export type Stockroom = {
             },
             {
               "name": "config",
+              "writable": true,
               "pda": {
                 "seeds": [
                   {
@@ -6434,6 +6565,341 @@ export type Stockroom = {
       ]
     },
     {
+      "name": "swapPosition",
+      "discriminator": [
+        109,
+        143,
+        91,
+        230,
+        53,
+        67,
+        177,
+        79
+      ],
+      "accounts": [
+        {
+          "name": "base",
+          "accounts": [
+            {
+              "name": "actor",
+              "writable": true,
+              "signer": true
+            },
+            {
+              "name": "config",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      99,
+                      111,
+                      110,
+                      102,
+                      105,
+                      103
+                    ]
+                  }
+                ]
+              },
+              "relations": [
+                "position",
+                "manifest"
+              ]
+            },
+            {
+              "name": "position",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      112,
+                      111,
+                      115,
+                      105,
+                      116,
+                      105,
+                      111,
+                      110
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "position.owner",
+                    "account": "position"
+                  },
+                  {
+                    "kind": "account",
+                    "path": "position.id",
+                    "account": "position"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "manifest"
+            },
+            {
+              "name": "usdc",
+              "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            },
+            {
+              "name": "ownerCash",
+              "writable": true
+            },
+            {
+              "name": "cash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "position"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "sharesMint"
+            },
+            {
+              "name": "shares",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "position"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "sharesMint"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "treasury",
+              "writable": true
+            },
+            {
+              "name": "tokenProgram",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            }
+          ]
+        },
+        {
+          "name": "execution",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  99,
+                  107,
+                  45,
+                  101,
+                  120,
+                  101,
+                  99,
+                  117,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stockMint"
+        },
+        {
+          "name": "ownerStock",
+          "writable": true
+        },
+        {
+          "name": "stockProgram"
+        },
+        {
+          "name": "jupiter",
+          "address": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
+        }
+      ],
+      "args": [
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "positionSwapTerms"
+            }
+          }
+        },
+        {
+          "name": "route",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "withdrawLuckyReserve",
       "discriminator": [
         177,
@@ -6627,6 +7093,7 @@ export type Stockroom = {
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -7527,6 +7994,22 @@ export type Stockroom = {
             "type": "bool"
           },
           {
+            "name": "enabledProducts",
+            "type": "u8"
+          },
+          {
+            "name": "pilotOwner",
+            "type": "pubkey"
+          },
+          {
+            "name": "admissionLimit",
+            "type": "u64"
+          },
+          {
+            "name": "admittedUsdc",
+            "type": "u64"
+          },
+          {
             "name": "bump",
             "type": "u8"
           }
@@ -8158,6 +8641,46 @@ export type Stockroom = {
           },
           {
             "name": "cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "positionSwapTerms",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "input",
+            "type": "u64"
+          },
+          {
+            "name": "quotedOutput",
+            "type": "u64"
+          },
+          {
+            "name": "minimumOutput",
+            "type": "u64"
+          },
+          {
+            "name": "quotedAt",
+            "type": "i64"
+          },
+          {
+            "name": "withdrawAccounts",
+            "type": "u16"
+          },
+          {
+            "name": "depositAccounts",
+            "type": "u16"
+          },
+          {
+            "name": "minimumRedeemed",
+            "type": "u64"
+          },
+          {
+            "name": "minimumShares",
+            "type": "u64"
           }
         ]
       }

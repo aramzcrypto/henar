@@ -6,6 +6,7 @@ export type PaymentToken = {
   name: string;
   decimals: number;
   logo?: string;
+  provider?: string;
 };
 export const PAYMENT_USDC: PaymentToken = {
   mint: USDC,
@@ -46,6 +47,13 @@ export function resolveFeeAccount(
   if (accounts[outputMint])
     return { address: accounts[outputMint], mint: outputMint };
   throw new Error("Protocol fee collection is not configured for this pair.");
+}
+
+/** Prefer stablecoin fees, then the input token; native SOL fees use output. */
+export function feeOnInput(inputMint: string, outputMint: string) {
+  if (inputMint === USDC) return true;
+  if (outputMint === USDC) return false;
+  return inputMint !== SOL_MINT;
 }
 export function accountFunding(
   before: bigint,

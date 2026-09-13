@@ -1,6 +1,5 @@
 import { protocolLookupTables } from "../src/lib/protocol/lookup";
 import { safeError } from "../src/lib/protocol/errors";
-import { fetchPrices } from "../services/solver/oracles";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { PublicKey } from "@solana/web3.js";
@@ -16,8 +15,6 @@ import { vaultState, KVAULT, KLEND } from "../src/lib/protocol/kamino";
 import { JUPITER_ROUTER } from "../services/solver/pack-swap";
 import { pda, USDC_KEY } from "../src/lib/protocol/client";
 import { PROGRAM_ID as ORAO } from "@orao-network/solana-vrf";
-import { PYTH_PROGRAMS } from "../src/lib/protocol/pyth";
-const PYTH = PYTH_PROGRAMS.receiverProgramId;
 async function main() {
   const report: { check: string; status: string; detail?: string }[] = [];
   for (const name of [
@@ -51,15 +48,7 @@ async function main() {
       console.log(JSON.stringify(report, null, 2));
       throw error;
     });
-  const withOracles = process.argv.includes("--with-oracles");
-  for (const key of [
-    programId,
-    KVAULT,
-    KLEND,
-    ORAO,
-    JUPITER_ROUTER,
-    ...(withOracles ? [PYTH] : []),
-  ]) {
+  for (const key of [programId, KVAULT, KLEND, ORAO, JUPITER_ROUTER]) {
     const info = await c.getAccountInfo(key);
     if (!info?.executable)
       throw new Error(`Required program unavailable: ${key}`);
@@ -96,24 +85,11 @@ async function main() {
       : "Configure the pack quote authority",
   });
   report.push({
-    check: "automated-position-oracles",
-    status: withOracles ? "checking" : "not-checked",
+    check: "position-execution",
+    status: execution?.enabled ? "configured" : "missing",
     detail:
-      "Packs do not require Pyth. Current Limit/DCA/yield-stock settlement still requires entitled feeds.",
+      "Direct Jupiter escrow execution; limit price and net delivery enforced onchain. No Pyth requirement.",
   });
-  if (withOracles) {
-    if (!process.env.PYTH_API_KEY)
-      throw new Error("PYTH_API_KEY is required for --with-oracles.");
-    const prices = await fetchPrices([
-      Buffer.from(config.usdcFeed).toString("hex"),
-      ...manifest.stocks.map((s) => Buffer.from(s.feed).toString("hex")),
-    ]);
-    report.push({
-      check: "authenticated-oracles",
-      status: "available",
-      detail: `${prices.prices.size} price feeds; freshness is enforced at execution`,
-    });
-  }
   const treasury = await getAccount(c, config.treasury);
   if (!treasury.mint.equals(USDC_KEY))
     throw new Error("Treasury must hold canonical USDC.");
@@ -156,6 +132,11 @@ async function main() {
       detail: programId.toBase58(),
     },
     { check: "program-pause", status: config.paused ? "paused" : "unpaused" },
+    {
+      check: "admission-policy",
+      status: config.enabledProducts ? "configured" : "products-disabled",
+      detail: `mask ${config.enabledProducts}; pilot ${config.pilotOwner}; admitted ${config.admittedUsdc}/${config.admissionLimit} USDC base units`,
+    },
     {
       check: "fees",
       status: "read-from-chain",

@@ -1,21 +1,24 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ChartNoAxesCombined } from "lucide-react";
+import { compactUsdc, exactDecimal } from "@/lib/protocol/display";
 type Point = { timestamp: string; apy: number; tvl: number };
 export function EarnHistory({
   vault,
   metric,
   period,
+  tvl,
 }: {
   vault?: string;
   metric: "APY" | "TVL";
   period: string;
+  tvl?: string | null;
 }) {
   const [points, setPoints] = useState<Point[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setPoints([]);
-    if (!vault) return;
+    if (!vault || metric === "TVL") return;
     const controller = new AbortController();
     setLoading(true);
     fetch(`/api/protocol/history?days=${period.replace("D", "")}`, {
@@ -30,7 +33,17 @@ export function EarnHistory({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [vault, period]);
+  }, [vault, metric, period]);
+  if (metric === "TVL")
+    return (
+      <div className="earn-chart-empty" role="status">
+        <ChartNoAxesCombined size={23} strokeWidth={1.3} />
+        <span title={tvl ? `${exactDecimal(tvl)} USDC` : undefined}>
+          {tvl ? `${compactUsdc(tvl)} USDC` : "Henar TVL unavailable"}
+        </span>
+        <small>Current Henar principal · onchain</small>
+      </div>
+    );
   if (points.length < 2)
     return (
       <div className="earn-chart-empty" role="status">
@@ -53,15 +66,12 @@ export function EarnHistory({
         `${i ? "L" : "M"}${12 + ((times[i] - times[0]) / span) * 576},${170 - ((v - min) / range) * 145}`,
     )
     .join(" ");
-  const label = (v: number) =>
-    metric === "APY"
-      ? `${v.toFixed(2)}%`
-      : `$${Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 }).format(v)}`;
+  const label = (v: number) => `${v.toFixed(2)}%`;
   return (
     <figure className="earn-history">
       <div>
         <span>{label(max)}</span>
-        <span>{metric === "TVL" ? "Vault TVL · USD" : "Vault APY"}</span>
+        <span>Vault APY</span>
       </div>
       <svg
         viewBox="0 0 600 190"

@@ -45,7 +45,6 @@ async function main() {
   };
   wanted.SOLVER_STATE_DIR = resolve("solver-state");
   wanted.SOLVER_MAX_SETTLEMENT_USDC_BASE_UNITS = "100000000";
-  wanted.SOLVER_ROUTE_STOCKS = "true";
   for (const [name, value] of Object.entries(wanted)) {
     if (current[name] && current[name] !== value)
       throw new Error(`Existing ${name} differs; refusing to replace it.`);

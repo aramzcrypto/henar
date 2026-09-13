@@ -32,25 +32,28 @@
     "lucky:simulate": "node --import tsx scripts/simulate-lucky.ts",
     "pyth:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-pyth.ts",
     "packs:execution": "node --env-file-if-exists=.env.local --import tsx scripts/pack-execution.ts",
-    "packs:snapshot": "node --env-file-if-exists=.env.local --import tsx scripts/snapshot-pack-swap.ts"
+    "packs:snapshot": "node --env-file-if-exists=.env.local --import tsx scripts/snapshot-pack-swap.ts",
+    "mainnet:access": "node --env-file-if-exists=.env.local --import tsx scripts/protocol-access.ts",
+    "positions:snapshot": "node --env-file-if-exists=.env.local --import tsx scripts/snapshot-position-swap.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
     "@kamino-finance/klend-sdk": "12.0.0",
     "@orao-network/solana-vrf": "0.8.0",
     "@pythnetwork/pyth-solana-receiver": "0.16.0",
+    "@pythnetwork/solana-utils": "0.6.0",
     "@solana/spl-token": "0.4.15",
     "@solana/wallet-adapter-react": "0.15.40",
     "@solana/wallet-adapter-react-ui": "0.9.40",
     "@solana/web3.js": "1.99.0",
+    "@titanexchange/sdk-ts": "^0.1.6",
     "buffer": "6.0.3",
+    "decimal.js": "10.6.0",
     "lucide-react": "0.468.0",
     "next": "15.5.25",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "zod": "3.25.76",
-    "@pythnetwork/solana-utils": "0.6.0",
-    "decimal.js": "10.6.0"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -59,10 +62,10 @@
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.5",
     "eslint-config-next": "15.5.25",
+    "prettier": "3.6.2",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.13",
-    "typescript": "5.9.3",
-    "prettier": "3.6.2"
+    "typescript": "5.9.3"
   },
   "overrides": {
     "jito-ts": {

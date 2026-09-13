@@ -85,6 +85,7 @@ pub fn swap<'info>(
     route: Vec<u8>,
 ) -> Result<()> {
     let a = ctx.accounts;
+    a.config.check_product(PRODUCT_PACKS)?;
     let p = &mut a.pack;
     let now = Clock::get()?.unix_timestamp;
     require!(

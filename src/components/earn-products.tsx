@@ -1,9 +1,10 @@
 "use client";
+import { productAvailable } from "@/lib/protocol/access";
 import { AppSelect } from "./app-select";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LuckyMode, type OpeningMode } from "./lucky-mode";
+import { LuckyAllocation, LuckyMode, type OpeningMode } from "./lucky-mode";
 import { batchPackQuote, giftDraft } from "@/lib/pack-actions";
 import {
   Info,
@@ -26,6 +27,7 @@ import { EarnHistory } from "./earn-history";
 import { useProtocol } from "./protocol-provider";
 import { ProtocolInventory, ProtocolPositions } from "./protocol-inventory";
 import { StockLogo } from "./stock-logo";
+import { compactUsdc, exactDecimal } from "@/lib/protocol/display";
 
 type Balances = Record<string, { amount: string; decimals: number }>;
 function EarnInfo({
@@ -320,7 +322,9 @@ export function EarnPage({
               ? live.paused
                 ? "Deposits paused"
                 : "Mainnet"
-              : "Not live yet"}
+              : protocol.loading
+                ? "Connecting…"
+                : "Connection unavailable"}
           </span>
         </div>
         <div className="earn-headline-metrics">
@@ -328,8 +332,8 @@ export function EarnPage({
             <span>
               Variable APY{" "}
               <EarnInfo label="About variable APY">
-                Vault APY before Kani Markets’ yield share. Variable, not
-                guaranteed. Rates are provided by Kamino.
+                Vault APY before Henar’ yield share. Variable, not guaranteed.
+                Rates are provided by Kamino.
               </EarnInfo>
             </span>
             <strong>
@@ -339,13 +343,19 @@ export function EarnPage({
           </div>
           <div className="earn-tvl">
             <span>
-              Total value locked{" "}
+              Henar TVL{" "}
               <EarnInfo label="About TVL">
-                Total USDC across the connected Kamino vault.
+                Current principal deposited through Henar. This excludes other
+                deposits in the connected Kamino vault.
               </EarnInfo>
             </span>
-            <strong>
-              {live?.tvl ?? "—"} <small>USDC</small>
+            <strong
+              title={live?.tvl ? `${exactDecimal(live.tvl)} USDC` : undefined}
+              aria-label={
+                live?.tvl ? `${exactDecimal(live.tvl)} USDC` : "TVL unavailable"
+              }
+            >
+              {live?.tvl ? compactUsdc(live.tvl) : "—"} <small>USDC</small>
             </strong>
           </div>
         </div>
@@ -362,25 +372,28 @@ export function EarnPage({
                 </button>
               ))}
             </div>
-            <div
-              className="earn-chart-tabs earn-chart-periods"
-              aria-label="Chart period"
-            >
-              {["7D", "30D", "90D"].map((period) => (
-                <button
-                  key={period}
-                  aria-pressed={chartPeriod === period}
-                  onClick={() => setChartPeriod(period)}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
+            {chartMetric === "APY" && (
+              <div
+                className="earn-chart-tabs earn-chart-periods"
+                aria-label="Chart period"
+              >
+                {["7D", "30D", "90D"].map((period) => (
+                  <button
+                    key={period}
+                    aria-pressed={chartPeriod === period}
+                    onClick={() => setChartPeriod(period)}
+                  >
+                    {period}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <EarnHistory
             vault={live?.vault}
             metric={chartMetric}
             period={chartPeriod}
+            tvl={live?.tvl}
           />
         </div>
         <div className="earn-personal-metrics">
@@ -444,6 +457,11 @@ export function EarnPage({
         <PackProgress compact />
       </section>
       <ProtocolPositions earnOnly />
+      {owner && live && earningPositions.length === 0 && (
+        <p className="earn-position-empty" role="status">
+          No active Henar Earn deposit found for this wallet.
+        </p>
+      )}
       <ResponsiveEarnTicket>
         <aside className="earn-ticket" aria-label="USDC deposit and withdrawal">
           <div
@@ -492,6 +510,24 @@ export function EarnPage({
               <span>— USDC</span>
             </small>
           </label>
+          {action === "Withdraw" &&
+            withdrawFrom === "principal" &&
+            chosenPosition &&
+            BigInt(chosenPosition.principalBasis) > 0n && (
+              <button
+                className="product-back"
+                disabled={protocol.busy}
+                onClick={() =>
+                  protocol.run({
+                    action: "withdraw",
+                    account: chosenPosition.address,
+                    amount: "18446744073709551615",
+                  })
+                }
+              >
+                Withdraw all principal
+              </button>
+            )}
           {amount && !valid && (
             <p role="alert" className="error-message">
               Enter a positive USDC amount with at most 6 decimals.
@@ -672,8 +708,21 @@ export function EarnPage({
             )}
             <span className="earn-ticket-status">
               <LockKeyhole size={11} />{" "}
-              {live ? "Confirmed on Solana" : "Vault not connected"}
+              {protocol.loadError
+                ? "Connection interrupted"
+                : live
+                  ? "Confirmed on Solana"
+                  : "Connecting to Solana…"}
             </span>
+            {protocol.loadError && (
+              <button
+                className="product-back"
+                disabled={protocol.loading}
+                onClick={() => void protocol.refresh(true)}
+              >
+                {protocol.loading ? "Reconnecting…" : "Retry connection"}
+              </button>
+            )}
           </div>
         </aside>
       </ResponsiveEarnTicket>
@@ -767,15 +816,30 @@ export function EarnPage({
           </Detail>
           {!live && (
             <p className="product-unavailable">
-              The mainnet vault is not connected yet.
+              {protocol.loading
+                ? "Loading live vault data…"
+                : protocol.loadError ||
+                  "Live vault data is unavailable. Please retry."}
             </p>
+          )}
+          {!live && !protocol.loading && (
+            <button
+              className="product-back"
+              onClick={() => void protocol.refresh(true)}
+            >
+              Retry connection
+            </button>
           )}
           <button
             className="primary"
             disabled={
               !live ||
               protocol.busy ||
-              (action === "Deposit" && live.paused) ||
+              (action === "Deposit" &&
+                !productAvailable(
+                  live,
+                  preferences.destination === "stocks" ? 9 : 1,
+                )) ||
               (action === "Withdraw" && !chosenPosition)
             }
             onClick={() => {
@@ -871,6 +935,47 @@ export function PacksPage({
     const [whole, fraction = ""] = formatUnits(value, 6).split(".");
     return `${whole}.${fraction.padEnd(2, "0")}`;
   };
+  const quantityControls = (
+    <div className="pack-quantity-selector">
+      <span>
+        Quantity <small>10 USDC each</small>
+      </span>
+      <div className="product-segments" aria-label="Pack quantity">
+        {["1", "5", "10"].map((count) => (
+          <button
+            key={count}
+            aria-pressed={!customQuantity && quantity === count}
+            onClick={() => {
+              setQuantity(count);
+              setCustomQuantity(false);
+            }}
+          >
+            {count}
+          </button>
+        ))}
+        <button
+          aria-pressed={customQuantity}
+          onClick={() => setCustomQuantity(true)}
+        >
+          Custom
+        </button>
+      </div>
+      {customQuantity && (
+        <input
+          aria-label="Custom pack quantity"
+          inputMode="numeric"
+          maxLength={13}
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+        />
+      )}
+      {quantityError && (
+        <p className="error-message" role="alert">
+          {quantityError}
+        </p>
+      )}
+    </div>
+  );
   return (
     <div className="backpack-market">
       <h1 className="sr-only">Packs</h1>
@@ -895,12 +1000,12 @@ export function PacksPage({
           <details className="pack-execution-details">
             <summary>How unpacking works</summary>
             <p>
-              Unpack selects a stock using verifiable randomness. Kani requests
+              Unpack selects a stock using verifiable randomness. Henar requests
               a Jupiter quote, and the contract swaps your allocation into your
               wallet before the reveal.
             </p>
             <p>
-              Kani chooses the quote. The contract checks the stock, recipient,
+              Henar chooses the quote. The contract checks the stock, recipient,
               exact spend, quote expiry and minimum received. There is no
               independent price oracle. Network and randomness fees are
               separate.
@@ -913,69 +1018,46 @@ export function PacksPage({
           </details>
         </div>
         <div className="backpack-purchase">
-          <div className="backpack-product-tag">
-            <Backpack size={14} /> Backpack Securities{" "}
-            <span>{openingMode === "lucky" ? "Lucky" : "Random"}</span>
-          </div>
           <h2>Stock Pack</h2>
           <div className="backpack-offer-meta">
             <a href="#possible-stocks">
               {candidates.length} possible stocks <ArrowUpRight size={13} />
             </a>
-            <span>Equal odds</span>
-            <EarnInfo label="About selection odds">
-              Each mint in this catalog preview has a 1 in {candidates.length}{" "}
-              chance. The eligible manifest must be fixed before purchase.
-              Opening requires your action and verifiable onchain randomness.
-            </EarnInfo>
           </div>
-          <div className="backpack-price">
-            {quote ? `$${formatUnits(quote.price, 6)}` : "—"} <span>USDC</span>
+          <div className="pack-price-row">
+            <div className="backpack-price">
+              {quote ? `$${formatUnits(quote.price, 6)}` : "—"}{" "}
+              <span>USDC</span>
+            </div>
+            <LuckyAllocation
+              mode={openingMode}
+              stake={quote ? quote.stockValue / quote.quantity : 9_800_000n}
+              enabled={!!live?.luckyPool?.enabled}
+            />
           </div>
           <LuckyMode
             mode={openingMode}
             onChange={setOpeningMode}
             stake={quote ? quote.stockValue / quote.quantity : 9_800_000n}
-            enabled={!!live?.luckyPool?.enabled}
+            stockCount={candidates.length}
           />
-          <div className="pack-quantity-selector">
-            <span>
-              Quantity <small>10 USDC each</small>
-            </span>
-            <div className="product-segments" aria-label="Pack quantity">
-              {["1", "5", "10"].map((count) => (
-                <button
-                  key={count}
-                  aria-pressed={!customQuantity && quantity === count}
-                  onClick={() => {
-                    setQuantity(count);
-                    setCustomQuantity(false);
-                  }}
-                >
-                  {count}
-                </button>
-              ))}
-              <button
-                aria-pressed={customQuantity}
-                onClick={() => setCustomQuantity(true)}
-              >
-                Custom
-              </button>
-            </div>
-            {customQuantity && (
-              <input
-                aria-label="Custom pack quantity"
-                inputMode="numeric"
-                maxLength={13}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-              />
-            )}
-            {quantityError && (
-              <p className="error-message" role="alert">
-                {quantityError}
-              </p>
-            )}
+          <div className="pack-desktop-quantity">{quantityControls}</div>
+          <div className="mobile-action-dock pack-purchase-action">
+            <button
+              className="primary pack-desktop-buy"
+              disabled={!quote}
+              onClick={() => setReview(true)}
+            >
+              Buy {quote?.quantity.toString() ?? ""}{" "}
+              {quote?.quantity === 1n ? "Pack" : "Packs"}{" "}
+              <ArrowUpRight size={17} />
+            </button>
+            <button
+              className="primary pack-mobile-buy"
+              onClick={() => setReview(true)}
+            >
+              Buy Packs <ArrowUpRight size={17} />
+            </button>
           </div>
           <div className="backpack-price-details">
             <Detail
@@ -990,17 +1072,6 @@ export function PacksPage({
             <Detail label={`Protocol fee · ${percent(config.packFeeBps)}`}>
               {quote ? money(quote.fee) : "—"} USDC
             </Detail>
-          </div>
-          <div className="mobile-action-dock pack-purchase-action">
-            <button
-              className="primary"
-              disabled={!quote}
-              onClick={() => setReview(true)}
-            >
-              Buy {quote?.quantity.toString() ?? ""}{" "}
-              {quote?.quantity === 1n ? "Pack" : "Packs"}{" "}
-              <ArrowUpRight size={17} />
-            </button>
           </div>
           <div className="backpack-launch-status">
             <LockKeyhole size={12} />{" "}
@@ -1076,10 +1147,15 @@ export function PacksPage({
       <section className="backpack-inventory" id="sealed-packs">
         <div className="backpack-inventory-heading">
           <h2>
-            Your packs <span>{live?.summary.sealed ?? "—"}</span>
+            Your packs{" "}
+            <span>
+              {live
+                ? `${live.summary.sealed} sealed · ${live.packs.filter((pack) => "settled" in pack.status).length} opened`
+                : "—"}
+            </span>
           </h2>
-          <Link href="/stockfolio">
-            Stockfolio <ArrowUpRight size={14} />
+          <Link href="/portfolio">
+            Portfolio <ArrowUpRight size={14} />
           </Link>
         </div>
         <ProtocolInventory openingMode={openingMode} />
@@ -1232,9 +1308,12 @@ export function PacksPage({
             <span>Stock Pack</span>
             <span className="product-status">Direct purchase</span>
           </div>
-          <Detail label="Quantity">
-            {quote?.quantity.toString()} sealed packs
-          </Detail>
+          <div className="pack-drawer-quantity">{quantityControls}</div>
+          <div className="pack-desktop-quantity">
+            <Detail label="Quantity">
+              {quote?.quantity.toString()} sealed packs
+            </Detail>
+          </div>
           <Detail label="Total price">
             {quote ? money(quote.price) : "—"} USDC
           </Detail>
@@ -1263,7 +1342,7 @@ export function PacksPage({
           )}
           <button
             className="primary"
-            disabled={!live || live.paused || protocol.busy || !quote}
+            disabled={!productAvailable(live, 16) || protocol.busy || !quote}
             onClick={() => {
               setReview(false);
               protocol.run({
@@ -1272,7 +1351,7 @@ export function PacksPage({
               });
             }}
           >
-            Get purchase preview
+            Review purchase
           </button>
         </ProductDialog>
       )}

@@ -50,10 +50,12 @@ async function main() {
         sha256: createHash("sha256").update(elf).digest("hex"),
         rentLamports: rents,
         persistentRentLamports: rents.program + rents.programData,
+        initialDeploymentRentLamports: rents.program + rents.programData,
+        cliBufferFundingLamports: rents.programData,
         conservativePeakRentLamports:
-          rents.program + rents.programData + rents.buffer,
+          rents.program + rents.programData * 2,
         excludes:
-          "Network fees, initialization accounts, solver funding. Buffer rent is reclaimable after successful deployment.",
+          "Network fees, initialization accounts, solver funding. Agave 2.3.13 first deployment reuses the funded buffer for ProgramData rent. The conservative peak covers separately funded buffers, such as upgrades while the existing program remains funded.",
         deployCommand:
           "solana program deploy target/deploy/stockroom.so --program-id <local-program-key-file> --upgrade-authority <local-admin-key-file> --fee-payer <local-admin-key-file> --url <mainnet-rpc> --max-len <binaryBytes> --use-rpc",
       },

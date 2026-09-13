@@ -74,6 +74,8 @@ export function validatePackQuote(
   if (
     !keys.some((a) => a.pubkey === pack.toBase58() && a.isSigner) ||
     keys.some((a) => a.isSigner && a.pubkey !== pack.toBase58()) ||
+    (payer.toBase58() !== pack.toBase58() &&
+      keys.some((a) => a.pubkey === payer.toBase58())) ||
     !keys.some((a) => a.pubkey === ata(pack).toBase58() && a.isWritable) ||
     !keys.some((a) => a.pubkey === destination.toBase58() && a.isWritable)
   )
@@ -153,6 +155,8 @@ export async function fetchPackRoute(
     slippageBps: String(slippage),
     maxAccounts: String(maxAccounts),
     wrapAndUnwrapSol: "false",
+    useSharedAccounts: "false",
+    instructionVersion: "V2",
   });
   const r = await fetch(`https://api.jup.ag/swap/v2/build?${params}`, {
     headers: { "x-api-key": key },
@@ -179,6 +183,38 @@ export async function fetchPackRoute(
     tables.push(t.value);
   }
   return { ...result, tables, quotedAt };
+}
+export async function fetchExecutablePackRoute(
+  c: Connection,
+  pack: PublicKey,
+  owner: PublicKey,
+  payer: PublicKey,
+  mint: PublicKey,
+  destination: PublicKey,
+  budget: bigint,
+  slippage: number,
+) {
+  let lastError: unknown;
+  for (const maxAccounts of [24, 20, 16, 12]) {
+    try {
+      return await fetchPackRoute(
+        c,
+        pack,
+        owner,
+        payer,
+        mint,
+        destination,
+        budget,
+        slippage,
+        maxAccounts,
+      );
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("No executable pack route; allocation remains in escrow.");
 }
 export async function executePackSwap(
   address: PublicKey,
@@ -208,7 +244,7 @@ export async function executePackSwap(
   if (!spec) throw new Error("Selected pack stock is unavailable.");
   const payer = dispatch.signer.publicKey,
     destination = ata(pack.owner, spec.mint, spec.tokenProgram);
-  const route = await fetchPackRoute(
+  const route = await fetchExecutablePackRoute(
     c,
     address,
     pack.owner,

@@ -42,16 +42,40 @@ export class Dispatcher {
     tables: AddressLookupTableAccount[] = [],
   ) {
     const latest = await this.connection.getLatestBlockhash();
-    const tx = new VersionedTransaction(
-      new TransactionMessage({
-        payerKey: this.signer.publicKey,
-        recentBlockhash: latest.blockhash,
-        instructions: [
-          ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }),
-          ...instructions,
-        ],
-      }).compileToV0Message(tables),
+    const build = (units: number) =>
+      new VersionedTransaction(
+        new TransactionMessage({
+          payerKey: this.signer.publicKey,
+          recentBlockhash: latest.blockhash,
+          instructions: [
+            ComputeBudgetProgram.setComputeUnitLimit({ units }),
+            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }),
+            ...instructions,
+          ],
+        }).compileToV0Message(tables),
+      );
+    const probe = build(1_400_000);
+    assertTransactionLimits(probe.message);
+    const simulated = await this.connection.simulateTransaction(probe, {
+      sigVerify: false,
+      commitment: "confirmed",
+    });
+    if (simulated.value.err)
+      throw new Error(
+        `Simulation rejected: ${JSON.stringify(simulated.value.err)}`,
+      );
+    const used = simulated.value.unitsConsumed;
+    if (
+      used === undefined ||
+      !Number.isSafeInteger(used) ||
+      used < 0 ||
+      used > 1_400_000
+    )
+      throw new Error("Compute estimate unavailable; no transaction sent.");
+    // Reserve measured compute plus headroom instead of needlessly reserving
+    // the block maximum for small transfers and account setup.
+    const tx = build(
+      Math.min(1_400_000, Math.max(10000, Math.ceil(used * 1.2) + 10000)),
     );
     assertTransactionLimits(tx.message);
     await this.signed(tx);

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MARKET_FEE_BPS, tradeFee } from "./trade-fee";
 export const instructionSchema = z.object({
   programId: z.string(),
   accounts: z.array(
@@ -18,6 +19,17 @@ export const buildSchema = z.object({
   otherAmountThreshold: z.string().regex(/^\d+$/),
   slippageBps: z.number(),
   priceImpactPct: z.string(),
+  routePlan: z
+    .array(
+      z.object({
+        percent: z.number().nullable().optional(),
+        swapInfo: z.object({
+          ammKey: z.string().optional(),
+          label: z.string().optional(),
+        }),
+      }),
+    )
+    .default([]),
   platformFee: z
     .object({ amount: z.string().regex(/^\d+$/), feeBps: z.number() })
     .nullable()
@@ -29,6 +41,12 @@ export const buildSchema = z.object({
   addressesByLookupTableAddress: z.record(z.array(z.string())).nullable(),
 });
 export type MarketReview = {
+  route: z.infer<typeof buildSchema>;
+  inputProgram: string;
+  outputProgram: string;
+  feeAccount: string;
+  feeSetupOwner: string | null;
+  feeInstruction: z.infer<typeof instructionSchema> | null;
   transaction: string;
   blockhash: string;
   lastValidBlockHeight: number;
@@ -46,6 +64,7 @@ export type MarketReview = {
   protocolFee: string;
   networkFee: string;
   rent: string;
+  feeAccountRent?: string;
   priceImpactPct: string;
   balance: string;
 };
@@ -59,7 +78,7 @@ export function marketAmounts(
 ) {
   if (input <= 0n || output <= 0n || minimum <= 0n || minimum > output)
     throw new Error("Invalid quote amounts.");
-  const fee = ((inputFee ? input : output) * 25n) / 10000n;
+  const fee = tradeFee(inputFee ? input : output, MARKET_FEE_BPS);
   const swapInput = inputFee ? input - fee : input;
   const receive = inputFee ? output : output - fee,
     minReceive = inputFee ? minimum : minimum - fee;

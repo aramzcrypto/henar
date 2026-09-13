@@ -1,3 +1,4 @@
+import { quoteRequest } from "./helpers/quote-request";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -6,6 +7,7 @@ import {
   paymentForMode,
   resolveFeeAccount,
   accountFunding,
+  feeOnInput,
   SOL_MINT,
 } from "../src/lib/payment-tokens";
 import { USDC, stocks } from "../src/lib/registry";
@@ -26,6 +28,23 @@ test("fee collection only uses one of the swap mints", () => {
     mint: USDC,
   });
   assert.throws(() => resolveFeeAccount(SOL_MINT, output, {}, "usdc-fee"));
+  const otherStock = stocks[1].mint;
+  assert.deepEqual(
+    resolveFeeAccount(output, otherStock, {
+      [output]: "input-stock-fee",
+      [otherStock]: "output-stock-fee",
+    }),
+    { address: "input-stock-fee", mint: output },
+  );
+});
+test("generic pairs collect fees from a usable swap mint", () => {
+  const stockA = stocks[0].mint;
+  const stockB = stocks[1].mint;
+  assert.equal(feeOnInput(USDC, stockA), true);
+  assert.equal(feeOnInput(stockA, USDC), false);
+  assert.equal(feeOnInput(stockA, stockB), true);
+  assert.equal(feeOnInput(SOL_MINT, stockA), false);
+  assert.equal(feeOnInput(stockA, SOL_MINT), true);
 });
 test("SOL principal is not displayed as rent or network fees", () => {
   assert.equal(
@@ -60,14 +79,10 @@ test("market endpoint cannot be used to submit a yield limit request", async () 
 });
 test("same-mint swaps are rejected before requesting a route", async () => {
   const res = await POST(
-    new Request("http://localhost/api/market", {
-      method: "POST",
-      body: JSON.stringify({
-        owner: "11111111111111111111111111111111",
-        mint: stocks[0].mint,
-        inputMint: stocks[0].mint,
-        amount: "1",
-      }),
+    quoteRequest({
+      mint: stocks[0].mint,
+      inputMint: stocks[0].mint,
+      amount: "1",
     }),
   );
   assert.equal(res.status, 400);

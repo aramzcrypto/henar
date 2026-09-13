@@ -2,20 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { POST } from "../src/app/api/market/route";
 import { stocks } from "../src/lib/registry";
-const request = (mint: string, amount = "10") =>
-  new Request("http://localhost/api/market", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      mint,
-      amount,
-      owner: "11111111111111111111111111111111",
-    }),
-  });
-test("market rejects unregistered mints before calling any external service", async () => {
+import { quoteRequest } from "./helpers/quote-request";
+const request = (mint: string, amount = "10") => quoteRequest({ mint, amount });
+test("market rejects malformed mints before calling any external service", async () => {
   const res = await POST(request("NVDA"));
   assert.equal(res.status, 400);
-  assert.match((await res.json()).error, /Unsupported stock/);
+  assert.match((await res.json()).error, /public key/i);
 });
 test("market rejects zero and precision overflow before calling external services", async () => {
   for (const value of ["0", "0.0000001", "-1"]) {

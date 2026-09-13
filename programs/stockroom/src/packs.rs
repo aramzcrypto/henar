@@ -14,6 +14,9 @@ pub fn buy(ctx: Context<BuyBatch>, id: u64, count: u64, slippage_bps: u16) -> Re
         StockroomError::Manifest
     );
     let total = math(stockroom_math::pack_total(count))?;
+    ctx.accounts
+        .config
+        .admit(ctx.accounts.owner.key(), total, PRODUCT_PACKS)?;
     tokens::pay(
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.owner_cash.to_account_info(),
@@ -45,6 +48,7 @@ pub fn buy(ctx: Context<BuyBatch>, id: u64, count: u64, slippage_bps: u16) -> Re
     emit_activity(batch.owner, batch.key(), 10, total, count)
 }
 pub fn from_yield(ctx: Context<YieldBatch>, id: u64) -> Result<()> {
+    ctx.accounts.config.check_product(PRODUCT_PACKS)?;
     require!(!ctx.accounts.config.paused, StockroomError::Paused);
     let p = &mut ctx.accounts.position;
     require!(
@@ -106,6 +110,7 @@ pub fn gift(
     recipient: Pubkey,
     message: String,
 ) -> Result<()> {
+    ctx.accounts.config.check_pilot(recipient)?;
     require!(
         recipient != Pubkey::default() && recipient != ctx.accounts.owner.key(),
         StockroomError::Unauthorized
@@ -180,7 +185,8 @@ pub fn open(ctx: Context<OpenPack>, index: u64, nonce: [u8; 32]) -> Result<()> {
     open_accounts(ctx.accounts, index, nonce, ctx.bumps.pack)
 }
 pub fn open_accounts(a: &mut OpenPack, index: u64, nonce: [u8; 32], pack_bump: u8) -> Result<()> {
-    require!(!a.config.paused, StockroomError::Paused);
+    a.config.check_product(PRODUCT_PACKS)?;
+    a.config.check_pilot(a.owner.key())?;
     let batch = &mut a.batch;
     require!(
         batch.remaining > 0 && batch.next_open == index,
@@ -324,6 +330,12 @@ pub fn settle<'info>(
     ctx: Context<'_, '_, '_, 'info, SettlePack<'info>>,
     deliver_amount: u64,
 ) -> Result<()> {
+    ctx.accounts.config.check_product(PRODUCT_PACKS)?;
+    require!(
+        ctx.accounts.execution.enabled
+            && ctx.accounts.pack.budget <= ctx.accounts.execution.max_budget,
+        StockroomError::Paused
+    );
     let p = &mut ctx.accounts.pack;
     require!(p.status == PackStatus::Selected, StockroomError::State);
     require!(

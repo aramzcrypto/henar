@@ -46,7 +46,7 @@ async function main() {
     stocks: manifest.stocks.length,
     yieldShareBps: 1000,
     packFeeBps: 200,
-    tradeFeeBps: 25,
+    tradeFeeBps: 15,
     pausedAfterSetup: true,
   };
   if (!process.argv.includes("--execute")) {
@@ -116,7 +116,7 @@ async function main() {
           usdcFeed: [...Buffer.from(manifest.usdcFeed, "hex")],
           yieldShareBps: 1000,
           packFeeBps: 200,
-          tradeFeeBps: 25,
+          tradeFeeBps: 15,
           maxSlippageBps: 50,
           maxConfidenceBps: 100,
           oracleMaxAge: 60,

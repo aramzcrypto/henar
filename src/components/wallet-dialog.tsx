@@ -117,7 +117,7 @@ function WalletDialog({ close }: { close: () => void }) {
           <Wallet size={23} />
           <strong>No wallets detected</strong>
           <span>
-            Enable a Solana wallet extension or open Kani Markets in your wallet’s
+            Enable a Solana wallet extension or open Henar in your wallet’s
             browser.
           </span>
         </div>

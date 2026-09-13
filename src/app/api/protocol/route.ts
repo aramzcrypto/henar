@@ -4,21 +4,79 @@ import { z } from "zod";
 import { protocolContext } from "@/lib/protocol/context";
 import { displayStockUnits } from "@/lib/protocol/pricing";
 import { jsonAccount, pda, ata } from "@/lib/protocol/client";
+import { createReadCache } from "@/lib/read-cache";
+import { principalTvl } from "@/lib/protocol/display";
 export const dynamic = "force-dynamic";
+const readCache = createReadCache<unknown>(10000);
+const tvlCache = createReadCache<string>(15000, 1);
 export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const fresh = url.searchParams.get("fresh") === "1";
+  const owner = url.searchParams.get("owner") ?? "";
+  try {
+    if (owner) new PublicKey(owner);
+    const value = await readCache(
+      owner,
+      async () => {
+        const response = await readProtocol(request);
+        if (!response.ok) throw new Error("Protocol read failed");
+        return response.json();
+      },
+      fresh,
+    );
+    return NextResponse.json(value, {
+      headers: {
+        "Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": fresh
+          ? "no-store"
+          : "public, max-age=10, stale-while-revalidate=10",
+      },
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        available: false,
+        error: "Unable to refresh the mainnet connection. Please retry.",
+      },
+      {
+        status: 503,
+        headers: { "Cache-Control": "no-store", "Retry-After": "3" },
+      },
+    );
+  }
+}
+async function readProtocol(request: Request) {
   try {
     const ctx = await protocolContext();
-    const { client, config, programId } = ctx;
+    const { client, config, configKey, programId } = ctx;
     const poolKey = pda(programId, "lucky-pool");
-    const [pool, execution] = await Promise.all([
+    const fresh = new URL(request.url).searchParams.get("fresh") === "1";
+    const [pool, execution, tvl] = await Promise.all([
       client.account.luckyPool.fetchNullable(poolKey),
       client.account.packExecution.fetchNullable(
         pda(programId, "pack-execution"),
       ),
+      tvlCache(
+        configKey.toBase58(),
+        async () =>
+          principalTvl(
+            (
+              await client.account.position.all([
+                {
+                  memcmp: { offset: 40, bytes: configKey.toBase58() },
+                },
+              ])
+            ).map((position) => position.account),
+          ),
+        fresh,
+      ),
     ]);
     const luckyPool = pool
       ? {
-          enabled: pool.enabled && !config.paused,
+          enabled:
+            pool.enabled &&
+            !config.paused &&
+            (config.enabledProducts & 48) === 48,
           reserve: (await ctx.c.getTokenAccountBalance(ata(poolKey))).value
             .amount,
           maxStake: pool.maxStake.toString(),
@@ -51,8 +109,7 @@ export async function GET(request: Request) {
           await client.account.manifest.fetch(p.account.manifest),
         );
     }
-    let apy: number | null = null,
-      tvl: string | null = null;
+    let apy: number | null = null;
     try {
       const res = await fetch(
         `https://api.kamino.finance/kvaults/vaults/${config.vault}/metrics`,
@@ -62,13 +119,9 @@ export async function GET(request: Request) {
         const m = z
           .object({
             apyActual: z.coerce.number().finite(),
-            tokensAvailable: z.string(),
-            tokensInvested: z.string(),
           })
           .parse(await res.json());
         apy = m.apyActual * 100;
-        const Decimal = (await import("decimal.js")).default;
-        tvl = new Decimal(m.tokensAvailable).add(m.tokensInvested).toFixed(6);
       }
     } catch {
       /* Missing upstream metrics remain unavailable; no synthetic rates. */
@@ -92,12 +145,25 @@ export async function GET(request: Request) {
         luckyPool,
         packExecution: execution
           ? {
-              enabled: execution.enabled && !config.paused,
+              enabled:
+                execution.enabled &&
+                !config.paused &&
+                (config.enabledProducts & 16) === 16,
               authority: execution.authority.toBase58(),
               maxBudget: execution.maxBudget.toString(),
             }
           : undefined,
         paused: config.paused,
+        access: {
+          walletAllowed:
+            !owner ||
+            config.pilotOwner.equals(PublicKey.default) ||
+            config.pilotOwner.equals(owner),
+          enabledProducts: config.enabledProducts,
+          pilotOwner: config.pilotOwner.toBase58(),
+          admissionLimit: config.admissionLimit.toString(),
+          admittedUsdc: config.admittedUsdc.toString(),
+        },
         programId: programId.toBase58(),
         vault: config.vault.toBase58(),
         yieldShareBps: config.yieldShareBps,

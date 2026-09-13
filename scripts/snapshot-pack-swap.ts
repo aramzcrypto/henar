@@ -15,7 +15,10 @@ import {
   integer,
   USDC_KEY,
 } from "../src/lib/protocol/client";
-import { fetchPackRoute, JUPITER_ROUTER } from "../services/solver/pack-swap";
+import {
+  fetchExecutablePackRoute,
+  JUPITER_ROUTER,
+} from "../services/solver/pack-swap";
 import { assertMainnet } from "../src/lib/solana";
 async function main() {
   const c = new Connection(process.env.SOLANA_RPC_URL!, "confirmed");
@@ -34,7 +37,7 @@ async function main() {
     tp = new PublicKey(stock.tokenProgram),
     destination = ata(owner, mint, tp),
     treasury = ata(feeOwner);
-  const r = await fetchPackRoute(
+  const r = await fetchExecutablePackRoute(
     c,
     pack,
     owner,
@@ -122,6 +125,10 @@ async function main() {
       oracleMaxAge: 60,
       packTimeout: 3600,
       paused: false,
+      enabledProducts: 63,
+      pilotOwner: PublicKey.default,
+      admissionLimit: integer(100000000),
+      admittedUsdc: integer(0),
       bump: seeds("config"),
     }),
   );

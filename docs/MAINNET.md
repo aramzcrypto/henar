@@ -1,8 +1,8 @@
 # Mainnet setup and operations
 
-Status: the Kani Markets website is deployed; the Solana program is built but not deployed or funded. Helius and Jupiter credentials are configured. Pyth trial credentials are local, but the trial does not cover the 39-stock pack manifest. Packs now use Jupiter directly without Pyth; automated positions retain oracle safeguards. No funded mainnet flow or independent security audit has passed. The initial program configuration is paused.
+Status: the Solana program is deployed, initialized and upgradeable. Earn is unpaused only for pilot wallet `EYVq1MrwT5mfsh8kJLw645ARKK3uP4ja3UcTzb8ULcff`, with a 25 USDC cumulative admission cap (1 USDC already admitted, leaving 24 USDC). Other contract products remain disabled. A restricted 1 USDC Earn deposit and full withdrawal previously passed on mainnet using the admin wallet. See [the deployment record](MAINNET_RELEASE_2026-09-13.md). This is not unrestricted public activation.
 
-Public website: [Kani Markets](https://kanimarkets.vercel.app). Website deployment does not deploy the Solana program.
+Current production website: [Henar](https://henarapp.vercel.app). Website deployment does not deploy or upgrade the Solana program.
 
 ## Testing setup
 
@@ -16,7 +16,7 @@ Run `npm run mainnet:status` for fresh balances and deployment status. Operation
 | --- | --- | --- |
 | `SOLANA_RPC_URL` | Vercel server and worker | Mainnet RPC with account reads, simulation and transaction submission |
 | `JUPITER_API_KEY` | Vercel server and worker | Market and pack routing; optional position routing |
-| `PYTH_API_KEY` | Worker and local verification | Optional for oracle-gated positions; not required for packs |
+| `OPENOCEAN_API_URL` | Vercel server | Optional independent OpenOcean quote discovery; include the QuickNode `/addon/807` suffix |
 | `STOCKROOM_TREASURY_OWNER` | Server and local setup | Public wallet receiving protocol fees |
 | `STOCKROOM_LOOKUP_TABLE` | Server and worker | Public lookup table created by the setup command |
 | `STOCKROOM_PROGRAM_ID` | Server and worker | Public address of the exact deployed build |
@@ -24,17 +24,17 @@ Run `npm run mainnet:status` for fresh balances and deployment status. Operation
 | `STOCKROOM_ADMIN_KEYPAIR_PATH` | Local deployment only | Funded upgrade/configuration authority, mode 0600 |
 | `SOLVER_KEYPAIR_PATH` | Persistent worker only | Limited operational wallet, mode 0600 |
 
-Get Jupiter access through its [developer portal](https://developers.jup.ag/portal). **No paid Pyth plan is needed for Market or Packs.** Current oracle-gated Limit/DCA/yield-stock settlement still requires entitled feeds. The optional Pyth adapter uses the official upgraded receiver and authenticated `pyth.dourolabs.app/hermes` endpoint. Do not enable those position fills without verifying coverage. See [PACK_EXECUTION.md](PACK_EXECUTION.md) for the pack execution trust model.
+Get Jupiter access through its [developer portal](https://developers.jup.ag/portal). **No Pyth subscription is required by the active worker.** Positions and packs use direct Jupiter escrow swaps. The program checks actual token delivery, schedules and limit prices. Quote quality for market-priced execution relies on the configured, capped quote authority. Legacy oracle instructions are retained for compatibility but are not called by the active worker. See [PACK_EXECUTION.md](PACK_EXECUTION.md).
 
 `STOCKROOM_FEE_ACCOUNT` and `STOCKROOM_FEE_ACCOUNTS` remain optional explicit Market fee-account overrides. Otherwise, the server derives canonical treasury ATAs from `STOCKROOM_TREASURY_OWNER` and verifies that they exist. These are public account addresses, not credentials.
 
-Jupiter V2 `/build` does not return the legacy platform-fee object. Market fees are explicit atomic token transfers: input-USDC fees reduce the swap budget, while output-token fees reduce the quoted stock receipt and minimum by the same disclosed fixed fee. No Titan integration/key is required for V1. Jupiter `/build` provides composable swap instructions; additional routing providers can be evaluated against actual stock execution quality later.
+Jupiter V2 `/build` does not return the legacy platform-fee object. Market fees are explicit atomic token transfers: input-USDC fees reduce the swap budget, while output-token fees reduce the quoted stock receipt and minimum by the same disclosed fixed fee. No paid Titan integration/key is required for V1. OpenOcean adds independent price discovery through the free QuickNode plan; its mandatory 15 basis point provider fee is deducted before ranking. OpenOcean remains quote-only until its transaction instructions pass the same custody and simulation policy as Jupiter.
 
 ## Rebuild and deploy
 
 1. Create or choose local program/admin key files with permissions 0600. Keep their contents private. The generated development placeholder and build-generated test identity must not be funded or used as production identities.
 2. Set the public address using `npm run program:address -- <public-program-address>`. Set the corresponding environment variables. Run `npm run contracts:build` and all app checks. This regenerates IDL/address bindings.
-3. Run `npm run mainnet:cost`. It queries actual rent for the current executable. The current checked build is 922,072 bytes: approximately **4.6858 SOL persistent program rent**, with a conservative **9.3708 SOL peak rent allowance** including the temporary deployment buffer, before transaction fees and account setup. Recalculate after the final address/build; these are RPC rent results, not fiat price estimates.
+3. Run `npm run mainnet:cost`. It queries actual rent for the current executable. The reviewed build is 931,544 bytes: **4.73395548 SOL persistent program rent**, before transaction fees and account setup. Agave 2.3.13 reuses the upload buffer funding during a first deployment, so it does not require twice that rent at once. A later upgrade needs a temporary funded buffer while the existing program remains funded; the conservative combined allowance is **9.46707784 SOL** before fees. Recalculate after changes to the build; these are RPC rent results, not fiat price estimates.
 4. Deploy the checked binary with Solana CLI, explicit program key, admin upgrade authority and fee payer, mainnet RPC, `--max-len` equal to the binary size, and `--use-rpc`. The cost script prints the command template. Retain upgradeability for the controlled test phase; do not accidentally pass `--final`.
 5. Run `npm run mainnet:plan`, review `config/mainnet-manifest.json`, then `npm run mainnet:setup`. Setup creates the USDC treasury ATA, initializes paused configuration, uploads stocks in packet-sized chunks, and seals/activates the manifest. It checks resumed uploads against the intended contents and refuses an already-unpaused configuration.
 6. Run `npm run treasury:plan`, then `npm run treasury:setup` to create missing fee accounts for the V1 manifest. Add `-- --all` to plan/setup for the wider Market catalog; review the larger rent requirement first. It is idempotent and creates accounts with the correct SPL/Token-2022 program.
@@ -52,11 +52,10 @@ npm run solver:start
 
 Packs always use direct Jupiter CPI from pack escrow to the owner's stock account; the worker needs SOL for fees/rent, not USDC or stock inventory. Configure its public key using `npm run packs:execution -- enable` (plan) then `--execute` after deployment and verification. This adds an explicit, capped quote-service authority.
 
-Position stock fills remain disabled unless `SOLVER_EXECUTE_POSITIONS=true`. For those oracle-gated fills only, `SOLVER_ROUTE_STOCKS=true` enables Jupiter routing instead of stock inventory; those fills still front capital and require Pyth feed coverage. USDC harvest and yield-earned sealed pack creation do not require this position-fill opt-in.
+Position stock fills now call `swapPosition`. The same configured quote authority and per-settlement cap apply. Product flags and pause state remain onchain controls; deployment of the new instruction must precede activation. The worker needs SOL for transaction/account costs, not USDC inventory. USDC harvesting and sealed-pack accounting use actual redeemed vault yield.
 
 Persist `SOLVER_STATE_DIR` on durable storage. `worker.lock` prevents concurrent use of the same directory. `journal.json` records signatures before broadcasting. Reconcile all recorded signatures before removing a stale lock, restoring backups, or moving hosts. Never retry solely because an RPC request timed out. `health.json` is the heartbeat; alert on stale timestamps and repeated job errors. A process manager should restart crashes, not delete the journal.
 
-Pyth update accounts close only after confirmed consumption. If a submission is uncertain, they remain open rather than risk invalidating an in-flight settlement. Reclaim orphan oracle-account rent only after reconciling the recorded transactions; automated orphan reclamation is not implemented.
 
 ## Controlled mainnet verification
 

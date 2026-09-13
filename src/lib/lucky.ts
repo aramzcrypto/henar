@@ -1,10 +1,10 @@
 /** Fixed V1 terms. Mirrors stockroom_math::lucky_payout; amounts are USDC base units. */
 export const LUCKY_OUTCOMES = [
-  { quarters: 1n, probability: 10, label: "0.25×" },
-  { quarters: 2n, probability: 45, label: "0.5×" },
-  { quarters: 4n, probability: 15, label: "1×" },
-  { quarters: 6n, probability: 10, label: "1.5×" },
-  { quarters: 8n, probability: 20, label: "2×" },
+  { quarters: 1n, probability: 4, label: "0.25×" },
+  { quarters: 2n, probability: 20, label: "0.5×" },
+  { quarters: 4n, probability: 64, label: "1×" },
+  { quarters: 6n, probability: 8, label: "1.5×" },
+  { quarters: 8n, probability: 4, label: "2×" },
 ] as const;
 const U64_MAX = (1n << 64n) - 1n;
 export function luckyPayout(stake: bigint, bucket: number) {

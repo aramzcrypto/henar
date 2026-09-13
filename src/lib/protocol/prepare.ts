@@ -1,3 +1,4 @@
+import { assertAdmission, productMask, PRODUCTS } from "./access";
 import { assertTransactionLimits } from "./transaction-limits";
 import { protocolLookupTables } from "./lookup";
 import { createHash, randomBytes } from "node:crypto";
@@ -89,6 +90,27 @@ export async function prepareAction(input: Action) {
     !input.stockMint
   )
     throw new Error("Select a verified stock mint.");
+  if (input.action === "deposit" || input.action === "preferences")
+    assertAdmission(
+      config,
+      input.owner,
+      productMask(input.kind, input.destination),
+      input.action === "deposit" ? BigInt(input.amount) : 0n,
+    );
+  if (
+    ["buy", "open", "openLucky", "rollLucky", "yieldBatch"].includes(
+      input.action,
+    )
+  )
+    assertAdmission(
+      config,
+      input.owner,
+      PRODUCTS.packs |
+        (["openLucky", "rollLucky"].includes(input.action)
+          ? PRODUCTS.lucky
+          : 0),
+      input.action === "buy" ? BigInt(input.count) * 10_000_000n : 0n,
+    );
   const instructions: TransactionInstruction[] = [];
   const tables: AddressLookupTableAccount[] = await protocolLookupTables(c);
   if (["open", "openLucky", "bankLucky"].includes(input.action)) {
@@ -102,7 +124,7 @@ export async function prepareAction(input: Action) {
     review.execution =
       "Jupiter swap, then delivery to your wallet, then reveal";
     review.quoteService =
-      "Kani chooses the market quote; no independent price oracle";
+      "Henar chooses the market quote; no independent price oracle";
     review.protection =
       "Exact allocation, selected stock, minimum received and 30-second quote expiry";
   }
@@ -231,6 +253,7 @@ export async function prepareAction(input: Action) {
           .accountsStrict({
             owner,
             position: resource,
+            config: configKey,
             manifest: position.manifest,
           })
           .instruction(),
@@ -290,6 +313,7 @@ export async function prepareAction(input: Action) {
             .accountsStrict({
               owner,
               position: resource,
+              config: configKey,
               manifest: position.manifest,
             })
             .instruction(),
@@ -334,6 +358,11 @@ export async function prepareAction(input: Action) {
             .instruction(),
         );
         review.minimumRedeemedUSDC = minRedeemed.toString();
+        if (input.action === "withdraw")
+          review.withdrawalMode =
+            input.amount === "18446744073709551615"
+              ? "All available principal after vault costs"
+              : "Exact USDC amount";
         review.withdrawalPenaltyBps =
           vault.state.withdrawalPenaltyBps.toString();
         review.withdrawalPenaltyUSDC =
@@ -449,7 +478,7 @@ export async function prepareAction(input: Action) {
         BigInt(pack.budget.toString()) * 2n
       ).toString();
       review.theoreticalReturnBps = 9500;
-      review.odds = "0.25×: 10% · 0.5×: 45% · 1×: 15% · 1.5×: 10% · 2×: 20%";
+      review.odds = "0.25×: 4% · 0.5×: 20% · 1×: 64% · 1.5×: 8% · 2×: 4%";
       review.randomnessFeeLamports = network.config.requestFee.toString();
       review.remainingRollovers = 0;
     } else {
@@ -501,6 +530,8 @@ export async function prepareAction(input: Action) {
         );
       else if (input.action === "gift") {
         if (!input.recipient) throw new Error("Choose a recipient.");
+        if (!PublicKey.isOnCurve(new PublicKey(input.recipient).toBytes()))
+          throw new Error("Choose a wallet address that can receive and open packs.");
         const gift = pda(programId, "batch", owner, id);
         instructions.push(
           await client.methods
@@ -513,6 +544,7 @@ export async function prepareAction(input: Action) {
             .accountsStrict({
               owner,
               batch: resource,
+              config: configKey,
               gift,
               batchCash: ata(resource),
               giftCash: ata(gift),
@@ -579,8 +611,7 @@ export async function prepareAction(input: Action) {
           review.minimumAllocationUSDC = (stake / 4n).toString();
           review.maximumAllocationUSDC = (stake * 2n).toString();
           review.theoreticalReturnBps = 9500;
-          review.odds =
-            "0.25×: 10% · 0.5×: 45% · 1×: 15% · 1.5×: 10% · 2×: 20%";
+          review.odds = "0.25×: 4% · 0.5×: 20% · 1×: 64% · 1.5×: 8% · 2×: 4%";
           review.feeTiming =
             "Charged once on opening; non-refundable after opening";
           review.rollover =

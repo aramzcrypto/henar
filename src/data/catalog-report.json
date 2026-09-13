@@ -1,9 +1,9 @@
 {
-  "retrievedAt": "2026-09-12T12:45:47.104696+00:00",
+  "retrievedAt": "2026-09-13T16:40:19.760774+00:00",
   "sources": {
     "xstocks": {
       "url": "https://xstocks.com/products",
-      "sha256": "c89860cbdae10898ac62ec0845d125215028ee32c4094da341049bdd5f579d33"
+      "sha256": "53031ea3d4d19b4424f50503b6917c4d75ac6540e408ed7eeaff7e702bed3e2c"
     },
     "ondo-mints": {
       "url": "https://raw.githubusercontent.com/ondoprotocol/gm-solana-simulator/main/constants.rs",
@@ -15,16 +15,16 @@
     },
     "backpack": {
       "url": "https://api.backpack.exchange/api/v1/assets",
-      "sha256": "18cf10d5dbdbd59f72ac809859839549a0e879d2c5bd322f2954dd1b24a63137"
+      "sha256": "3ac4c602c909ac2371c7937c4541b58b04be720c0da95584424d0cc590acdcc4"
     }
   },
   "counts": {
     "xStocks": 711,
     "Ondo": 432,
-    "Backpack": 43
+    "Backpack": 1069
   },
-  "total": 1186,
-  "logos": 1186,
+  "total": 2212,
+  "logos": 2212,
   "missingLogos": [],
   "excluded": [
     {
@@ -101,7 +101,357 @@
       "provider": "Ondo",
       "ticker": "YEARon",
       "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "CONL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "MUU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "QLD",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPCF",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "AMDD",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TSDD",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SNK",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SQQQ",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "NVD",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SNXX",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TSLG",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "AMZD",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TZA",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SOXL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "BOIL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SSO",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SSPC",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SDOW",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TECL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "BSV",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "VCSH",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "KORU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "PLTD",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "DRIP",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "UCTT",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "PSQ",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "MSFU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPCH",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPCL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SH",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "BTCZ",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "YINN",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TNA",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SDS",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "MINT",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "VGSH",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "UVXY",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "MSTZ",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPAL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "INTW",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "QID",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SOXS",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "NVDL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "FNGU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "ZSL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "UCO",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "NVDX",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPCU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "BMNU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPXU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "MVLL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "AMDL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TSLL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "BITX",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "AGQ",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPDN",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "GGLS",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "MSTU",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SCO",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "RWM",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "UDOW",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "JPST",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPXL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "MULL",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "RKLX",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "UPRO",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "SPXS",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TSLQ",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "TQQQ",
+      "reason": "Leveraged or inverse product"
+    },
+    {
+      "provider": "Backpack",
+      "ticker": "VXX",
+      "reason": "Leveraged or inverse product"
     }
   ],
-  "policy": "Issuer-published Solana addresses; Backpack requires both deposit and withdrawal enabled. Leveraged/inverse products excluded. Live routes unverified."
+  "policy": "Issuer-published Solana addresses are canonical representations even when issuer deposits or withdrawals are disabled. Leveraged/inverse products excluded. Live execution is always verified separately."
 }

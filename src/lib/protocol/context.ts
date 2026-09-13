@@ -5,12 +5,12 @@ import { DEVELOPMENT_PROGRAM, program, pda } from "./client";
 export async function protocolContext() {
   const configured = process.env.STOCKROOM_PROGRAM_ID;
   if (!configured || configured === DEVELOPMENT_PROGRAM)
-    throw new Error("Kani Markets mainnet deployment is not configured.");
+    throw new Error("Henar mainnet deployment is not configured.");
   const c = connection();
   await assertMainnet(c);
   const programId = new PublicKey(configured);
   const info = await c.getAccountInfo(programId);
-  if (!info?.executable) throw new Error("Kani Markets program is not deployed.");
+  if (!info?.executable) throw new Error("Henar program is not deployed.");
   const client = program(c, programId);
   const configKey = pda(programId, "config");
   const config = await client.account.config.fetch(configKey);

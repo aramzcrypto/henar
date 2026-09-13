@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import { ata, USDC_KEY } from "../src/lib/protocol/client";
 import {
   validatePackQuote,
@@ -11,6 +15,15 @@ const pack = Keypair.generate().publicKey,
   payer = Keypair.generate().publicKey,
   mint = Keypair.generate().publicKey,
   destination = ata(owner, mint);
+type RawInstruction = {
+  programId: string;
+  data: string;
+  accounts: Array<{
+    pubkey: string;
+    isSigner: boolean;
+    isWritable: boolean;
+  }>;
+};
 const quote = () => ({
   inputMint: USDC_KEY.toBase58(),
   outputMint: mint.toBase58(),
@@ -19,7 +32,7 @@ const quote = () => ({
   otherAmountThreshold: "99500",
   slippageBps: 50,
   priceImpactPct: "0.001",
-  setupInstructions: [],
+  setupInstructions: [] as RawInstruction[],
   swapInstruction: {
     programId: JUPITER_ROUTER.toBase58(),
     data: Buffer.from("bb64facc31c4af140102", "hex").toString("base64"),
@@ -40,6 +53,45 @@ test("pack routes use exact allocation, conservative integer minimum and PDA-onl
   assert.equal(r.minimum, 99501n);
   assert.ok(r.keys.every((k) => !k.isSigner));
   assert.equal(r.output, 100001n);
+});
+test("worker pays external ATA setup but is never forwarded into Jupiter CPI", () => {
+  const q = quote();
+  q.setupInstructions = [
+    {
+      programId: ASSOCIATED_TOKEN_PROGRAM_ID.toBase58(),
+      data: Buffer.from([1]).toString("base64"),
+      accounts: [
+        { pubkey: payer.toBase58(), isSigner: true, isWritable: true },
+        { pubkey: destination.toBase58(), isSigner: false, isWritable: true },
+        { pubkey: owner.toBase58(), isSigner: false, isWritable: false },
+        { pubkey: mint.toBase58(), isSigner: false, isWritable: false },
+        {
+          pubkey: SystemProgram.programId.toBase58(),
+          isSigner: false,
+          isWritable: false,
+        },
+        {
+          pubkey: TOKEN_PROGRAM_ID.toBase58(),
+          isSigner: false,
+          isWritable: false,
+        },
+      ],
+    },
+  ];
+  const result = check(q);
+  assert.equal(result.setup[0].keys[0].pubkey.toBase58(), payer.toBase58());
+  assert.equal(result.setup[0].keys[0].isSigner, true);
+  assert.equal(
+    result.setup[0].keys[1].pubkey.toBase58(),
+    destination.toBase58(),
+  );
+  const unsafe = quote();
+  unsafe.swapInstruction.accounts.push({
+    pubkey: payer.toBase58(),
+    isSigner: false,
+    isWritable: true,
+  });
+  assert.throws(() => check(unsafe));
 });
 test("reject wrong routes, excessive impact, invalid amounts and permissive minima", () => {
   for (const patch of [

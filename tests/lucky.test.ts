@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { luckyPayout, canReserveLucky, LUCKY_OUTCOMES } from "../src/lib/lucky";
 import { actionSchema } from "../src/lib/protocol/prepare";
-test("Lucky odds conserve the exact escrow and yield 95% average before the initial fee", () => {
+test("Lucky odds conserve the exact escrow and yield 95% average on the post-fee allocation", () => {
   const stake = 9_800_000n;
   const counts = new Map<bigint, number>();
   let total = 0n;
@@ -13,15 +13,16 @@ test("Lucky odds conserve the exact escrow and yield 95% average before the init
     assert.equal(payout + (stake * 2n - payout), stake * 2n);
   }
   assert.equal(total, stake * 95n);
+  assert.deepEqual([...counts.values()], [4, 20, 64, 8, 4]);
   assert.deepEqual(
-    [...counts.values()],
     LUCKY_OUTCOMES.map((o) => o.probability),
+    [4, 20, 64, 8, 4],
   );
   assert.equal(total / 100n, 9_310_000n);
 });
 test("Lucky exact integer bounds and reserve capacity", () => {
   assert.equal(luckyPayout(5n, 0), 1n);
-  assert.equal(luckyPayout(5n, 79), 7n);
+  assert.equal(luckyPayout(5n, 95), 7n);
   for (const bucket of [-1, 100, NaN, 2.5])
     assert.throws(() => luckyPayout(10n, bucket));
   assert.throws(() => luckyPayout(0n, 0));

@@ -1,8 +1,8 @@
-import {
-  PublicKey,
-  TransactionInstruction,
-  type Connection,
-} from "@solana/web3.js";
+import { inspectRouteWallet } from "../../src/lib/wallet-route-state";
+import { validateWalletRoute } from "../../src/lib/route-policy";
+import { verifiedMint } from "../../src/lib/solana";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { PublicKey, type Connection } from "@solana/web3.js";
 import { buildSchema } from "../../src/lib/market";
 import { USDC_KEY } from "../../src/lib/protocol/client";
 export async function stockSwap(
@@ -23,6 +23,8 @@ export async function stockSwap(
     slippageBps: "50",
     instructionVersion: "V2",
     maxAccounts: String(maxAccounts),
+    useSharedAccounts: "false",
+    wrapAndUnwrapSol: "false",
   });
   const response = await fetch(`https://api.jup.ag/swap/v2/build?${params}`, {
     headers: { "x-api-key": apiKey },
@@ -38,15 +40,18 @@ export async function stockSwap(
     (quote.platformFee && quote.platformFee.feeBps !== 0)
   )
     throw new Error("Route does not satisfy the onchain stock minimum.");
-  const ix = (value: typeof quote.swapInstruction) =>
-    new TransactionInstruction({
-      programId: new PublicKey(value.programId),
-      keys: value.accounts.map((a) => ({
-        ...a,
-        pubkey: new PublicKey(a.pubkey),
-      })),
-      data: Buffer.from(value.data, "base64"),
-    });
+  const stock = await verifiedMint(c, mint.toBase58());
+  const terms = {
+    owner,
+    inputMint: USDC_KEY,
+    outputMint: mint,
+    inputProgram: TOKEN_PROGRAM_ID,
+    outputProgram: new PublicKey(stock.program),
+    amount: budget,
+    slippage: 50,
+  };
+  const validated = validateWalletRoute(quote, terms);
+  await inspectRouteWallet(c, validated.instructions, terms);
   const tables = [];
   for (const address of Object.keys(
     quote.addressesByLookupTableAddress ?? {},
@@ -56,12 +61,7 @@ export async function stockSwap(
     tables.push(table.value);
   }
   return {
-    instructions: [
-      ...quote.setupInstructions.map(ix),
-      ix(quote.swapInstruction),
-      ...(quote.cleanupInstruction ? [ix(quote.cleanupInstruction)] : []),
-      ...quote.otherInstructions.map(ix),
-    ],
+    instructions: validated.instructions,
     tables,
   };
 }

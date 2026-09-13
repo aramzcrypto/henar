@@ -50,6 +50,13 @@ export type PackView = {
   expiresAt: string;
 };
 export type ProtocolView = {
+  access?: {
+    walletAllowed?: boolean;
+    enabledProducts: number;
+    pilotOwner: string;
+    admissionLimit: string;
+    admittedUsdc: string;
+  };
   packExecution?: { enabled: boolean; authority: string; maxBudget: string };
   luckyPool?: {
     enabled: boolean;

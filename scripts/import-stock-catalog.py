@@ -2,7 +2,7 @@
 Run with python3 scripts/import-stock-catalog.py. Review catalog diff before release.
 No DEX ticker search is used to establish a mint address.
 """
-import concurrent.futures, datetime, hashlib, json, pathlib, re, subprocess, urllib.parse
+import concurrent.futures, datetime, hashlib, html, json, pathlib, re, subprocess, urllib.parse
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 SOURCES={
  'xstocks':'https://xstocks.com/products',
@@ -55,7 +55,11 @@ for symbol,mint in omints:
  add('Ondo',symbol,name,mint,metadata.get('logoURI'),'https://github.com/ondoprotocol/gm-solana-simulator/blob/main/constants.rs')
 for p in b:
  if not p['symbol'].endswith('.US'):continue
- token=next((t for t in p.get('tokens',[]) if t.get('blockchain')=='Solana' and t.get('contractAddress') and t.get('depositEnabled') and t.get('withdrawEnabled')),None)
+ # A canonical issuer-published mint is a valid representation even while
+ # Backpack deposits and withdrawals are disabled. Availability is resolved
+ # separately from the existence of the representation and live execution is
+ # still required before Henar offers a route.
+ token=next((t for t in p.get('tokens',[]) if t.get('blockchain')=='Solana' and t.get('contractAddress')),None)
  if not token:continue
  symbol=p['symbol'][:-3];xm=base_x.get(symbol,{});om=base_meta.get(symbol,{})
  name=p['displayName']
@@ -90,10 +94,20 @@ by_underlying={r['underlying']:r for r in rows if r['logo']}
 for r in rows:
  if not r['logo'] and r['underlying'] in by_underlying:
   other=by_underlying[r['underlying']];r['logo']=other['logo'];r['logoSource']=other['logoSource']
+# A few issuer logo endpoints can lag a newly published asset. Keep those
+# assets visible with a local ticker monogram instead of dropping the verified
+# representation or relying on a remote image at runtime.
+for r in rows:
+ if r['logo']:continue
+ label=re.sub(r'[^A-Z0-9]','',r['underlying'].upper())[:4] or 'EQ'
+ filename=hashlib.sha256(('henar-equity-fallback:'+label).encode()).hexdigest()[:18]+'.svg'
+ target=logos/filename
+ target.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72"><rect width="72" height="72" rx="36" fill="#202226"/><text x="36" y="40" text-anchor="middle" fill="#c8cad0" font-family="sans-serif" font-size="18" font-weight="700">{html.escape(label)}</text></svg>')
+ r['logo']='/logos/'+filename
 rows.sort(key=lambda r:(0 if r['ticker']=='NVDAx' else 1,r['name'].lower(),r['provider']))
 assert len({r['mint'] for r in rows})==len(rows),'Duplicate mint in issuer catalogs'
 assert len(rows)>500,'Unexpected source truncation'
 (ROOT/'src/data/stocks.json').write_text(json.dumps(rows,indent=2)+'\n')
-report={'retrievedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sources':{k:{'url':v,'sha256':hashlib.sha256(raw[k]).hexdigest()} for k,v in SOURCES.items()},'counts':{p:sum(r['provider']==p for r in rows) for p in ['xStocks','Ondo','Backpack']},'total':len(rows),'logos':sum(bool(r['logo']) for r in rows),'missingLogos':[{'provider':r['provider'],'ticker':r['ticker']} for r in rows if not r['logo']],'excluded':excluded,'policy':'Issuer-published Solana addresses; Backpack requires both deposit and withdrawal enabled. Leveraged/inverse products excluded. Live routes unverified.'}
+report={'retrievedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sources':{k:{'url':v,'sha256':hashlib.sha256(raw[k]).hexdigest()} for k,v in SOURCES.items()},'counts':{p:sum(r['provider']==p for r in rows) for p in ['xStocks','Ondo','Backpack']},'total':len(rows),'logos':sum(bool(r['logo']) for r in rows),'missingLogos':[{'provider':r['provider'],'ticker':r['ticker']} for r in rows if not r['logo']],'excluded':excluded,'policy':'Issuer-published Solana addresses are canonical representations even when issuer deposits or withdrawals are disabled. Leveraged/inverse products excluded. Live execution is always verified separately.'}
 (ROOT/'src/data/catalog-report.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps({k:report[k] for k in ['counts','total','logos','missingLogos']},indent=2))

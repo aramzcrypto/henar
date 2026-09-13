@@ -7,12 +7,14 @@ pub mod oracle;
 pub mod pack_swap;
 pub mod packs;
 pub mod positions;
+pub mod position_swap;
 pub mod state;
 pub mod tokens;
 use contexts::*;
 use lucky::*;
 use pack_swap::*;
 use positions::PositionTerms;
+use position_swap::*;
 use state::*;
 // Development-only placeholder. Deployment tooling replaces this with the generated program address.
 declare_id!("7EMrgJNodNBmuQBg3cv9ASDUmXQFYp1VRiHcCzUMaC7E");
@@ -31,6 +33,13 @@ pub struct ConfigTerms {
 #[program]
 pub mod stockroom {
     use super::*;
+    pub fn swap_position<'info>(
+        ctx: Context<'_, '_, '_, 'info, SwapPosition<'info>>,
+        terms: PositionSwapTerms,
+        route: Vec<u8>,
+    ) -> Result<()> {
+        position_swap::swap(ctx, terms, route)
+    }
     pub fn initialize(ctx: Context<Initialize>, terms: ConfigTerms) -> Result<()> {
         require!(
             terms.yield_share_bps <= 2000
@@ -65,6 +74,10 @@ pub mod stockroom {
             oracle_max_age: terms.oracle_max_age,
             pack_timeout: terms.pack_timeout,
             paused: true,
+            enabled_products: 0,
+            pilot_owner: ctx.accounts.admin.key(),
+            admission_limit: 100_000_000,
+            admitted_usdc: 0,
             bump: ctx.bumps.config,
         };
         kamino::validate_vault(&ctx.accounts.vault.to_account_info(), c)?;
@@ -76,6 +89,25 @@ pub mod stockroom {
             StockroomError::Manifest
         );
         ctx.accounts.config.paused = paused;
+        Ok(())
+    }
+    pub fn configure_access(
+        ctx: Context<Admin>,
+        products: u8,
+        pilot_owner: Pubkey,
+        admission_limit: u64,
+    ) -> Result<()> {
+        let c = &mut ctx.accounts.config;
+        require!(
+            c.paused
+                && products & !ALL_PRODUCTS == 0
+                && admission_limit >= c.admitted_usdc
+                && admission_limit > 0,
+            StockroomError::Config
+        );
+        c.enabled_products = products;
+        c.pilot_owner = pilot_owner;
+        c.admission_limit = admission_limit;
         Ok(())
     }
     pub fn propose_admin(ctx: Context<Admin>, pending: Pubkey) -> Result<()> {

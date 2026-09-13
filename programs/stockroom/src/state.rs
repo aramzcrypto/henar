@@ -24,6 +24,10 @@ pub struct Config {
     pub oracle_max_age: u32,
     pub pack_timeout: u32,
     pub paused: bool,
+    pub enabled_products: u8,
+    pub pilot_owner: Pubkey,
+    pub admission_limit: u64,
+    pub admitted_usdc: u64,
     pub bump: u8,
 }
 #[derive(AnchorSerialize, AnchorDeserialize, InitSpace, Clone, Debug, PartialEq)]
@@ -237,4 +241,52 @@ pub struct LuckyPool {
     pub enabled: bool,
     pub max_stake: u64,
     pub bump: u8,
+}
+
+// Admission limits count lifetime external USDC accepted, never yield or refunds.
+// They deliberately do not refill on withdrawal, so cycling deposits cannot bypass a pilot budget.
+pub const PRODUCT_EARN: u8 = 1;
+pub const PRODUCT_LIMIT: u8 = 2;
+pub const PRODUCT_DCA: u8 = 4;
+pub const PRODUCT_STOCK_YIELD: u8 = 8;
+pub const PRODUCT_PACKS: u8 = 16;
+pub const PRODUCT_LUCKY: u8 = 32;
+pub const ALL_PRODUCTS: u8 = 63;
+pub fn position_products(kind: PositionKind, destination: Destination) -> u8 {
+    match kind {
+        PositionKind::Limit => PRODUCT_LIMIT,
+        PositionKind::Dca => PRODUCT_DCA,
+        PositionKind::Earn => {
+            PRODUCT_EARN
+                | if destination == Destination::Stocks {
+                    PRODUCT_STOCK_YIELD
+                } else {
+                    0
+                }
+        }
+    }
+}
+impl Config {
+    pub fn check_product(&self, products: u8) -> Result<()> {
+        require!(
+            !self.paused && self.enabled_products & products == products,
+            StockroomError::Paused
+        );
+        Ok(())
+    }
+    pub fn check_pilot(&self, owner: Pubkey) -> Result<()> {
+        require!(
+            self.pilot_owner == Pubkey::default() || self.pilot_owner == owner,
+            StockroomError::Unauthorized
+        );
+        Ok(())
+    }
+    pub fn admit(&mut self, owner: Pubkey, amount: u64, products: u8) -> Result<()> {
+        self.check_product(products)?;
+        self.check_pilot(owner)?;
+        let total = math(stockroom_math::add(self.admitted_usdc, amount))?;
+        require!(total <= self.admission_limit, StockroomError::Balance);
+        self.admitted_usdc = total;
+        Ok(())
+    }
 }

@@ -6,8 +6,9 @@ import {
 import { StockroomWalletProvider } from "./wallet-dialog";
 import { ProtocolProvider } from "./protocol-provider";
 import { MobileViewport } from "./mobile-viewport";
+import { ReferralCapture } from "./referral-capture";
 import { useMemo } from "react";
-import "@solana/wallet-adapter-react-ui/styles.css";
+import "@/styles/wallet-adapter.css";
 export function Providers({ children }: { children: React.ReactNode }) {
   const endpoint =
     typeof window === "undefined"
@@ -19,6 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <WalletProvider wallets={wallets} autoConnect>
         <StockroomWalletProvider>
           <MobileViewport />
+          <ReferralCapture />
           <ProtocolProvider>{children}</ProtocolProvider>
         </StockroomWalletProvider>
       </WalletProvider>

@@ -12,13 +12,13 @@ Lucky: owner explicitly opens a purchased pack with fixed V1 odds. It charges th
 
 | Post-fee multiplier | Probability |
 | --- | ---: |
-| 0.25x | 10% |
-| 0.5x | 45% |
-| 1x | 15% |
-| 1.5x | 10% |
-| 2x | 20% |
+| 0.25x | 4% |
+| 0.5x | 20% |
+| 1x | 64% |
+| 1.5x | 8% |
+| 2x | 4% |
 
-Theoretical return per roll: 95% before the initial fee and execution costs. For a $10 purchased pack at 2% fee, average first-roll stock budget is $9.31; expected reserve growth $0.49, protocol fee $0.20. These are expectations, not individual or aggregate guarantees. Multipliers use the post-fee allocation; repeated rolls can produce less than 25% of the original purchase. Integer rounding below one micro-USDC remains in reserve.
+Theoretical return per roll: 95% of the post-fee allocation, before execution costs. For a $10 purchased pack at 2% fee, average first-roll stock budget is $9.31; expected reserve growth $0.49, protocol fee $0.20. These are expectations, not individual or aggregate guarantees. Multipliers use the post-fee allocation; repeated rolls can produce less than 25% of the original purchase. Integer rounding below one micro-USDC remains in reserve.
 
 ## Custody and state transitions
 
@@ -47,7 +47,7 @@ Run with `.cache/mainnet-snapshot/accounts.json` present:
 SBF_OUT_DIR="$PWD/target/deploy" cargo test -p stockroom --test runtime deployed_orao_lucky -- --ignored --test-threads=1
 ```
 
-`npm run lucky:simulate` runs synthetic seeded scenarios, never production outcome selection. In 200 runs of 1,000 attempts at $10 each, up to 20 concurrent first rolls, a $100 reserve rejected openings in all runs. A $1,000 reserve had no opening rejections in the sampled scenarios, but 4/200 bank-only runs ended below starting capital. This is not proof of capital adequacy. Operating costs, malicious oracle behavior, correlated participation, and real execution failures are outside that simulation. Mathematical safety comes from escrow checks, not the simulation's average result.
+`npm run lucky:simulate` runs synthetic seeded scenarios, never production outcome selection. In 200 runs of 1,000 attempts at $10 each, up to 20 concurrent first rolls, a $100 reserve rejected openings in all runs. With the revised 4/20/64/8/4 odds, a $1,000 reserve had no opening or rollover rejections and no runs ended below starting capital in these sampled scenarios. One of 200 $100 bank-only runs ended below starting capital. This is not proof of capital adequacy. Operating costs, malicious oracle behavior, correlated participation, and real execution failures are outside that simulation. Mathematical safety comes from escrow checks, not the simulation's average result.
 
 ## Operations and launch gates
 

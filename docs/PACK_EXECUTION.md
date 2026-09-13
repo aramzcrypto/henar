@@ -35,7 +35,7 @@ A retry fetches a fresh quote for the same stock. It never redraws the stock. Fa
 3. `npm run packs:execution -- enable` prints a plan. `--execute` installs the authority/cap. `disable --execute` stops this execution path. These commands do not unpause the protocol or fund/enable Lucky.
 4. Run the worker and bounded funded mainnet verification before public activation. Configure and fund Lucky separately.
 
-No Pyth key is required for this pack path. Existing oracle-verified settlement remains available separately, and position stock fills retain their Pyth checks. `SOLVER_EXECUTE_POSITIONS` defaults off until those paths are verified.
+No Pyth key is required by the active worker. Position fills use the new direct-escrow `swapPosition` instruction after its upgrade; legacy oracle settlement instructions remain for compatibility but are not used by the worker. Onchain product flags remain the activation gate.
 
 ## Evidence and limits
 

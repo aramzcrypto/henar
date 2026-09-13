@@ -466,6 +466,7 @@
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -660,6 +661,7 @@
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -945,6 +947,7 @@
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1202,6 +1205,61 @@
       "args": [
         {
           "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "configure_access",
+      "discriminator": [
+        67,
+        51,
+        26,
+        174,
+        192,
+        82,
+        74,
+        208
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "products",
+          "type": "u8"
+        },
+        {
+          "name": "pilot_owner",
+          "type": "pubkey"
+        },
+        {
+          "name": "admission_limit",
           "type": "u64"
         }
       ]
@@ -1577,6 +1635,7 @@
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1875,6 +1934,7 @@
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -2163,6 +2223,7 @@
             },
             {
               "name": "config",
+              "writable": true,
               "pda": {
                 "seeds": [
                   {
@@ -2480,6 +2541,27 @@
       ],
       "accounts": [
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "batch"
+          ]
+        },
+        {
           "name": "owner",
           "writable": true,
           "signer": true,
@@ -2777,6 +2859,7 @@
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -5620,6 +5703,27 @@
       ],
       "accounts": [
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "position"
+          ]
+        },
+        {
           "name": "owner",
           "signer": true,
           "relations": [
@@ -5692,6 +5796,32 @@
         219
       ],
       "accounts": [
+        {
+          "name": "execution",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  99,
+                  107,
+                  45,
+                  101,
+                  120,
+                  101,
+                  99,
+                  117,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
         {
           "name": "solver",
           "signer": true
@@ -5905,6 +6035,7 @@
             },
             {
               "name": "config",
+              "writable": true,
               "pda": {
                 "seeds": [
                   {
@@ -6428,6 +6559,341 @@
       ]
     },
     {
+      "name": "swap_position",
+      "discriminator": [
+        109,
+        143,
+        91,
+        230,
+        53,
+        67,
+        177,
+        79
+      ],
+      "accounts": [
+        {
+          "name": "base",
+          "accounts": [
+            {
+              "name": "actor",
+              "writable": true,
+              "signer": true
+            },
+            {
+              "name": "config",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      99,
+                      111,
+                      110,
+                      102,
+                      105,
+                      103
+                    ]
+                  }
+                ]
+              },
+              "relations": [
+                "position",
+                "manifest"
+              ]
+            },
+            {
+              "name": "position",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "const",
+                    "value": [
+                      112,
+                      111,
+                      115,
+                      105,
+                      116,
+                      105,
+                      111,
+                      110
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "position.owner",
+                    "account": "Position"
+                  },
+                  {
+                    "kind": "account",
+                    "path": "position.id",
+                    "account": "Position"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "manifest"
+            },
+            {
+              "name": "usdc",
+              "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            },
+            {
+              "name": "owner_cash",
+              "writable": true
+            },
+            {
+              "name": "cash",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "position"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "usdc"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "shares_mint"
+            },
+            {
+              "name": "shares",
+              "writable": true,
+              "pda": {
+                "seeds": [
+                  {
+                    "kind": "account",
+                    "path": "position"
+                  },
+                  {
+                    "kind": "const",
+                    "value": [
+                      6,
+                      221,
+                      246,
+                      225,
+                      215,
+                      101,
+                      161,
+                      147,
+                      217,
+                      203,
+                      225,
+                      70,
+                      206,
+                      235,
+                      121,
+                      172,
+                      28,
+                      180,
+                      133,
+                      237,
+                      95,
+                      91,
+                      55,
+                      145,
+                      58,
+                      140,
+                      245,
+                      133,
+                      126,
+                      255,
+                      0,
+                      169
+                    ]
+                  },
+                  {
+                    "kind": "account",
+                    "path": "shares_mint"
+                  }
+                ],
+                "program": {
+                  "kind": "const",
+                  "value": [
+                    140,
+                    151,
+                    37,
+                    143,
+                    78,
+                    36,
+                    137,
+                    241,
+                    187,
+                    61,
+                    16,
+                    41,
+                    20,
+                    142,
+                    13,
+                    131,
+                    11,
+                    90,
+                    19,
+                    153,
+                    218,
+                    255,
+                    16,
+                    132,
+                    4,
+                    142,
+                    123,
+                    216,
+                    219,
+                    233,
+                    248,
+                    89
+                  ]
+                }
+              }
+            },
+            {
+              "name": "treasury",
+              "writable": true
+            },
+            {
+              "name": "token_program",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            }
+          ]
+        },
+        {
+          "name": "execution",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  99,
+                  107,
+                  45,
+                  101,
+                  120,
+                  101,
+                  99,
+                  117,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stock_mint"
+        },
+        {
+          "name": "owner_stock",
+          "writable": true
+        },
+        {
+          "name": "stock_program"
+        },
+        {
+          "name": "jupiter",
+          "address": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
+        }
+      ],
+      "args": [
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "PositionSwapTerms"
+            }
+          }
+        },
+        {
+          "name": "route",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "withdraw_lucky_reserve",
       "discriminator": [
         177,
@@ -6621,6 +7087,7 @@
         },
         {
           "name": "config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -7521,6 +7988,22 @@
             "type": "bool"
           },
           {
+            "name": "enabled_products",
+            "type": "u8"
+          },
+          {
+            "name": "pilot_owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "admission_limit",
+            "type": "u64"
+          },
+          {
+            "name": "admitted_usdc",
+            "type": "u64"
+          },
+          {
             "name": "bump",
             "type": "u8"
           }
@@ -8152,6 +8635,46 @@
           },
           {
             "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PositionSwapTerms",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "input",
+            "type": "u64"
+          },
+          {
+            "name": "quoted_output",
+            "type": "u64"
+          },
+          {
+            "name": "minimum_output",
+            "type": "u64"
+          },
+          {
+            "name": "quoted_at",
+            "type": "i64"
+          },
+          {
+            "name": "withdraw_accounts",
+            "type": "u16"
+          },
+          {
+            "name": "deposit_accounts",
+            "type": "u16"
+          },
+          {
+            "name": "minimum_redeemed",
+            "type": "u64"
+          },
+          {
+            "name": "minimum_shares",
+            "type": "u64"
           }
         ]
       }

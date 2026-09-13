@@ -176,6 +176,57 @@ fn price_account(feed: [u8; 32], price: i64, publish: i64, full: bool) -> Solana
 fn mock_jupiter(_id: &Pubkey, a: &[AccountInfo], data: &[u8]) -> ProgramResult {
     let spend = u64::from_le_bytes(data[8..16].try_into().unwrap());
     let output = u64::from_le_bytes(data[16..24].try_into().unwrap());
+    if data.len() >= 35 {
+        if data[34] == 254 {
+            let steal = spl_token::instruction::transfer(
+                &spl_token::ID,
+                a[13].key,
+                a[14].key,
+                a[0].key,
+                &[],
+                1_000_000,
+            )?;
+            invoke_signed(
+                &steal,
+                &[a[13].clone(), a[14].clone(), a[0].clone(), a[5].clone()],
+                &[],
+            )?;
+        }
+        // Ordinary RouteV2 header layout used by position-swap tests.
+        let input = spl_token::instruction::transfer(
+            &spl_token::ID,
+            a[1].key,
+            a[10].key,
+            a[0].key,
+            &[],
+            spend,
+        )?;
+        invoke_signed(
+            &input,
+            &[a[1].clone(), a[10].clone(), a[0].clone(), a[5].clone()],
+            &[],
+        )?;
+        let bump = Pubkey::find_program_address(&[b"mock-dex"], &stockroom::pack_swap::JUPITER).1;
+        // A final fixture byte asks the mock to under-deliver after debiting.
+        let delivered = if data[34] == 255 {
+            output.saturating_sub(1000)
+        } else {
+            output
+        };
+        let out = spl_token::instruction::transfer(
+            &spl_token::ID,
+            a[11].key,
+            a[2].key,
+            a[12].key,
+            &[],
+            delivered,
+        )?;
+        return invoke_signed(
+            &out,
+            &[a[11].clone(), a[2].clone(), a[12].clone(), a[5].clone()],
+            &[&[b"mock-dex", &[bump]]],
+        );
+    }
     let input =
         spl_token::instruction::transfer(&spl_token::ID, a[1].key, a[2].key, a[0].key, &[], spend)?;
     invoke_signed(
@@ -311,6 +362,8 @@ impl Fixture {
             .as_ref()
             .map(|v| v.base_vault_authority)
             .unwrap_or(vault_auth);
+        let (execution, execution_bump) =
+            Pubkey::find_program_address(&[b"pack-execution"], &stockroom::ID);
         let c = Config {
             admin,
             pending_admin: Pubkey::default(),
@@ -327,6 +380,10 @@ impl Fixture {
             oracle_max_age: 60,
             pack_timeout: 3600,
             paused: false,
+            enabled_products: ALL_PRODUCTS,
+            pilot_owner: Pubkey::default(),
+            admission_limit: u64::MAX,
+            admitted_usdc: 0,
             bump: cb,
         };
         let m = Manifest {
@@ -375,6 +432,18 @@ impl Fixture {
                 },
             );
         }
+        pt.add_account(
+            execution,
+            account(
+                serialized(&stockroom::pack_swap::PackExecution {
+                    authority: solver.pubkey(),
+                    enabled: true,
+                    max_budget: 1_000_000_000,
+                    bump: execution_bump,
+                }),
+                stockroom::ID,
+            ),
+        );
         pt.add_account(config, account(serialized(&c), stockroom::ID));
         pt.add_account(manifest, account(serialized(&m), stockroom::ID));
         pt.add_account(vault, account(vault_bytes(v), KVAULT));
@@ -701,6 +770,7 @@ async fn purchased_batch_gifting_and_refunds_conserve_usdc() {
     let ix = Instruction {
         program_id: stockroom::ID,
         accounts: accounts::GiftBatch {
+            config: f.config,
             owner,
             batch,
             gift,
@@ -976,6 +1046,7 @@ impl Fixture {
         Instruction {
             program_id: stockroom::ID,
             accounts: accounts::SettlePack {
+                execution: Pubkey::find_program_address(&[b"pack-execution"], &stockroom::ID).0,
                 solver: self.solver.pubkey(),
                 config: self.config,
                 pack,
@@ -1020,6 +1091,18 @@ async fn harvest_multiple_earned_packs_never_spends_principal() {
         .data(),
         f.solver.pubkey(),
         true,
+    );
+    let mut pause_config: Config = f.state(f.config).await;
+    pause_config.paused = true;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&pause_config), stockroom::ID).into(),
+    );
+    assert!(!f.send(ix.clone(), 2).await);
+    pause_config.paused = false;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&pause_config), stockroom::ID).into(),
     );
     assert!(f.send(ix, 2).await);
     let position: Position = f.state(p).await;
@@ -1241,6 +1324,18 @@ async fn limit_trigger_cancellation_and_dca_schedule() {
     f.ctx.set_account(
         &f.stock_price,
         &price_account([1; 32], 100_000_000, 1000, true).into(),
+    );
+    let mut pause_config: Config = f.state(f.config).await;
+    pause_config.paused = true;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&pause_config), stockroom::ID).into(),
+    );
+    assert!(!f.send(ix.clone(), 2).await);
+    pause_config.paused = false;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&pause_config), stockroom::ID).into(),
     );
     assert!(f.send(ix, 2).await);
     let filled: Position = f.state(p).await;
@@ -1725,6 +1820,12 @@ async fn lucky_escrow_resolution_bank_and_delivery_are_atomic() {
     let before = f.balance(ata(&f.solver.pubkey(), &USDC)).await;
     assert!(!f.send(f.settle_ix(pack, 1), 2).await);
     assert_eq!(f.balance(ata(&pack, &USDC)).await, p.budget);
+    assert!(!f.send(f.settle_ix(pack, p.budget / 100), 2).await);
+    config.paused = false;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&config), stockroom::ID).into(),
+    );
     assert!(f.send(f.settle_ix(pack, p.budget / 100), 2).await);
     assert_eq!(
         f.balance(ata(&f.solver.pubkey(), &USDC)).await - before,
@@ -2151,6 +2252,21 @@ async fn deployed_jupiter_pack_swap_delivers_stock_without_pyth() {
             executable: a["executable"].as_bool().unwrap(),
             rent_epoch: 0,
         };
+        // Upgrade only the synthetic local config fixture from the previous capture schema.
+        // This is not a production migration; the program has never been deployed.
+        if a["address"].as_str().unwrap()
+            == Pubkey::find_program_address(&[b"config"], &stockroom::ID)
+                .0
+                .to_string()
+            && entry.data.len() == 8 + Config::INIT_SPACE - 49
+        {
+            let bump = entry.data.pop().unwrap();
+            entry.data.push(ALL_PRODUCTS);
+            entry.data.extend_from_slice(&[0; 32]);
+            entry.data.extend_from_slice(&u64::MAX.to_le_bytes());
+            entry.data.extend_from_slice(&0u64.to_le_bytes());
+            entry.data.push(bump);
+        }
         if entry.executable && entry.owner == solana_sdk::bpf_loader_upgradeable::ID {
             let data_key = Pubkey::new_from_array(entry.data[4..36].try_into().unwrap());
             let data = entries
@@ -2274,4 +2390,561 @@ async fn deployed_jupiter_pack_swap_delivers_stock_without_pyth() {
         spl_token::state::Account::unpack(&fee.data).unwrap().amount,
         200_000
     );
+}
+
+#[tokio::test]
+async fn pilot_admission_caps_all_deposits_and_keeps_owner_exit_open() {
+    let mut f = Fixture::new().await;
+    let mut c: Config = f.state(f.config).await;
+    c.enabled_products = PRODUCT_EARN | PRODUCT_PACKS;
+    c.pilot_owner = f.other.pubkey();
+    c.admission_limit = 100_000_000;
+    f.ctx
+        .set_account(&f.config, &account(serialized(&c), stockroom::ID).into());
+    assert!(
+        !f.send(f.create_position_ix(101, 90_000_000, PositionKind::Earn), 0)
+            .await
+    );
+    assert_eq!(f.state::<Config>(f.config).await.admitted_usdc, 0);
+    c.pilot_owner = f.owner.pubkey();
+    f.ctx
+        .set_account(&f.config, &account(serialized(&c), stockroom::ID).into());
+    assert!(
+        !f.send(
+            f.create_position_ix(101, 90_000_000, PositionKind::Limit),
+            0
+        )
+        .await
+    );
+    assert!(
+        !f.send(f.create_position_ix(101, 90_000_000, PositionKind::Dca), 0)
+            .await
+    );
+    assert!(
+        f.send(f.create_position_ix(101, 90_000_000, PositionKind::Earn), 0)
+            .await
+    );
+    let p = f.position_key(101);
+    let mut accts = f.manage(p, f.owner.pubkey()).to_account_metas(None);
+    accts.extend(f.deposit_metas(p));
+    assert!(
+        !f.send(
+            Instruction {
+                program_id: stockroom::ID,
+                accounts: accts,
+                data: instruction::DepositMore {
+                    amount: 11_000_000,
+                    min_shares: 11_000_000
+                }
+                .data()
+            },
+            0
+        )
+        .await
+    );
+    assert_eq!(f.state::<Config>(f.config).await.admitted_usdc, 90_000_000);
+    assert!(f.send(f.buy_ix(102, 1), 0).await);
+    assert!(!f.send(f.buy_ix(103, 1), 0).await);
+    assert_eq!(f.state::<Config>(f.config).await.admitted_usdc, 100_000_000);
+    // Emergency stop must preserve the original depositor's withdrawal.
+    c = f.state(f.config).await;
+    c.paused = true;
+    f.ctx
+        .set_account(&f.config, &account(serialized(&c), stockroom::ID).into());
+    let ix = f.manage_ix(
+        p,
+        instruction::WithdrawPrincipal {
+            amount: u64::MAX,
+            withdraw_accounts: 25,
+            min_redeemed: 90_000_000,
+            min_shares: 0,
+        }
+        .data(),
+        f.owner.pubkey(),
+        true,
+    );
+    assert!(f.send(ix, 0).await);
+    c = f.state(f.config).await;
+    assert_eq!(c.admitted_usdc, 100_000_000);
+    c.paused = false;
+    f.ctx
+        .set_account(&f.config, &account(serialized(&c), stockroom::ID).into());
+    assert!(
+        !f.send(f.create_position_ix(104, 1_000_000, PositionKind::Earn), 0)
+            .await
+    );
+}
+
+#[tokio::test]
+async fn legacy_pack_delivery_obeys_both_execution_and_global_stops() {
+    use stockroom::pack_swap::PackExecution;
+    let mut f = Fixture::new().await;
+    let pack = f.fixture_pack(777, PackSource::Purchased);
+    let mut p: Pack = f.state(pack).await;
+    p.status = PackStatus::Selected;
+    p.stock_index = 0;
+    f.ctx
+        .set_account(&pack, &account(serialized(&p), stockroom::ID).into());
+    let key = Pubkey::find_program_address(&[b"pack-execution"], &stockroom::ID).0;
+    let mut execution: PackExecution = f.state(key).await;
+    execution.enabled = false;
+    f.ctx
+        .set_account(&key, &account(serialized(&execution), stockroom::ID).into());
+    assert!(!f.send(f.settle_ix(pack, 100_000), 2).await);
+    execution.enabled = true;
+    f.ctx
+        .set_account(&key, &account(serialized(&execution), stockroom::ID).into());
+    let mut c: Config = f.state(f.config).await;
+    c.paused = true;
+    f.ctx
+        .set_account(&f.config, &account(serialized(&c), stockroom::ID).into());
+    assert!(!f.send(f.settle_ix(pack, 100_000), 2).await);
+    assert_eq!(f.balance(ata(&pack, &USDC)).await, 10_000_000);
+    c.paused = false;
+    f.ctx
+        .set_account(&f.config, &account(serialized(&c), stockroom::ID).into());
+    assert!(f.send(f.settle_ix(pack, 100_000), 2).await);
+}
+
+impl Fixture {
+    fn prepare_position_dex(&mut self) {
+        use stockroom::pack_swap::{PackExecution, JUPITER};
+        let (execution, bump) = Pubkey::find_program_address(&[b"pack-execution"], &stockroom::ID);
+        self.ctx.set_account(
+            &execution,
+            &account(
+                serialized(&PackExecution {
+                    authority: self.solver.pubkey(),
+                    enabled: true,
+                    max_budget: 40_000_000,
+                    bump,
+                }),
+                stockroom::ID,
+            )
+            .into(),
+        );
+        let dex = Pubkey::find_program_address(&[b"mock-dex"], &JUPITER).0;
+        let event = Pubkey::find_program_address(&[b"__event_authority"], &JUPITER).0;
+        for key in [dex, event] {
+            self.ctx.set_account(
+                &key,
+                &account(vec![], anchor_lang::system_program::ID).into(),
+            );
+        }
+        self.ctx
+            .set_account(&ata(&dex, &USDC), &token_account(USDC, dex, 0).into());
+        self.ctx.set_account(
+            &ata(&dex, &self.mint),
+            &token_account(self.mint, dex, 1_000_000_000).into(),
+        );
+    }
+    fn position_swap_ix(
+        &self,
+        p: Pubkey,
+        input: u64,
+        output: u64,
+        withdraw: bool,
+        deposit: bool,
+    ) -> Instruction {
+        use solana_sdk::instruction::AccountMeta as M;
+        use stockroom::pack_swap::JUPITER;
+        let execution = Pubkey::find_program_address(&[b"pack-execution"], &stockroom::ID).0;
+        let dex = Pubkey::find_program_address(&[b"mock-dex"], &JUPITER).0;
+        let event = Pubkey::find_program_address(&[b"__event_authority"], &JUPITER).0;
+        let mut accounts = accounts::SwapPosition {
+            base: self.manage(p, self.solver.pubkey()),
+            execution,
+            stock_mint: self.mint,
+            owner_stock: ata(&self.owner.pubkey(), &self.mint),
+            stock_program: spl_token::ID,
+            jupiter: JUPITER,
+        }
+        .to_account_metas(None);
+        let w = if withdraw {
+            self.withdraw_metas(p)
+        } else {
+            vec![]
+        };
+        let d = if deposit {
+            self.deposit_metas(p)
+        } else {
+            vec![]
+        };
+        let terms = stockroom::position_swap::PositionSwapTerms {
+            input,
+            quoted_output: output,
+            minimum_output: (output as u128 * 9950 + 9999).checked_div(10000).unwrap() as u64,
+            quoted_at: 1000,
+            withdraw_accounts: w.len() as u16,
+            deposit_accounts: d.len() as u16,
+            minimum_redeemed: 0,
+            minimum_shares: if deposit { 1 } else { 0 },
+        };
+        accounts.extend(w);
+        accounts.extend(d);
+        accounts.extend([
+            M::new_readonly(p, false),
+            M::new(ata(&p, &USDC), false),
+            M::new(ata(&self.owner.pubkey(), &self.mint), false),
+            M::new_readonly(USDC, false),
+            M::new_readonly(self.mint, false),
+            M::new_readonly(spl_token::ID, false),
+            M::new_readonly(spl_token::ID, false),
+            M::new_readonly(JUPITER, false),
+            M::new_readonly(event, false),
+            M::new_readonly(JUPITER, false),
+            M::new(ata(&dex, &USDC), false),
+            M::new(ata(&dex, &self.mint), false),
+            M::new_readonly(dex, false),
+        ]);
+        let mut route = vec![187, 100, 250, 204, 49, 196, 175, 20];
+        route.extend(input.to_le_bytes());
+        route.extend(output.to_le_bytes());
+        route.extend(50u16.to_le_bytes());
+        route.extend([0; 4]);
+        route.extend(1u32.to_le_bytes());
+        route.push(0);
+        Instruction {
+            program_id: stockroom::ID,
+            accounts,
+            data: instruction::SwapPosition { terms, route }.data(),
+        }
+    }
+}
+#[tokio::test]
+async fn position_swap_limit_checks_actual_delivery_fee_and_atomic_rollback() {
+    let mut f = Fixture::new().await;
+    f.prepare_position_dex();
+    assert!(
+        f.send(
+            f.create_position_ix(901, 10_000_000, PositionKind::Limit),
+            0
+        )
+        .await
+    );
+    let p = f.position_key(901);
+    let before = f.balance(ata(&f.owner.pubkey(), &f.mint)).await;
+    // Target $100: the 25,000 USDC-base-unit fee must also fit the price.
+    for output in [99_000, 99_750] {
+        assert!(
+            !f.send(f.position_swap_ix(p, 9_975_000, output, true, false), 2)
+                .await
+        );
+        assert_eq!(f.state::<Position>(p).await.shares, 10_000_000);
+        assert_eq!(f.balance(ata(&f.owner.pubkey(), &f.mint)).await, before);
+    }
+    let valid = f.position_swap_ix(p, 9_975_000, 100_000, true, false);
+    let mut stale = valid.clone();
+    let mut terms =
+        stockroom::position_swap::PositionSwapTerms::deserialize(&mut &stale.data[8..]).unwrap();
+    terms.quoted_at = 969;
+    let route = valid.data[valid.data.len() - 35..].to_vec();
+    stale.data = instruction::SwapPosition {
+        terms,
+        route: route.clone(),
+    }
+    .data();
+    assert!(!f.send(stale, 2).await);
+    let mut wrong = valid.clone();
+    wrong.accounts[0].pubkey = f.other.pubkey();
+    assert!(!f.send(wrong, 1).await);
+    let mut under = valid.clone();
+    *under.data.last_mut().unwrap() = 255;
+    assert!(!f.send(under, 2).await);
+    assert_eq!(f.state::<Position>(p).await.shares, 10_000_000);
+    assert!(f.send(valid.clone(), 2).await);
+    let state = f.state::<Position>(p).await;
+    assert_eq!(state.status, PositionStatus::Filled);
+    assert_eq!(state.principal_basis, 0);
+    assert_eq!(state.shares, 0);
+    assert_eq!(state.stock_units_received, 100_000);
+    assert_eq!(f.balance(f.treasury).await, 25_000);
+    assert!(!f.send(valid, 2).await);
+}
+#[tokio::test]
+async fn position_swap_dca_preserves_remaining_principal_and_schedule() {
+    let mut f = Fixture::new().await;
+    f.prepare_position_dex();
+    assert!(
+        f.send(f.create_position_ix(902, 20_000_000, PositionKind::Dca), 0)
+            .await
+    );
+    let p = f.position_key(902);
+    let mut ix = f.position_swap_ix(p, 9_965_000, 100_000, true, true);
+    assert!(!f.send(ix.clone(), 2).await);
+    f.ctx.set_sysvar(&Clock {
+        unix_timestamp: 4600,
+        ..Default::default()
+    });
+    let mut bytes = &ix.data[8..];
+    let mut terms = stockroom::position_swap::PositionSwapTerms::deserialize(&mut bytes).unwrap();
+    let route = Vec::<u8>::deserialize(&mut bytes).unwrap();
+    terms.quoted_at = 4600;
+    ix.data = instruction::SwapPosition { terms, route }.data();
+    assert!(f.send(ix.clone(), 2).await);
+    let state = f.state::<Position>(p).await;
+    assert_eq!(state.steps_remaining, 1);
+    assert_eq!(state.principal_basis, 10_000_000);
+    assert_eq!(state.shares, 10_000_000 + state.invested_fee_basis);
+    assert_eq!(state.next_fill_at, 8200);
+    assert_eq!(state.stock_usdc_spent, 9_965_000);
+    assert_eq!(
+        f.balance(f.treasury).await + state.invested_fee_basis,
+        25_000
+    );
+    assert!(!f.send(ix, 2).await);
+    assert_eq!(f.state::<Position>(p).await.shares, state.shares);
+}
+#[tokio::test]
+async fn position_swap_yield_never_spends_principal_and_respects_pause() {
+    let mut f = Fixture::new().await;
+    f.prepare_position_dex();
+    assert!(
+        f.send(f.create_position_ix(903, 10_000_000, PositionKind::Earn), 0)
+            .await
+    );
+    let p = f.position_key(903);
+    let mut state = f.state::<Position>(p).await;
+    state.destination = Destination::Stocks;
+    state.claimable = 2_000_000;
+    f.ctx
+        .set_account(&p, &account(serialized(&state), stockroom::ID).into());
+    f.ctx
+        .set_account(&ata(&p, &USDC), &token_account(USDC, p, 2_000_000).into());
+    assert!(
+        !f.send(f.position_swap_ix(p, 2_000_001, 20_000, false, false), 2)
+            .await
+    );
+    let ix = f.position_swap_ix(p, 2_000_000, 20_000, false, false);
+    let mut config = f.state::<Config>(f.config).await;
+    config.paused = true;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&config), stockroom::ID).into(),
+    );
+    assert!(!f.send(ix.clone(), 2).await);
+    config.paused = false;
+    f.ctx.set_account(
+        &f.config,
+        &account(serialized(&config), stockroom::ID).into(),
+    );
+    let mut steal_shares = ix.clone();
+    *steal_shares.data.last_mut().unwrap() = 254;
+    let dex = Pubkey::find_program_address(&[b"mock-dex"], &stockroom::pack_swap::JUPITER).0;
+    f.ctx.set_account(
+        &ata(&dex, &f.shares_mint),
+        &token_account(f.shares_mint, dex, 0).into(),
+    );
+    steal_shares.accounts.extend([
+        solana_sdk::instruction::AccountMeta::new(ata(&p, &f.shares_mint), false),
+        solana_sdk::instruction::AccountMeta::new(ata(&dex, &f.shares_mint), false),
+    ]);
+    assert!(!f.send(steal_shares, 2).await);
+    assert_eq!(f.state::<Position>(p).await.shares, 10_000_000);
+    assert!(f.send(ix.clone(), 2).await);
+    let state = f.state::<Position>(p).await;
+    assert_eq!(state.principal_basis, 10_000_000);
+    assert_eq!(state.shares, 10_000_000);
+    assert_eq!(state.claimable, 0);
+    assert_eq!(state.allocated_yield, 2_000_000);
+    assert!(!f.send(ix, 2).await);
+}
+
+async fn run_position_snapshot(kind: &str) {
+    use base64::Engine;
+    use solana_sdk::{
+        instruction::AccountMeta,
+        message::{v0, VersionedMessage},
+        signature::SeedDerivable,
+        transaction::VersionedTransaction,
+    };
+    let snap: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(format!(
+            "{}/../../.cache/position-swap-snapshot-{}.json",
+            env!("CARGO_MANIFEST_DIR"),
+            kind
+        ))
+        .expect("Run snapshot-position-swap first"),
+    )
+    .unwrap();
+    let decode = |s: &str| base64::engine::general_purpose::STANDARD.decode(s).unwrap();
+    let mut pt = ProgramTest::new("stockroom", stockroom::ID, None);
+    pt.set_compute_max_units(1_400_000);
+    let owner = Keypair::from_seed(&[42; 32]).unwrap();
+    pt.add_account(
+        owner.pubkey(),
+        SolanaAccount {
+            lamports: 100_000_000_000,
+            owner: anchor_lang::system_program::ID,
+            ..Default::default()
+        },
+    );
+    let entries = snap["accounts"].as_array().unwrap();
+    for a in entries {
+        let mut entry = SolanaAccount {
+            lamports: a["lamports"].as_u64().unwrap(),
+            data: decode(a["data"].as_str().unwrap()),
+            owner: a["owner"].as_str().unwrap().parse().unwrap(),
+            executable: a["executable"].as_bool().unwrap(),
+            rent_epoch: 0,
+        };
+        // Upgrade only the synthetic local config fixture from the previous capture schema.
+        // This is not a production migration; the program has never been deployed.
+        if a["address"].as_str().unwrap()
+            == Pubkey::find_program_address(&[b"config"], &stockroom::ID)
+                .0
+                .to_string()
+            && entry.data.len() == 8 + Config::INIT_SPACE - 49
+        {
+            let bump = entry.data.pop().unwrap();
+            entry.data.push(ALL_PRODUCTS);
+            entry.data.extend_from_slice(&[0; 32]);
+            entry.data.extend_from_slice(&u64::MAX.to_le_bytes());
+            entry.data.extend_from_slice(&0u64.to_le_bytes());
+            entry.data.push(bump);
+        }
+        if entry.executable && entry.owner == solana_sdk::bpf_loader_upgradeable::ID {
+            let data_key = Pubkey::new_from_array(entry.data[4..36].try_into().unwrap());
+            let data = entries
+                .iter()
+                .find(|x| x["address"].as_str().unwrap() == data_key.to_string())
+                .unwrap();
+            entry.data = decode(data["data"].as_str().unwrap())[45..].to_vec();
+            entry.owner = solana_sdk::bpf_loader::ID;
+            entry.lamports = 100_000_000_000;
+        }
+        pt.add_account(a["address"].as_str().unwrap().parse().unwrap(), entry);
+    }
+    let mut ctx = pt.start_with_context().await;
+    ctx.warp_to_slot(snap["slot"].as_u64().unwrap() + 1)
+        .unwrap();
+    ctx.set_sysvar(&Clock {
+        unix_timestamp: snap["timestamp"].as_i64().unwrap(),
+        slot: snap["slot"].as_u64().unwrap(),
+        epoch: snap["epoch"].as_u64().unwrap(),
+        ..Default::default()
+    });
+    let mut ix = vec![
+        solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_limit(1_400_000),
+    ];
+    for item in snap["instructions"].as_array().unwrap() {
+        ix.push(Instruction {
+            program_id: item["programId"].as_str().unwrap().parse().unwrap(),
+            accounts: item["keys"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|k| AccountMeta {
+                    pubkey: k["pubkey"].as_str().unwrap().parse().unwrap(),
+                    is_signer: k["isSigner"].as_bool().unwrap(),
+                    is_writable: k["isWritable"].as_bool().unwrap(),
+                })
+                .collect(),
+            data: decode(item["data"].as_str().unwrap()),
+        });
+    }
+    // A test lookup table changes message encoding only; all route account state and binaries are captured.
+    let mut addresses = Vec::new();
+    for i in &ix {
+        for a in &i.accounts {
+            if !a.is_signer && !addresses.contains(&a.pubkey) {
+                addresses.push(a.pubkey);
+            }
+        }
+    }
+    let table_key = Pubkey::new_unique();
+    let table = solana_sdk::address_lookup_table::state::AddressLookupTable {
+        meta: Default::default(),
+        addresses: std::borrow::Cow::Owned(addresses.clone()),
+    }
+    .serialize_for_tests()
+    .unwrap();
+    ctx.set_account(
+        &table_key,
+        &account(table, solana_sdk::address_lookup_table::program::ID).into(),
+    );
+    let blockhash = ctx.banks_client.get_latest_blockhash().await.unwrap();
+    let message = v0::Message::try_compile(
+        &owner.pubkey(),
+        &ix,
+        &[
+            solana_sdk::address_lookup_table::AddressLookupTableAccount {
+                key: table_key,
+                addresses,
+            },
+        ],
+        blockhash,
+    )
+    .unwrap();
+    let tx = VersionedTransaction::try_new(VersionedMessage::V0(message), &[&owner]).unwrap();
+    assert!(bincode::serialize(&tx).unwrap().len() <= 1232);
+    let result = ctx
+        .banks_client
+        .process_transaction_with_metadata(tx)
+        .await
+        .unwrap();
+    if result.result.is_err() {
+        eprintln!("{:?} {:?}", result.result, result.metadata);
+    }
+    assert!(
+        result.result.is_ok(),
+        "Actual Jupiter CPI must settle without any Pyth accounts"
+    );
+    let key: Pubkey = snap["position"].as_str().unwrap().parse().unwrap();
+    let info = ctx.banks_client.get_account(key).await.unwrap().unwrap();
+    let p = Position::try_deserialize(&mut &info.data[..]).unwrap();
+    assert!(p.stock_units_received >= snap["minimum"].as_str().unwrap().parse::<u64>().unwrap());
+    assert_eq!(
+        p.stock_usdc_spent,
+        snap["input"].as_str().unwrap().parse::<u64>().unwrap()
+    );
+    let destination = ctx
+        .banks_client
+        .get_account(snap["destination"].as_str().unwrap().parse().unwrap())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        u64::from_le_bytes(destination.data[64..72].try_into().unwrap()),
+        p.stock_units_received
+    );
+    match kind {
+        "limit" => {
+            assert_eq!(p.status, PositionStatus::Filled);
+            assert_eq!(p.shares, 0);
+            assert_eq!(p.principal_basis, 0);
+        }
+        "dca" => {
+            assert_eq!(p.status, PositionStatus::Active);
+            assert_eq!(p.steps_remaining, 1);
+            assert!(p.shares > 0);
+            assert!(p.principal_basis > 0);
+        }
+        _ => {
+            assert_eq!(
+                p.principal_basis,
+                snap["principal"].as_str().unwrap().parse::<u64>().unwrap()
+            );
+            assert_eq!(
+                p.shares,
+                snap["shares"].as_str().unwrap().parse::<u64>().unwrap()
+            );
+            assert_eq!(p.claimable, 0);
+        }
+    }
+}
+#[tokio::test]
+#[ignore = "requires snapshot-position-swap.ts; actual Jupiter and Kamino programs in local runtime"]
+async fn deployed_position_limit_without_pyth() {
+    run_position_snapshot("limit").await;
+}
+#[tokio::test]
+#[ignore = "requires snapshot-position-swap.ts --dca"]
+async fn deployed_position_dca_without_pyth() {
+    run_position_snapshot("dca").await;
+}
+#[tokio::test]
+#[ignore = "requires snapshot-position-swap.ts --stocks"]
+async fn deployed_position_stocks_without_pyth() {
+    run_position_snapshot("stocks").await;
 }

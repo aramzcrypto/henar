@@ -1,2 +1,3 @@
 import { redirect } from "next/navigation";
-export default function Page() { redirect("/stockfolio"); }
+export default function Page() { redirect("/portfolio"); }
+

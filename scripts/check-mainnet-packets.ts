@@ -222,6 +222,7 @@ async function main() {
       const packIx = await client.methods
         .settlePack(integer(1))
         .accountsStrict({
+          execution: pda(id, "pack-execution"),
           solver,
           config,
           pack,

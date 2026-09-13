@@ -61,7 +61,7 @@ pub struct ActivateManifest<'info> {
 pub struct CreatePosition<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
-    #[account(seeds=[b"config"],bump=config.bump)]
+    #[account(mut,seeds=[b"config"],bump=config.bump)]
     pub config: Account<'info, Config>,
     #[account(address=config.active_manifest,has_one=config)]
     pub manifest: Box<Account<'info, Manifest>>,
@@ -85,7 +85,7 @@ pub struct CreatePosition<'info> {
 pub struct ManagePosition<'info> {
     #[account(mut)]
     pub actor: Signer<'info>,
-    #[account(seeds=[b"config"],bump=config.bump)]
+    #[account(mut,seeds=[b"config"],bump=config.bump)]
     pub config: Account<'info, Config>,
     #[account(mut,has_one=config,seeds=[b"position",position.owner.as_ref(),&position.id.to_le_bytes()],bump=position.bump)]
     pub position: Box<Account<'info, Position>>,
@@ -107,8 +107,10 @@ pub struct ManagePosition<'info> {
 }
 #[derive(Accounts)]
 pub struct PositionOwner<'info> {
+    #[account(seeds=[b"config"],bump=config.bump)]
+    pub config: Account<'info, Config>,
     pub owner: Signer<'info>,
-    #[account(mut,has_one=owner,seeds=[b"position",owner.key().as_ref(),&position.id.to_le_bytes()],bump=position.bump)]
+    #[account(mut,has_one=owner,has_one=config,seeds=[b"position",owner.key().as_ref(),&position.id.to_le_bytes()],bump=position.bump)]
     pub position: Box<Account<'info, Position>>,
     #[account(address=position.manifest)]
     pub manifest: Box<Account<'info, Manifest>>,
@@ -118,7 +120,7 @@ pub struct PositionOwner<'info> {
 pub struct BuyBatch<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
-    #[account(seeds=[b"config"],bump=config.bump)]
+    #[account(mut,seeds=[b"config"],bump=config.bump)]
     pub config: Account<'info, Config>,
     #[account(address=config.active_manifest,has_one=config)]
     pub manifest: Box<Account<'info, Manifest>>,
@@ -160,9 +162,11 @@ pub struct YieldBatch<'info> {
 #[derive(Accounts)]
 #[instruction(id:u64)]
 pub struct GiftBatch<'info> {
+    #[account(seeds=[b"config"],bump=config.bump)]
+    pub config: Account<'info, Config>,
     #[account(mut)]
     pub owner: Signer<'info>,
-    #[account(mut,has_one=owner,seeds=[b"batch",batch.creator.as_ref(),&batch.id.to_le_bytes()],bump=batch.bump)]
+    #[account(mut,has_one=owner,has_one=config,seeds=[b"batch",batch.creator.as_ref(),&batch.id.to_le_bytes()],bump=batch.bump)]
     pub batch: Box<Account<'info, PackBatch>>,
     #[account(init,payer=owner,space=8+PackBatch::INIT_SPACE,seeds=[b"batch",owner.key().as_ref(),&id.to_le_bytes()],bump)]
     pub gift: Box<Account<'info, PackBatch>>,
@@ -243,6 +247,8 @@ pub struct RefundPack<'info> {
 }
 #[derive(Accounts)]
 pub struct SettlePack<'info> {
+    #[account(seeds=[b"pack-execution"],bump=execution.bump)]
+    pub execution: Account<'info, crate::pack_swap::PackExecution>,
     pub solver: Signer<'info>,
     #[account(seeds=[b"config"],bump=config.bump)]
     pub config: Account<'info, Config>,

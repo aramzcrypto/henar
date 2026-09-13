@@ -20,7 +20,11 @@ pub fn create<'info>(
     min_shares: u64,
     terms: PositionTerms,
 ) -> Result<()> {
-    require!(!ctx.accounts.config.paused, StockroomError::Paused);
+    ctx.accounts.config.admit(
+        ctx.accounts.owner.key(),
+        amount,
+        position_products(terms.kind, terms.destination),
+    )?;
     require!(amount > 0 && min_shares > 0, StockroomError::Balance);
     require!(
         terms.slippage_bps <= ctx.accounts.config.max_slippage_bps,
@@ -154,6 +158,10 @@ pub fn preferences(
     stock_index: u16,
 ) -> Result<()> {
     let p = &mut ctx.accounts.position;
+    ctx.accounts
+        .config
+        .check_product(position_products(p.kind, destination))?;
+    ctx.accounts.config.check_pilot(p.owner)?;
     require!(
         p.kind == PositionKind::Earn && p.status == PositionStatus::Active,
         StockroomError::State
@@ -182,6 +190,8 @@ pub fn deposit_more<'info>(
         StockroomError::State
     );
     require!(amount > 0 && min_shares > 0, StockroomError::Balance);
+    a.config
+        .admit(p.owner, amount, position_products(p.kind, p.destination))?;
     let owner = p.owner;
     let id = p.id.to_le_bytes();
     let bump = [p.bump];
@@ -233,7 +243,7 @@ pub fn deposit_more<'info>(
     emit_activity(owner, p.key(), 1, spent, minted)
 }
 /// Realize only measured USDC received for tracked shares, excluding unsolicited cash/share donations.
-fn redeem_all<'info>(
+pub(crate) fn redeem_all<'info>(
     a: &mut ManagePosition<'info>,
     accounts: &[AccountInfo<'info>],
     min_redeemed: u64,
@@ -296,7 +306,7 @@ fn redeem_all<'info>(
     p.invested_fee_basis = 0;
     Ok(principal_value)
 }
-fn reinvest<'info>(
+pub(crate) fn reinvest<'info>(
     a: &mut ManagePosition<'info>,
     accounts: &[AccountInfo<'info>],
     principal: u64,
@@ -360,7 +370,7 @@ fn reinvest<'info>(
     }
     Ok(())
 }
-fn flush_fees<'info>(a: &mut ManagePosition<'info>) -> Result<()> {
+pub(crate) fn flush_fees<'info>(a: &mut ManagePosition<'info>) -> Result<()> {
     let p = &mut a.position;
     let owner = p.owner;
     let id = p.id.to_le_bytes();
@@ -389,6 +399,7 @@ pub fn harvest<'info>(
     min_shares: u64,
 ) -> Result<()> {
     let a = ctx.accounts;
+    require!(!a.config.paused, StockroomError::Paused);
     require!(
         a.position.status == PositionStatus::Active,
         StockroomError::State
@@ -525,6 +536,10 @@ pub fn settle_yield<'info>(
     delivered: u64,
 ) -> Result<()> {
     let a = ctx.accounts;
+    a.base.config.check_product(position_products(
+        a.base.position.kind,
+        a.base.position.destination,
+    ))?;
     let p = &a.base.position;
     require!(
         p.status == PositionStatus::Active
@@ -600,6 +615,10 @@ pub fn fill<'info>(
     stock_transfer_accounts: u16,
 ) -> Result<()> {
     let a = ctx.accounts;
+    a.base.config.check_product(position_products(
+        a.base.position.kind,
+        a.base.position.destination,
+    ))?;
     let p = &a.base.position;
     let now = Clock::get()?.unix_timestamp;
     require!(

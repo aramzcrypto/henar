@@ -164,6 +164,10 @@ fn pack_pay<'info>(
     )
 }
 pub fn open(ctx: Context<OpenLucky>, index: u64, nonce: [u8; 32]) -> Result<()> {
+    ctx.accounts
+        .base
+        .config
+        .check_product(PRODUCT_PACKS | PRODUCT_LUCKY)?;
     let a = &mut ctx.accounts.base;
     // Earned packs preserve their full yield allocation; no automatic gambling of yield.
     require!(
@@ -271,6 +275,14 @@ pub fn bank(ctx: Context<OwnerLucky>) -> Result<()> {
     emit_activity(p.owner, p.key(), 22, p.budget, p.round as u64)
 }
 pub fn rollover(ctx: Context<RollLucky>, nonce: [u8; 32]) -> Result<()> {
+    ctx.accounts
+        .base
+        .config
+        .check_product(PRODUCT_PACKS | PRODUCT_LUCKY)?;
+    ctx.accounts
+        .base
+        .config
+        .check_pilot(ctx.accounts.base.owner.key())?;
     let b = &mut ctx.accounts.base;
     let cash = &mut b.cash;
     require!(

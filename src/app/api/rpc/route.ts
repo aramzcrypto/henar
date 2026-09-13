@@ -1,16 +1,7 @@
+import { boundedJson } from "@/lib/request-body";
+import { rpcRequest } from "@/lib/rpc-policy";
 import { NextResponse } from "next/server";
-const allowed = new Set([
-  "getLatestBlockhash",
-  "getBlockHeight",
-  "getSignatureStatuses",
-  "getBalance",
-  "getAccountInfo",
-  "getMultipleAccounts",
-  "getFeeForMessage",
-  "simulateTransaction",
-  "sendTransaction",
-  "getVersion",
-]);
+import { assertApplicationRelay } from "@/lib/relay-policy";
 export async function POST(req: Request) {
   if (!process.env.SOLANA_RPC_URL)
     return NextResponse.json(
@@ -21,13 +12,15 @@ export async function POST(req: Request) {
       },
       { status: 503 },
     );
-  const raw = await req.text();
-  if (raw.length > 20000)
-    return new Response("Request too large", { status: 413 });
+  let body;
   try {
-    const body = JSON.parse(raw);
-    if (!allowed.has(body.method) || Array.isArray(body))
-      return new Response("Method unavailable", { status: 400 });
+    body = rpcRequest(await boundedJson(req));
+    if (body.method === "sendTransaction")
+      assertApplicationRelay(String(body.params[0]), process.env.STOCKROOM_PROGRAM_ID);
+  } catch {
+    return new Response("Invalid RPC request", { status: 400 });
+  }
+  try {
     const res = await fetch(process.env.SOLANA_RPC_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,22 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { marketAmounts, buildSchema } from "../src/lib/market";
+import { grossForNet, MARKET_FEE_BPS } from "../src/lib/trade-fee";
 test("input fees preserve the total budget and output minimum", () => {
   assert.deepEqual(marketAmounts(10000000n, 200000n, 199000n, true), {
-    fee: 25000n,
-    swapInput: 9975000n,
+    fee: 15000n,
+    swapInput: 9985000n,
     receive: 200000n,
     minReceive: 199000n,
   });
 });
 test("output fees are fixed before signature and deducted from the received minimum", () => {
   assert.deepEqual(marketAmounts(10000000n, 200000n, 199000n, false), {
-    fee: 500n,
+    fee: 300n,
     swapInput: 10000000n,
-    receive: 199500n,
-    minReceive: 198500n,
+    receive: 199700n,
+    minReceive: 198700n,
   });
   assert.throws(() => marketAmounts(1n, 100000n, 1n, false));
+});
+test("the shared fee can be reversed exactly for an input budget", () => {
+  const net = 10000000n;
+  const gross = grossForNet(net);
+  assert.equal(MARKET_FEE_BPS, 15);
+  assert.equal(marketAmounts(gross, 200000n, 199000n, true).swapInput, net);
 });
 test("Swap V2 responses can omit the legacy platformFee object", () => {
   const instruction = { programId: "test", accounts: [], data: "" };
