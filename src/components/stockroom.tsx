@@ -468,6 +468,9 @@ export function Stockroom({
   const [assetClass, setAssetClass] = useState<"all" | "crypto" | "stocks">(
     "all",
   );
+  const [assetIssuer, setAssetIssuer] = useState<
+    "all" | "xStocks" | "Backpack" | "Ondo"
+  >("all");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [resolvingPayment, setResolvingPayment] = useState(false);
@@ -681,7 +684,7 @@ export function Stockroom({
   ];
   const oppositeMint =
     assetPickerSide === "input" ? marketReceive.mint : marketPayment.mint;
-  const paymentOptions = availablePayments
+  const searchedPaymentOptions = availablePayments
     .filter((token) => {
       const isStock = !!token.provider;
       return (
@@ -692,7 +695,11 @@ export function Stockroom({
           .toLowerCase()
           .includes(paymentSearch.toLowerCase())
       );
-    })
+    });
+  const paymentOptions = searchedPaymentOptions
+    .filter(
+      (token) => assetIssuer === "all" || token.provider === assetIssuer,
+    )
     .sort((a, b) => {
       const aHeld = BigInt(balances?.[a.mint]?.amount ?? "0") > 0n ? 1 : 0;
       const bHeld = BigInt(balances?.[b.mint]?.amount ?? "0") > 0n ? 1 : 0;
@@ -2031,14 +2038,50 @@ export function Stockroom({
                   key={value}
                   aria-pressed={assetClass === value}
                   className={assetClass === value ? "active" : ""}
-                  onClick={() =>
-                    setAssetClass(value as "all" | "crypto" | "stocks")
-                  }
+                  onClick={() => {
+                    const next = value as "all" | "crypto" | "stocks";
+                    setAssetClass(next);
+                    if (next === "crypto") setAssetIssuer("all");
+                  }}
                 >
                   {label}
                 </button>
               ))}
             </div>
+            {assetClass !== "crypto" && (
+              <div className="asset-issuer-tabs" aria-label="Stock issuer">
+                <button
+                  type="button"
+                  aria-pressed={assetIssuer === "all"}
+                  className={assetIssuer === "all" ? "active" : ""}
+                  onClick={() => setAssetIssuer("all")}
+                >
+                  All issuers
+                </button>
+                {(["xStocks", "Backpack", "Ondo"] as const).map((provider) => (
+                  <button
+                    type="button"
+                    key={provider}
+                    aria-pressed={assetIssuer === provider}
+                    className={assetIssuer === provider ? "active" : ""}
+                    onClick={() => {
+                      setAssetClass("stocks");
+                      setAssetIssuer(provider);
+                    }}
+                  >
+                    <Image
+                      className="issuer-logo"
+                      src={`/logos/issuers/${provider.toLowerCase()}.svg`}
+                      width={18}
+                      height={18}
+                      alt=""
+                      unoptimized
+                    />
+                    {provider}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="selector-columns asset-selector-columns">
               <span>
                 Asset <span className="result-count">{paymentOptions.length.toLocaleString()}</span>
