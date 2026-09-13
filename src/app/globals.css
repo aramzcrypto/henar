@@ -5101,9 +5101,19 @@ footer a {
   font-size: 11px;
   font-weight: 700;
 }
-.quote-source-jupiter { background: #18342d; color: #80e0b7; }
-.quote-source-raydium { background: #252147; color: #a99cff; }
-.quote-source-openocean { background: #123845; color: #73d8ee; }
+.quote-source img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.quote-source-jupiter { background: #eefcf7; }
+.quote-source-raydium { background: #211d45; }
+.quote-source-orca { background: #eef9ff; }
+.quote-source-meteora { background: #f0f2f6; }
+.quote-source-phoenix { background: #fff4eb; }
+.quote-source-openbook { background: #f1f3f7; }
+.quote-source-lifinity { background: #17203b; }
+.quote-source-openocean { background: #eefbff; }
 .quote-source-titan { background: #332d19; color: #ead16f; }
 .quote-route {
   display: flex;

@@ -5,6 +5,10 @@ import { HenarBrand } from "./henar-brand";
 import { RewardsMenu } from "./rewards-menu";
 import { AppSelect } from "./app-select";
 import { TokenLogo } from "@/components/token-logo";
+import {
+  ExecutionSourceLogo,
+  getExecutionSourceBrand,
+} from "@/components/execution-source-logo";
 import Link from "next/link";
 import Image from "next/image";
 import DecimalBase from "decimal.js";
@@ -1572,15 +1576,13 @@ export function Stockroom({
                         const venues = Array.from(
                           new Set(candidate.route.map((step) => step.venue)),
                         ).slice(0, 2);
-                        const source = `${candidate.source[0].toUpperCase()}${candidate.source.slice(1)}`;
+                        const source = getExecutionSourceBrand(candidate.source).label;
                         return (
                           <div
                             className={index === 0 ? "quote-row best" : "quote-row"}
                             key={`${candidate.source}-${candidate.quoteProvider}`}
                           >
-                            <span className={`quote-source quote-source-${candidate.source}`}>
-                              {candidate.source.slice(0, 1).toUpperCase()}
-                            </span>
+                            <ExecutionSourceLogo source={candidate.source} />
                             <div className="quote-route">
                               <strong>{source}</strong>
                               <span>
