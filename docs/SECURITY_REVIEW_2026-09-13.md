@@ -1,4 +1,4 @@
-# Kani Markets — pre-mainnet security review
+# Henar — pre-mainnet security review
 
 > Historical baseline report. The four numbered findings were subsequently fixed and retested; see [the remediation review](SECURITY_REVIEW_RETEST_2026-09-13.md) for current evidence, deployment status, and remaining launch requirements. Statements below describe the original review, before remediation.
 

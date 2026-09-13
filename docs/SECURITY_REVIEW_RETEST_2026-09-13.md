@@ -1,4 +1,4 @@
-# Kani Markets — remediation review
+# Henar — remediation review
 
 > Subsequent release update: the reviewed artifact was deployed upgradeably and a restricted Earn deposit/full-withdrawal test passed. The contract remains paused. See [the mainnet deployment record](MAINNET_RELEASE_2026-09-13.md); statements below record the remediation review before that deployment.
 
@@ -37,7 +37,7 @@ Local evidence is retained under `.cache/`: `security-fix-tests.log`, `security-
 
 ## Deployment status
 
-Production: [kanimarkets.vercel.app](https://kanimarkets.vercel.app).
+Production: [henarapp.vercel.app](https://henarapp.vercel.app).
 
 Production deployment ID: `dpl_GPghL25SpW6wehrSxis97MLCqxMb`, rebuilt with production environment variables from successful preview `dpl_QTHKD9Xit1BSfEtMHWGQTEToHLyG`.
 
