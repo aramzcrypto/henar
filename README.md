@@ -79,9 +79,9 @@ npm run contracts:build
 Two generated data sets are rebuilt offline rather than fetched per request:
 
 ```sh
-npm run sectors:build       # SIC-based sector index from SEC EDGAR
-npm run calendar:warm       # pre-cache filings for calendar coverage
-npm run calendar:warm -- 200  # widen the pre-cached company set
+npm run sectors:build         # SIC-based sector index from SEC EDGAR
+npm run earnings:build        # filed results powering the calendar
+npm run calendar:warm -- 200  # widen the local research cache
 ```
 
 The repository also contains release checks for protocol configuration, routes, transaction size, treasury accounts, and deployment planning. See [validation evidence](docs/VALIDATION.md), [mainnet setup](docs/MAINNET.md), and [security review](docs/SECURITY_REVIEW_RETEST_2026-09-13.md).

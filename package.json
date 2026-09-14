@@ -36,7 +36,8 @@
     "mainnet:access": "node --env-file-if-exists=.env.local --import tsx scripts/protocol-access.ts",
     "positions:snapshot": "node --env-file-if-exists=.env.local --import tsx scripts/snapshot-position-swap.ts",
     "calendar:warm": "node --env-file-if-exists=.env.local --import tsx scripts/warm-calendar.ts",
-    "sectors:build": "node --import tsx scripts/build-sectors.ts"
+    "sectors:build": "node --import tsx scripts/build-sectors.ts",
+    "earnings:build": "node --import tsx scripts/build-earnings.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",

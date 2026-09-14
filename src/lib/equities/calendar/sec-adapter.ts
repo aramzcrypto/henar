@@ -1,5 +1,6 @@
+import storedEarnings from "@/data/earnings.json";
 import { jupiterMetadata } from "../jupiter";
-import { equityRegistry } from "../registry";
+import { equityForTicker, equityRegistry } from "../registry";
 import { loadResearchForEquity } from "../research";
 import { readResearchFileCache } from "../research-file-cache";
 import type { Equity } from "../types";
@@ -65,16 +66,68 @@ function toEvents(equity: Equity, research: Awaited<ReturnType<typeof loadResear
   }));
 }
 
+type StoredEarnings = {
+  ticker: string;
+  name: string;
+  logo: string | null;
+  sourceUrl: string | null;
+  events: {
+    reportedAt: string;
+    fiscalPeriod: string;
+    actualEps: string | null;
+    estimatedEps: string | null;
+  }[];
+};
+
 /**
- * Reads whatever SEC research is already cached and warms a small number of
- * additional companies within a fixed time budget. Coverage therefore grows
- * across requests without any single request paying to download every filing.
+ * The committed dataset, built offline by `npm run earnings:build`. It exists
+ * because the parsed-research cache lives in the OS temp directory, which on a
+ * serverless host is per-instance and empty on a cold start — so without this
+ * a deployed calendar showed nothing.
+ */
+function storedEvents(range: CalendarRange): CalendarEvent[] {
+  const rows = storedEarnings as StoredEarnings[];
+  const events: CalendarEvent[] = [];
+  for (const row of rows) {
+    for (const event of row.events) {
+      const date = event.reportedAt.slice(0, 10);
+      if (date < range.start || date > range.end) continue;
+      events.push({
+        id: `earnings:${row.ticker}:${date}:${event.fiscalPeriod}`,
+        type: "earnings",
+        date,
+        time: null,
+        country: "US",
+        ticker: row.ticker,
+        companyName: row.name,
+        companyLogo: row.logo,
+        eventName: event.fiscalPeriod || null,
+        timing: null,
+        estimatedEps: event.estimatedEps,
+        actualEps: event.actualEps,
+        surprise: surprisePct(event.actualEps, event.estimatedEps),
+        previous: null,
+        estimate: null,
+        actual: null,
+        marketCap: null,
+        source: "SEC EDGAR",
+        sourceUrl: row.sourceUrl,
+      });
+    }
+  }
+  return events;
+}
+
+/**
+ * Prefers the committed dataset, then anything already cached locally, then
+ * warms a small number of companies within a fixed time budget.
  */
 export async function secEarningsEvents(
   range: CalendarRange,
 ): Promise<CalendarEvent[]> {
   const companies = coverage();
-  const events: CalendarEvent[] = [];
+  const events: CalendarEvent[] = storedEvents(range);
+  const covered = new Set(events.map((event) => event.ticker));
   const cold: Equity[] = [];
 
   const cached = await Promise.all(
@@ -85,7 +138,7 @@ export async function secEarningsEvents(
   );
   for (const entry of cached) {
     if (entry.research) events.push(...toEvents(entry.equity, entry.research));
-    else cold.push(entry.equity);
+    else if (!covered.has(entry.equity.ticker)) cold.push(entry.equity);
   }
 
   const deadline = Date.now() + WARM_BUDGET_MS;
@@ -123,7 +176,13 @@ export async function secEarningsEvents(
  */
 async function withMarketCaps(events: CalendarEvent[], companies: Equity[]) {
   const tickers = new Set(events.map((event) => event.ticker));
-  const needed = companies.filter((equity) => tickers.has(equity.ticker));
+  const pool = new Map(companies.map((equity) => [equity.ticker, equity]));
+  for (const ticker of tickers) {
+    if (!ticker || pool.has(ticker)) continue;
+    const equity = equityForTicker(ticker);
+    if (equity) pool.set(ticker, equity);
+  }
+  const needed = [...pool.values()].filter((equity) => tickers.has(equity.ticker));
   if (!needed.length) return events;
   try {
     const metadata = await jupiterMetadata(
