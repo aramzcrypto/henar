@@ -55,17 +55,89 @@ export function HeroGlobe() {
     window.addEventListener("resize", onResize);
     requestAnimationFrame(() => setReady(true));
 
-    if (!still) {
-      const spin = () => {
-        phi += 0.0016;
-        globe?.update({ phi });
-        frame = requestAnimationFrame(spin);
-      };
+    /* The globe is a WebGL draw on every frame. It sits in the hero, so once
+       the reader has scrolled past it there is nothing to see and no reason to
+       keep drawing: park the loop when it leaves the viewport or the tab goes
+       to the background. */
+    const spin = () => {
+      phi += 0.0016;
+      globe?.update({ phi });
       frame = requestAnimationFrame(spin);
+    };
+    const start = () => {
+      if (still || frame) return;
+      frame = requestAnimationFrame(spin);
+    };
+    const stop = () => {
+      if (!frame) return;
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+
+    /* Scroll-linked exit: the sphere swells and dissolves as the hero leaves,
+       so it reads as passing the reader rather than sliding away. Written as
+       custom properties on the wrapper, which composes them with the static
+       centring transform in CSS. */
+    /* closest(), not parentElement: cobe wraps the canvas in a div of its own
+       at runtime, so the painted box is two levels up. */
+    const stage = node.closest<HTMLElement>(".hero-globe");
+    const hero = stage?.closest<HTMLElement>("section");
+    let scrollFrame = 0;
+    let lastStep = -1;
+
+    const drift = () => {
+      scrollFrame = 0;
+      if (!stage) return;
+      const span = Math.max(1, (hero?.offsetHeight ?? window.innerHeight) * 0.8);
+      const progress = Math.min(Math.max(window.scrollY / span, 0), 1);
+      /* Quantised: below a percent of travel the change is invisible, and
+         this runs on every scroll frame. */
+      const step = Math.round(progress * 100);
+      if (step === lastStep) return;
+      lastStep = step;
+      const eased = progress * progress;
+      stage.style.setProperty("--globe-scale", `${1 + eased * 0.95}`);
+      stage.style.setProperty("--globe-dim", `${1 - progress}`);
+    };
+
+    const onScroll = () => {
+      if (still || scrollFrame) return;
+      scrollFrame = window.requestAnimationFrame(drift);
+    };
+
+    let onScreen = true;
+    const watcher = new IntersectionObserver(
+      ([entry]) => {
+        onScreen = entry.isIntersecting;
+        if (onScreen && !document.hidden) {
+          start();
+          window.addEventListener("scroll", onScroll, { passive: true });
+        } else {
+          stop();
+          window.removeEventListener("scroll", onScroll);
+        }
+      },
+      { threshold: 0 },
+    );
+    watcher.observe(node);
+
+    const onVisibility = () => {
+      if (!document.hidden && onScreen) start();
+      else stop();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    start();
+    if (!still) {
+      window.addEventListener("scroll", onScroll, { passive: true });
+      drift();
     }
 
     return () => {
-      cancelAnimationFrame(frame);
+      stop();
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      window.removeEventListener("scroll", onScroll);
+      watcher.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("resize", onResize);
       globe?.destroy();
     };

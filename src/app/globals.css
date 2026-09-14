@@ -11052,9 +11052,11 @@ body {
   width: min(1180px, 150vw);
   aspect-ratio: 1;
   /* Most of the sphere sits below the fold so the lit rim reads as a
-     horizon rather than a planet parked behind the headline. */
-  transform: translate(-50%, 30%);
-  opacity: 0.82;
+     horizon rather than a planet parked behind the headline. --globe-scale
+     and --globe-dim are driven by scroll position in <HeroGlobe />, so the
+     sphere swells and dissolves as the hero leaves. */
+  transform: translate(-50%, 30%) scale(var(--globe-scale, 1));
+  opacity: calc(0.82 * var(--globe-dim, 1));
   pointer-events: none;
   z-index: 0;
 }
@@ -11094,8 +11096,23 @@ body {
     rgba(0, 0, 0, 0.18) 60%,
     transparent 67%
   );
-  -webkit-mask-image: var(--globe-fade);
-  mask-image: var(--globe-fade);
+  /* Two mask layers intersected: the vertical fade shapes the horizon, the
+     horizontal one dissolves the left and right edges. Without it the sphere
+     meets .hero's overflow clip on a hard vertical cut once it scales past
+     the viewport. */
+  --globe-sides: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.5) 5%,
+    #000 13%,
+    #000 87%,
+    rgba(0, 0, 0, 0.5) 95%,
+    transparent 100%
+  );
+  -webkit-mask-image: var(--globe-fade), var(--globe-sides);
+  mask-image: var(--globe-fade), var(--globe-sides);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 
@@ -11121,8 +11138,10 @@ body {
 @media (max-width: 720px) {
   .hero-globe {
     width: 150vw;
-    transform: translate(-50%, 26%);
-    opacity: 0.9;
+    /* Keep the scroll scale in the transform; dropping it here would leave
+       phones with a static sphere. */
+    transform: translate(-50%, 26%) scale(var(--globe-scale, 1));
+    opacity: calc(0.9 * var(--globe-dim, 1));
   }
 }
 
@@ -11897,36 +11916,54 @@ body {
    than drawing a chart the visitor can already see on /markets.
    --------------------------------------------------------------- */
 .unify {
+  /* The panel's own width decides the layout, not the viewport: this figure
+     sits in a column whose width varies independently of the breakpoints. */
+  container-type: inline-size;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
-  align-items: center;
-  gap: 0;
+  gap: 26px;
   margin: 0;
-  padding: 34px 30px;
+  padding: 26px 26px 28px;
+  border: 1px solid var(--border);
   border-radius: 22px;
   background: var(--surface);
 }
+.unify-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
 .unify-label {
-  display: block;
-  margin-bottom: 16px;
-  color: #6c6c72;
-  font-size: 10px;
+  color: #7a7a82;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+.unify-chain {
+  display: inline-flex;
+  opacity: 0.6;
+}
+.unify-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
+  align-items: center;
+}
 .unify-issuers {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 10px;
 }
 .unify-token {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 13px 15px;
+  height: 56px;
+  padding: 0 15px;
   border-radius: 13px;
-  background: #1c1c1f;
+  background: var(--surface-2);
 }
 .unify-token b {
   font-family: var(--data);
@@ -11936,70 +11973,130 @@ body {
 }
 .unify-token i {
   margin-left: auto;
-  color: #85858c;
+  color: var(--muted);
   font-size: 11.5px;
   font-style: normal;
 }
-.unify-wires {
-  width: 120px;
-  height: 220px;
-  align-self: center;
+
+/* The hub sits on the junction: three curves in, one line out. */
+.unify-join {
+  position: relative;
+  height: 188px;
 }
-.unify-hub {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
+.unify-wires {
+  display: block;
+  width: 112px;
+  height: 188px;
 }
 .unify-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  background: #1c1c1f;
-  box-shadow: 0 0 0 1px rgba(70, 179, 168, 0.22);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px rgba(70, 179, 168, 0.3);
+  transform: translate(-50%, -50%);
 }
+
 .unify-result {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgba(70, 179, 168, 0.22);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+.unify-result-label {
+  color: var(--viz-teal);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.unify-company {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-.unify-result span {
+.unify-company span {
   display: flex;
+  min-width: 0;
   flex-direction: column;
 }
-.unify-result b {
-  font-size: 17px;
+.unify-company b {
+  overflow: hidden;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.unify-result i {
+.unify-company i {
   margin-top: 3px;
-  color: #85858c;
+  color: var(--muted);
+  font-family: var(--data);
   font-size: 11.5px;
   font-style: normal;
 }
-.unify-chain {
-  display: inline-flex;
-  opacity: 0.65;
+.unify-merged {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.unify-merged span {
+  margin-left: 4px;
 }
 
-@media (max-width: 940px) {
+@media (max-width: 640px) {
   .unify {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 22px;
-    padding: 26px 22px;
+    padding: 22px 20px 24px;
   }
-  /* The curves only make sense side by side; stacked, the order carries it. */
+}
+
+/* Below this the three columns crush the result card, so the flow runs top
+   to bottom instead and the curves become a single stem through the mark. */
+@container (max-width: 520px) {
+  .unify-body {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+  }
+  .unify-join {
+    display: flex;
+    height: 78px;
+    align-items: center;
+    justify-content: center;
+  }
   .unify-wires {
     display: none;
   }
-  .unify-hub {
-    padding-top: 22px;
-    border-top: 1px solid #232326;
-    width: 100%;
+  .unify-join::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1.5px;
+    background: linear-gradient(
+      rgba(70, 179, 168, 0.18),
+      rgba(70, 179, 168, 0.55)
+    );
+    content: "";
+    transform: translateX(-50%);
+  }
+  .unify-mark {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
   }
 }
 
@@ -12103,4 +12200,561 @@ body {
 }
 .portfolio-viewing button:hover {
   background: #2e2e32;
+}
+
+/* ---------------------------------------------------------------
+   Landing motion
+   Reveal is driven by a single IntersectionObserver in
+   <ScrollReveal />; elements opt in with data-reveal and keep
+   data-in once seen. Data attributes rather than module classes so
+   server components can mark themselves without importing styles. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.75s var(--ease),
+    transform 0.75s var(--ease);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+[data-reveal][data-in] {
+  opacity: 1;
+  transform: none;
+}
+/* Each will-change pins a compositor layer for the life of the page. Once an
+   element has arrived it never animates again, so hand the layer back. */
+[data-reveal][data-settled] {
+  will-change: auto;
+}
+
+/* The fanned company deck. */
+.fan {
+  display: grid;
+  justify-items: center;
+  gap: 30px;
+}
+.fan-deck {
+  --fan-step: 150px;
+  display: flex;
+  overflow: hidden;
+  width: 100%;
+  justify-content: center;
+  /* Bottom padding clears the deepest tile in the arc (distance 4 x 16px) so
+     the fan is not clipped by the overflow that hides the far ends. */
+  padding: 64px 0 104px;
+  mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+}
+.fan-track {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transform: translateX(calc(var(--fan-shift, 0) * var(--fan-step)));
+}
+/* No chrome: the logos carry their own shape, and a rounded card behind each
+   one just fought with it. Depth comes from scale and opacity instead. */
+.fan-tile {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 132px;
+  height: 132px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  opacity: var(--fan-fade, 1);
+  transform: rotate(var(--fan-rotate, 0deg)) translateY(var(--fan-lift, 0))
+    scale(var(--fan-scale, 1));
+}
+.fan-tile:focus-visible {
+  outline: 2px solid var(--viz-teal);
+  outline-offset: 6px;
+  border-radius: 50%;
+}
+.fan-caption {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  text-align: center;
+}
+.fan-caption b {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.fan-caption i {
+  color: var(--muted);
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-style: normal;
+}
+
+
+@media (max-width: 720px) {
+  .fan-tile {
+    width: 86px;
+    height: 86px;
+  }
+  .fan-deck {
+    --fan-step: 98px;
+    padding: 40px 0 86px;
+  }
+  .fan-track {
+    gap: 12px;
+  }
+  .fan-caption b {
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .fan-track {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Bento cards
+   Shared by Research, Trade and Earn: equal cards, each with a
+   fragment of interface bled into the top and faded out behind the
+   copy, so it reads as ground rather than a panel inside a panel.
+   Fragments show structure only - real issuer names, symbols, form
+   types and product labels, and no figures anywhere. */
+.lbento {
+  display: grid;
+  width: 100%;
+  /* The sections centre their heads with justify-items, which would otherwise
+     size the grid to its content and leave each section a different width. */
+  justify-self: stretch;
+  grid-template-columns: repeat(var(--lbento-cols, 2), minmax(0, 1fr));
+  gap: 16px;
+  /* The section head is centred; the cards are not. */
+  text-align: left;
+}
+.lcard {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  min-height: 336px;
+  align-content: end;
+  border-radius: 24px;
+  background: var(--surface);
+  transition: background 0.25s var(--ease);
+}
+.lcard:hover {
+  background: #191a1d;
+}
+.lcard-copy {
+  position: relative;
+  padding: 0 26px 28px;
+}
+.lcard h3 {
+  margin: 0 0 8px;
+  color: #e9e9eb;
+  font-size: 17px;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+}
+.lcard p {
+  margin: 0;
+  color: #888890;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* The fragment: no frame, no ground of its own, faded out at the foot so the
+   copy sits on clean surface. */
+.lmock {
+  position: absolute;
+  inset: 0;
+  padding: 22px 26px 0;
+  opacity: 0.92;
+  /* Spans the whole card so the fade lands under the copy rather than
+     stopping short of it: the fragment reads as ground, not as a panel. */
+  mask-image: linear-gradient(to bottom, #000 54%, transparent 88%);
+  pointer-events: none;
+}
+.lmock-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #26262b;
+  color: #74747c;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+}
+
+.lmock-statement {
+  display: grid;
+  gap: 19px;
+  padding-top: 21px;
+}
+.lmock-statement > div {
+  display: grid;
+  gap: 7px;
+}
+.lmock-statement span {
+  color: #9a9aa2;
+  font-size: 10.5px;
+}
+.lmock-statement i {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(70, 179, 168, 0.75), rgba(70, 179, 168, 0.26));
+}
+
+.lmock-calendar {
+  display: grid;
+  padding-top: 20px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 9px;
+}
+.lmock-calendar span {
+  height: 17px;
+  border-radius: 4px;
+  background: #232327;
+}
+.lmock-calendar span[data-mark] {
+  background: rgba(70, 179, 168, 0.55);
+}
+
+.lmock-filings {
+  display: grid;
+  gap: 21px;
+  padding-top: 22px;
+}
+.lmock-filings > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.lmock-filings b {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: #232327;
+  color: #b9b9c0;
+  font-family: var(--data);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+.lmock-filings i {
+  height: 7px;
+  flex: 1;
+  border-radius: 3px;
+  background: #232327;
+}
+
+.lmock-onchain {
+  display: grid;
+  gap: 21px;
+  padding-top: 22px;
+}
+.lmock-onchain > div {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 17px auto 1fr 84px;
+  gap: 10px;
+}
+.lmock-onchain b {
+  font-family: var(--data);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.lmock-onchain span {
+  color: #7d7d85;
+  font-size: 10.5px;
+}
+.lmock-onchain i {
+  height: 7px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(70, 179, 168, 0.12), rgba(70, 179, 168, 0.6));
+}
+
+@media (max-width: 720px) {
+  .lbento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lcard {
+    min-height: 312px;
+  }
+  .lmock {
+    padding: 20px 22px 0;
+  }
+  .lcard-copy {
+    padding: 0 22px 26px;
+  }
+}
+
+
+
+
+
+
+
+
+
+@media (max-width: 960px) {
+  .lbento {
+    --lbento-cols: 2;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Earn flow
+   One sequence, not three cards: deposit becomes yield, and only
+   the yield becomes stock. */
+.eflow {
+  display: grid;
+  width: 100%;
+  align-items: start;
+  justify-self: stretch;
+  grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr) 64px minmax(0, 1fr);
+  gap: 0;
+  text-align: center;
+}
+.eflow-step {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 18px;
+}
+.eflow-node {
+  display: inline-flex;
+  width: 76px;
+  height: 76px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  border-radius: 26px;
+  background: var(--surface);
+  color: #9a9aa2;
+}
+.eflow-node[data-live] {
+  box-shadow: inset 0 0 0 1px rgba(70, 179, 168, 0.32);
+  color: var(--viz-teal);
+}
+.eflow-stocks {
+  display: inline-flex;
+  height: 76px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-left: 12px;
+}
+/* Overlapped so the cluster reads as one outcome, not three choices. */
+.eflow-stocks > * {
+  margin-left: -12px;
+  box-shadow: 0 0 0 4px var(--bg);
+}
+.eflow-step b {
+  font-size: 16px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+}
+.eflow-step i {
+  max-width: 260px;
+  color: #888890;
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.6;
+}
+.eflow-wire {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 76px;
+  color: rgba(70, 179, 168, 0.75);
+}
+.eflow-wire::before,
+.eflow-wire::after {
+  height: 1.5px;
+  flex: 1;
+  content: "";
+}
+.eflow-wire::before {
+  background: linear-gradient(90deg, transparent, rgba(70, 179, 168, 0.5));
+}
+.eflow-wire::after {
+  background: linear-gradient(90deg, rgba(70, 179, 168, 0.5), transparent);
+}
+
+@media (max-width: 860px) {
+  .eflow {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+  .eflow-wire {
+    height: 44px;
+    flex-direction: column;
+    transform: rotate(90deg);
+  }
+  .eflow-wire::before,
+  .eflow-wire::after {
+    width: 1.5px;
+    height: auto;
+  }
+  .eflow-wire::before {
+    background: linear-gradient(transparent, rgba(70, 179, 168, 0.5));
+  }
+  .eflow-wire::after {
+    background: linear-gradient(rgba(70, 179, 168, 0.5), transparent);
+  }
+}
+
+/* ---------------------------------------------------------------
+   Trade interface switch
+   Simple and Pro are two interfaces over the same order types, so
+   they read as a control above the cards rather than a fourth card
+   beside them. Decorative: the real control lives in /trade. */
+.tswitch-wrap {
+  display: grid;
+  width: 100%;
+  justify-items: center;
+  justify-self: stretch;
+  gap: 14px;
+}
+.tswitch {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+.tswitch span {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  color: #74747c;
+  font-size: 14px;
+  font-weight: 520;
+  letter-spacing: -0.01em;
+}
+.tswitch span[data-on] {
+  background: var(--surface-2);
+  color: #ededef;
+  box-shadow: inset 0 0 0 1px rgba(70, 179, 168, 0.28);
+}
+.tswitch b {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #232327;
+  color: #8b8b93;
+  font-family: var(--data);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.tswitch-note {
+  margin: 0 0 34px;
+  color: #74747c;
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------
+   Closing ring
+   Text on a circular path, turning slowly, with the mark at the
+   centre. */
+/* The circle is wide and the frame is a third as tall, so only the top arc is
+   in view; the mask dissolves it as it curves away. */
+.lring {
+  overflow: hidden;
+  width: min(1080px, 96%);
+  margin-top: 0;
+  aspect-ratio: 3 / 1;
+  mask-image: linear-gradient(to bottom, #000 26%, transparent 92%);
+}
+.lring-svg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  /* Rotating the whole element keeps the glyphs upright relative to the path,
+     which a per-glyph transform would not. */
+  animation: lring-turn 42s linear infinite;
+}
+.lring-text {
+  fill: #55555f;
+  font-family: var(--font-display);
+  /* Two repeats at this size run the circumference almost exactly. A single
+     repeat covers only half the circle, and textLength will not stretch a gap
+     that large, so it leaves a bare arc. */
+  font-size: 22.2px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+/* Anticlockwise: the text is left to right, so the arc should carry words
+   leftward past the reader, the way a marquee does. Turning the other way
+   pushes them back against the reading direction. */
+@keyframes lring-turn {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lring-svg {
+    animation: none;
+  }
+}
+
+/* The order types themselves stay plain: an icon, a name and a line. They are
+   the same three in either interface, so nothing here needs illustrating. */
+.tmodes {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+.tmode {
+  display: grid;
+  align-content: start;
+  padding: 28px 26px 30px;
+  border-radius: 22px;
+  background: var(--surface);
+  transition: background 0.25s var(--ease);
+}
+.tmode:hover {
+  background: #191a1d;
+}
+.tmode-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: #9a9aa2;
+}
+.tmode h3 {
+  margin: 20px 0 8px;
+  color: #e9e9eb;
+  font-size: 17px;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+}
+.tmode p {
+  margin: 0;
+  color: #888890;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+@media (max-width: 860px) {
+  .tmodes {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

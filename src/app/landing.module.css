@@ -1,6 +1,9 @@
 .page {
   min-height: 100svh;
-  overflow: hidden;
+  /* clip, not hidden: hidden makes this a scroll container, which silently
+     disables position:sticky for the pinned Coverage stage. clip does the
+     same visual job for the hero globe and the closing wordmark. */
+  overflow: clip;
   background: #0a0a0b;
   color: var(--text);
 }
@@ -74,7 +77,7 @@
 .eyebrow {
   display: inline-block;
   color: var(--accent-text);
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 650;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -149,8 +152,8 @@
   justify-content: center;
   gap: 17px;
   margin-top: 66px;
-  color: #777b84;
-  font-size: 11px;
+  color: #8a8e97;
+  font-size: 13px;
 }
 
 .issuerRow {
@@ -161,9 +164,11 @@
   gap: 12px 25px;
 }
 
+/* 9px was below what anyone should have to read; the row is the first proof
+   of the issuer claim, so it is set at a size a phone can carry. */
 .networkLabel {
-  color: #4f535b;
-  font-size: 9px;
+  color: #6a6e77;
+  font-size: 10.5px;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
@@ -175,20 +180,22 @@
 }
 
 .networkItem img {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: contain;
 }
 
 .solanaLogo {
-  height: 17px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
-  opacity: 0.6;
+  opacity: 0.72;
 }
 
 .solanaLogo img {
   width: auto;
-  height: 15px;
+  height: 18px;
 }
 
 .live {
@@ -208,23 +215,68 @@
   box-shadow: 0 0 0 4px rgba(88, 184, 137, 0.08);
 }
 
-.marketsSection,
-.tradeSection,
-.researchSection {
+.marketsSection {
   display: grid;
   grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
   gap: clamp(70px, 10vw, 180px);
   align-items: center;
   padding: 150px 4%;
-  border-top: 1px solid #232326;
+}
+
+/* Research runs full width: the bento's cropped mockups need the measure, and
+   a side-by-side copy column would squeeze them to illegibility. The cards
+   carry the section's structure, so it needs no band behind it. */
+.researchSection,
+.tradeSection,
+.earnSection {
+  display: grid;
+  justify-items: center;
+  gap: 60px;
+  padding: 150px 4%;
+  text-align: center;
+}
+
+.researchSection .sectionCopy,
+.tradeSection .sectionCopy,
+.earnSection .sectionCopy {
+  max-width: 620px;
+}
+
+.researchSection .sectionCopy > p,
+.tradeSection .sectionCopy > p,
+.earnSection .sectionCopy > p {
+  margin-inline: auto;
+}
+
+/* No pin: the section scrolls like any other and the deck drifts as it passes
+   through the viewport, so the page never appears to stall. */
+.companiesSection {
+  display: grid;
+  justify-items: center;
+  padding: 150px 4%;
+  text-align: center;
+}
+
+.companiesStage {
+  display: grid;
+  justify-items: center;
+  gap: 30px;
+}
+
+.companiesSection .sectionCopy {
+  max-width: 560px;
+}
+
+.companiesSection .sectionCopy > p {
+  max-width: 470px;
+  margin-inline: auto;
 }
 
 .sectionCopy {
   max-width: 470px;
 }
 
-.sectionCopy h2,
-.finalCta h2 {
+.sectionCopy h2 {
   margin-top: 20px;
   font-size: clamp(40px, 4.6vw, 67px);
   font-weight: 520;
@@ -444,8 +496,12 @@
   margin-left: 0;
 }
 
-.positive { color: #5eb78c !important; }
-.negative { color: #d96875 !important; }
+.positive {
+  color: #5eb78c !important;
+}
+.negative {
+  color: #d96875 !important;
+}
 
 .marketVolume {
   color: #9a9ea7;
@@ -455,67 +511,40 @@
 .marketRowSkeleton {
   height: 69px;
   border-top: 1px solid #212429;
-  background: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.035), transparent 80%);
+  background: linear-gradient(
+    90deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.035),
+    transparent 80%
+  );
   background-size: 200% 100%;
   animation: market-loading 1.8s ease-in-out infinite;
 }
 
 @keyframes trace-in {
-  from { stroke-dashoffset: 900; opacity: 0; }
-  to { stroke-dashoffset: 0; opacity: 1; }
+  from {
+    stroke-dashoffset: 900;
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
 }
 
 @keyframes market-loading {
-  0% { background-position: 120% 0; }
-  100% { background-position: -120% 0; }
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
 }
 
-.tradeSection {
-  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
-}
-
-.tradeModes {
-  border-top: 1px solid #2b2b2f;
-}
-
-.tradeMode {
-  min-height: 112px;
-  display: grid;
-  grid-template-columns: 42px 40px 1fr;
-  align-items: center;
-  gap: 22px;
-  border-bottom: 1px solid #2b2b2f;
-  color: #78787f;
-  transition: color 0.2s, padding 0.2s, background 0.2s;
-}
-
-.tradeMode:hover {
-  padding-left: 14px;
-  color: var(--accent-text);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.035), transparent 70%);
-}
-
-.modeNumber {
-  color: #565a63;
-  font-size: 9px;
-}
-
-.tradeMode h3 {
-  margin: 0 0 7px;
-  color: #e3e4e6;
-  font-size: 16px;
-  font-weight: 520;
-}
-
-.tradeMode p {
-  color: #777b84;
-  font-size: 11px;
-}
-
+/* The closing slogan is gone: the ring alone carries the foot of the page, so
+   it sits close under Earn rather than a section's worth of space away. */
 .finalCta {
-  min-height: 520px;
-  padding: 120px 24px;
-  border-top: 1px solid #232326;
+  padding: 0 24px 84px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -523,9 +552,6 @@
   text-align: center;
 }
 
-.finalCta h2 {
-  margin-bottom: 34px;
-}
 
 .footer {
   width: min(92%, 1380px);
@@ -550,10 +576,13 @@
   .heroCopy {
     max-width: 820px;
   }
-  .marketsSection,
-  .tradeSection {
+  .marketsSection {
     grid-template-columns: 1fr;
     gap: 70px;
+    padding: 110px 2%;
+  }
+  .tradeSection {
+    gap: 46px;
     padding: 110px 2%;
   }
   .sectionCopy {
@@ -612,13 +641,10 @@
   }
   .marketsSection,
   .tradeSection {
-    gap: 52px;
+    gap: 44px;
     padding: 88px 0;
   }
   .sectionCopy h2,
-  .finalCta h2 {
-    font-size: 42px;
-  }
   .marketBoard {
     min-height: 424px;
   }
@@ -646,29 +672,13 @@
     width: 27px;
     height: 27px;
   }
-  .tradeMode {
-    grid-template-columns: 28px 30px 1fr;
-    gap: 14px;
-  }
   .finalCta {
-    min-height: 430px;
-    padding: 90px 0;
+    padding: 0 0 56px;
   }
   .footer {
     width: calc(100% - 40px);
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .tradeMode,
-  .textLink,
-  .chartTrace,
-  .marketRowSkeleton {
-    animation: none;
-    transition: none;
-  }
-}
-
 
 /* Hero credibility strip: real catalog counts, no adjectives. */
 .heroStats {
@@ -698,58 +708,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.researchGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  background: #2b2b2f;
-  border: 1px solid #2b2b2f;
-}
-
-.researchItem {
-  padding: 32px 30px;
-  background: #0a0a0b;
-  color: #78787f;
-  transition: color 0.2s, background 0.2s;
-}
-
-.researchItem:hover {
-  color: var(--accent-text);
-  background: #111214;
-}
-
-.researchItem h3 {
-  margin: 18px 0 9px;
-  color: #e9e9eb;
-  font-size: 15px;
-  font-weight: 520;
-  letter-spacing: -0.02em;
-}
-
-.researchItem p {
-  margin: 0;
-  color: #888890;
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.earnSection {
-  display: flex;
-  justify-content: center;
-  padding: 150px 4%;
-  border-top: 1px solid #232326;
-  text-align: center;
-}
-
-.earnSection .sectionCopy {
-  max-width: 560px;
-}
-
-.earnSection .sectionCopy > p {
-  max-width: 460px;
-  margin-inline: auto;
-}
-
 @media (max-width: 900px) {
   .heroStats {
     gap: 28px;
@@ -757,9 +715,6 @@
   }
   .heroStats dd {
     font-size: 21px;
-  }
-  .researchGrid {
-    grid-template-columns: minmax(0, 1fr);
   }
   .earnSection {
     padding: 90px 4%;
@@ -771,6 +726,28 @@
 .hero {
   position: relative;
   overflow: hidden;
+}
+
+/* The globe grows past the viewport as it exits, and .hero clips it. Fading
+   the element's own edges does not help once it is wider than the screen -
+   the faded band goes off-screen and the opaque middle meets the clip. This
+   scrim is anchored to the frame instead, so the cut is always covered.
+   Painted after .hero's children, so it sits over the globe; .heroCopy has
+   z-index 1 and stays above it. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    #0a0a0b 0%,
+    rgba(10, 10, 11, 0.6) 4%,
+    transparent 11%,
+    transparent 89%,
+    rgba(10, 10, 11, 0.6) 96%,
+    #0a0a0b 100%
+  );
 }
 
 .heroCopy {
@@ -789,8 +766,8 @@
 }
 
 .sectionStats dt {
-  color: #6c6c72;
-  font-size: 10px;
+  color: #7a7a82;
+  font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -847,7 +824,6 @@
   z-index: -1;
 }
 
-
 /* No rule between the hero and the page: the globe's own fade is the
    transition. Declared last so it beats the shared section border above. */
 .marketsSection {
@@ -902,8 +878,7 @@
     padding: 72px 5%;
   }
 
-  .sectionCopy h2,
-  .finalCta h2 {
+  .sectionCopy h2 {
     font-size: clamp(30px, 9vw, 40px);
     margin-top: 14px;
   }
@@ -911,16 +886,6 @@
   .sectionCopy > p {
     margin-top: 16px;
     font-size: 13.5px;
-  }
-
-  .researchItem {
-    padding: 24px 22px;
-  }
-
-  .tradeMode {
-    min-height: 92px;
-    grid-template-columns: 32px 30px 1fr;
-    gap: 14px;
   }
 
   .header {

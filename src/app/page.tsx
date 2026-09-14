@@ -1,65 +1,64 @@
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ArrowRight,
-  CalendarDays,
-  Clock3,
-  Crosshair,
-  FileText,
-  Layers,
-  Newspaper,
-  Repeat2,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { HenarBrand } from "@/components/henar-brand";
 import { HeroGlobe } from "@/components/hero-globe";
 import { LandingUnify } from "@/components/landing-unify";
+import { LandingCompanies } from "@/components/landing-companies";
+import { LandingResearch } from "@/components/landing-research";
+import { LandingTrade } from "@/components/landing-trade";
+import { LandingEarn } from "@/components/landing-earn";
+import { LandingRing } from "@/components/landing-ring";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import {
   equityForTicker,
+  multiIssuerEquities,
   multiIssuerStats,
   universeStats,
 } from "@/lib/equities/registry";
 import styles from "./landing.module.css";
 
-const researchItems = [
-  {
-    icon: FileText,
-    name: "Financials",
-    description: "Income, balance sheet and cash flow from filed XBRL.",
-  },
-  {
-    icon: CalendarDays,
-    name: "Calendar",
-    description: "Earnings and macro events in month, week and day views.",
-  },
-  {
-    icon: Newspaper,
-    name: "News & filings",
-    description: "Coverage and every 10-K, 10-Q and 8-K as filed.",
-  },
-  {
-    icon: Layers,
-    name: "Onchain",
-    description: "Every issuer representation, compared side by side.",
-  },
+
+/* multiIssuerEquities sorts by ticker, so taking the first nine opens the deck
+   on whatever is alphabetically first. Lead with names a visitor recognises,
+   then top up from the registry; every entry is still a real company carrying
+   three verified issuer representations. */
+const FAN_PREFERRED = [
+  "NVDA",
+  "AAPL",
+  "TSLA",
+  "MSFT",
+  "AMZN",
+  "GOOGL",
+  "META",
+  "SPY",
+  "COIN",
 ];
 
-const tradeModes = [
-  {
-    icon: Repeat2,
-    name: "Swap",
-    description: "Route across available liquidity.",
-  },
-  {
-    icon: Crosshair,
-    name: "Limit + Yield",
-    description: "Put idle orders to work.",
-  },
-  {
-    icon: Clock3,
-    name: "DCA",
-    description: "Build positions on a schedule.",
-  },
-];
+const fanCompanies = (() => {
+  const pool = multiIssuerEquities(400);
+  const byTicker = new Map(pool.map((equity) => [equity.ticker, equity]));
+  const picked = FAN_PREFERRED.map((ticker) => byTicker.get(ticker)).filter(
+    (equity) => equity !== undefined,
+  );
+  for (const equity of pool) {
+    if (picked.length >= 9) break;
+    if (!picked.includes(equity)) picked.push(equity);
+  }
+  return picked.slice(0, 9).map((equity) => ({
+    ticker: equity.ticker,
+    name: equity.name,
+    logo: equity.logo,
+    issuers: new Set(equity.representations.map((item) => item.provider)).size,
+  }));
+})();
+
+const earnStocks = fanCompanies.slice(0, 3).map((company) => ({
+  ticker: company.ticker,
+  logo: company.logo,
+}));
+
+
 
 // A company that exists on all three issuers makes the point without
 // needing a caption.
@@ -87,10 +86,7 @@ export default function Home() {
         <section className={styles.hero}>
           <HeroGlobe />
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>Stocks · Onchain</span>
-            <h1>
-              One company. <span>Every representation.</span>
-            </h1>
+            <h1>Stocks, unified.</h1>
             <p>
               The market and intelligence layer for stocks on Solana.
             </p>
@@ -119,7 +115,7 @@ export default function Home() {
 
         {example ? (
         <section className={styles.marketsSection}>
-          <div className={styles.sectionCopy}>
+          <div className={styles.sectionCopy} data-reveal>
             <span className={styles.eyebrow}>Markets</span>
             <h2>One company.<br />Every market.</h2>
             <p>
@@ -156,71 +152,69 @@ export default function Home() {
         </section>
         ) : null}
 
+        {/* A tall track holding a pinned stage: the deck advances with scroll
+            position instead of a timer, so the reader drives it. */}
+        <section className={styles.companiesSection} data-fan-track>
+          <div className={styles.companiesStage}>
+            <div className={styles.sectionCopy} data-reveal>
+              <span className={styles.eyebrow}>Coverage</span>
+              <h2>Every company you know.</h2>
+              <p>
+                {universeStats.companies.toLocaleString()} companies and ETFs,
+                grouped by the business rather than the token.
+              </p>
+            </div>
+            <LandingCompanies companies={fanCompanies} />
+          </div>
+        </section>
+
         <section className={styles.researchSection}>
-          <div className={styles.sectionCopy}>
+          <div className={styles.sectionCopy} data-reveal>
             <span className={styles.eyebrow}>Research</span>
             <h2>Know what you own.</h2>
             <p>Filed fundamentals and events, straight from the source.</p>
-            <Link href="/markets/calendar" className={styles.textLink}>
-              Open calendar <ArrowRight size={14} />
-            </Link>
           </div>
-          <div className={styles.researchGrid}>
-            {researchItems.map(({ icon: Icon, name, description }) => (
-              <div className={styles.researchItem} key={name}>
-                <Icon size={18} strokeWidth={1.6} />
-                <h3>{name}</h3>
-                <p>{description}</p>
-              </div>
-            ))}
-          </div>
+          <LandingResearch
+            representations={
+              example
+                ? example.representations.map((item) => ({
+                    provider: item.provider,
+                    symbol: item.tokenSymbol,
+                  }))
+                : []
+            }
+          />
         </section>
 
         <section className={styles.tradeSection}>
-          <div className={styles.sectionCopy}>
+          <div className={styles.sectionCopy} data-reveal>
             <span className={styles.eyebrow}>Trade</span>
             <h2>More ways to trade.</h2>
-            <p>Choose the execution that fits the position.</p>
-            <Link href="/trade" className={styles.textLink}>
-              Open trade <ArrowRight size={14} />
-            </Link>
+            <p>
+              Simple execution for the common cases, with a Pro terminal one
+              toggle away.
+            </p>
           </div>
-          <div className={styles.tradeModes}>
-            {tradeModes.map(({ icon: Icon, name, description }, index) => (
-              <div className={styles.tradeMode} key={name}>
-                <span className={styles.modeNumber}>0{index + 1}</span>
-                <Icon size={19} strokeWidth={1.6} />
-                <div>
-                  <h3>{name}</h3>
-                  <p>{description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <LandingTrade />
         </section>
 
         <section className={styles.earnSection}>
-          <div className={styles.sectionCopy}>
+          <div className={styles.sectionCopy} data-reveal>
             <span className={styles.eyebrow}>Earn</span>
             <h2>Yield into stocks.</h2>
             <p>
               Deposit USDC and direct the yield into stock exposure. Stock pools
               across Solana are listed alongside it.
             </p>
-            <Link href="/earn" className={styles.textLink}>
-              Open earn <ArrowRight size={14} />
-            </Link>
           </div>
+          <LandingEarn stocks={earnStocks} />
         </section>
 
         <section className={styles.finalCta}>
-          <span className={styles.eyebrow}>Henar</span>
-          <h2>Stocks, unified.</h2>
-          <Link href="/markets" className={styles.primaryAction}>
-            Open Henar <ArrowRight size={15} />
-          </Link>
+          <LandingRing />
         </section>
       </main>
+      <ScrollReveal />
 
       <footer className={styles.footer}>
         <span>Henar · Solana stock markets</span>
