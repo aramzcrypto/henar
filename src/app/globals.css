@@ -11593,3 +11593,151 @@ body {
     margin-top: 30px;
   }
 }
+
+/* ---------------------------------------------------------------
+   Calendar: same vocabulary as Overview and All markets
+   Outlined boxes become fills, corners match the bento, and "today"
+   is marked in teal rather than in the colour that means a loss.
+   --------------------------------------------------------------- */
+.calendar-month-head,
+.calendar-month-grid,
+.calendar-week,
+.calendar-sidebar,
+.calendar-table-scroll,
+.calendar-note,
+.calendar-empty {
+  border: none !important;
+}
+.calendar-month-head {
+  border-radius: 16px 16px 0 0;
+  background: var(--surface);
+}
+.calendar-month-head span {
+  background: transparent;
+  border-left: none;
+  padding: 12px 12px 6px;
+}
+.calendar-month-grid {
+  border-radius: 0 0 16px 16px;
+  background: var(--surface);
+  padding: 0 6px 6px;
+  gap: 4px;
+}
+.calendar-day {
+  border: none;
+  border-radius: 10px;
+  background: #19191c;
+  min-height: 108px;
+  padding: 9px 10px;
+}
+.calendar-day:nth-child(7n + 1),
+.calendar-day:nth-child(-n + 7) {
+  border: none;
+}
+.calendar-day:hover {
+  background: #1f1f23;
+}
+.calendar-day-outside {
+  background: #151517;
+  opacity: 0.5;
+}
+
+/* Today reads as a marker, not a warning. */
+.calendar-day-today {
+  box-shadow: inset 0 0 0 1px rgba(70, 179, 168, 0.45);
+}
+.calendar-day-today .calendar-day-number {
+  background: var(--viz-teal);
+  color: #07100f;
+}
+.calendar-week-day.calendar-day-today > header b {
+  color: var(--viz-teal);
+}
+
+.calendar-week {
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 6px;
+  gap: 4px;
+}
+.calendar-week-day {
+  border: none;
+  border-radius: 10px;
+  background: #19191c;
+}
+.calendar-week-day > header {
+  border-bottom: 1px solid #232326;
+  background: transparent;
+}
+
+.calendar-sidebar {
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 18px;
+}
+.calendar-pill {
+  border: none;
+  background: #1e1e21;
+}
+.calendar-pill.active {
+  border: none;
+  background: #26262a;
+}
+
+.calendar-note {
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 11px 14px;
+}
+.calendar-table-scroll {
+  border-radius: 16px;
+  background: var(--surface);
+}
+.calendar-table th {
+  background: transparent;
+  border-bottom: 1px solid #232326;
+}
+.calendar-empty {
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+/* Chips lose their tinted left rule for a filled pill. */
+.calendar-chip {
+  border-left: none;
+  border-radius: 6px;
+  background: #232326;
+  padding: 3px 7px;
+}
+.calendar-chip-earnings {
+  box-shadow: inset 2px 0 0 var(--viz-blue);
+}
+.calendar-chip-macro {
+  box-shadow: inset 2px 0 0 var(--viz-amber);
+}
+.calendar-week-earnings,
+.calendar-week-macro {
+  border-left: none;
+  border-radius: 8px;
+  background: #232326;
+}
+.calendar-week-earnings {
+  box-shadow: inset 2px 0 0 var(--viz-blue);
+}
+.calendar-week-macro {
+  box-shadow: inset 2px 0 0 var(--viz-amber);
+}
+.legend-earnings {
+  background: var(--viz-blue);
+}
+.legend-macro {
+  background: var(--viz-amber);
+}
+
+/* Form controls follow the informational hue, not the loss colour. */
+.calendar-check input {
+  accent-color: var(--viz-teal);
+}
+.calendar-chip .equity-logo {
+  flex: none;
+}
