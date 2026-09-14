@@ -10795,3 +10795,215 @@ input:focus-visible,
     font-size: 44px;
   }
 }
+
+/* ---------------------------------------------------------------
+   Palette: colour as meaning, not decoration
+   Red retreats to the logo and falling prices. Each data family gets
+   its own hue so the surface reads as varied without being arbitrary,
+   and cards lose their outlines entirely — separation comes from fill
+   against a darker canvas.
+   --------------------------------------------------------------- */
+:root {
+  --viz-amber: #e0a355;
+  --viz-teal: #46b3a8;
+  --viz-violet: #8b7fd4;
+  --viz-green: #4fc98a;
+  --viz-rose: #e0607f;
+  --viz-blue: #5b86e0;
+
+  /* Canvas drops so unbordered fills separate on their own. */
+  --bg: #0a0708;
+  --surface: #161112;
+  --surface-2: #1c1618;
+}
+body {
+  background: var(--bg);
+}
+
+/* Cards stop being outlined boxes. */
+.bento-tile,
+.multi-issuer-grid a,
+.sector-blocks article,
+.overview-events ul,
+.stock-earn-scroll,
+.calendar-table-scroll,
+.fin-table-scroll,
+.fin-metrics,
+.fin-chart,
+.company-keystats,
+.research-summary,
+.pool-about,
+.pool-ticket,
+.calendar-sidebar,
+.news-list,
+.earn-banner,
+.price-movement-grid article,
+.market-list-head,
+.research-pending,
+.research-unavailable,
+.calendar-note,
+.stock-earn-note,
+.stock-earn-empty,
+.fin-empty,
+.calendar-empty,
+.overview-events-empty {
+  border: none !important;
+  background: var(--surface);
+}
+
+/* Internal dividers stay, so tables keep their rhythm. */
+.company-keystats > div,
+.research-summary > div,
+.fin-metrics > div,
+.markets-statbar > div {
+  border-color: #241c1e;
+}
+
+/* Bigger, softer geometry throughout. */
+.bento {
+  grid-auto-rows: 150px;
+  gap: 12px;
+}
+.bento-tile {
+  padding: 22px 24px;
+  border-radius: 20px;
+}
+.bento-volume .bento-figure {
+  font-size: 68px;
+}
+.bento-figure {
+  font-size: 50px;
+}
+.bento-universe strong {
+  font-size: 30px;
+}
+.multi-issuer-grid a,
+.sector-blocks article,
+.overview-events ul,
+.news-list,
+.pool-about,
+.pool-ticket,
+.company-keystats,
+.research-summary,
+.fin-metrics,
+.fin-chart,
+.stock-earn-scroll,
+.calendar-table-scroll,
+.fin-table-scroll,
+.price-movement-grid article {
+  border-radius: 16px;
+}
+.earn-banner {
+  border-radius: 22px;
+  padding: 32px 34px;
+}
+.multi-issuer-grid a {
+  padding: 16px 18px;
+}
+
+/* Each tile family takes a hue, so the grid reads as a set of
+   distinct instruments rather than one repeated card. */
+.bento-volume {
+  background:
+    radial-gradient(130% 100% at 100% 0%, rgba(224, 163, 85, 0.18), transparent 62%),
+    var(--surface);
+}
+.bento-bars i {
+  background: linear-gradient(180deg, var(--viz-amber), rgba(224, 163, 85, 0.22));
+}
+.bento-universe {
+  background:
+    radial-gradient(120% 110% at 0% 100%, rgba(139, 127, 212, 0.16), transparent 62%),
+    var(--surface);
+}
+.bento-universe strong {
+  color: #d8d2ef;
+}
+.bento-traded {
+  background:
+    radial-gradient(110% 100% at 100% 100%, rgba(70, 179, 168, 0.13), transparent 60%),
+    var(--surface);
+}
+.bento-traded li u {
+  color: var(--viz-teal);
+}
+.bento-breadth {
+  background: var(--surface);
+}
+.bento-breadth-bar {
+  background: rgba(224, 96, 127, 0.3);
+}
+.bento-breadth-bar i {
+  background: var(--viz-green);
+}
+.bento-mover .up,
+.bento-breadth dd.up {
+  color: var(--viz-green);
+}
+.bento-mover .down,
+.bento-breadth dd.down {
+  color: var(--viz-rose);
+}
+
+/* Section labels grow; headings carry more presence. */
+.multi-issuer > header strong,
+.overview-events > header strong,
+.sector-blocks > header strong,
+.earn-pool-list h2,
+.stock-earn-head h2 {
+  font-size: 19px;
+  letter-spacing: -0.03em;
+}
+.markets-heading h1 {
+  font-size: 38px;
+}
+
+/* Sector tiles take rotating hues so the row is not monochrome. */
+.sector-blocks > div > article:nth-child(6n + 1) .sector-accent,
+.sector-blocks > div > article:nth-child(6n + 1) > header button {
+  color: var(--viz-teal);
+}
+.sector-blocks > div > article:nth-child(6n + 2) > header button {
+  color: var(--viz-amber);
+}
+.sector-blocks > div > article:nth-child(6n + 3) > header button {
+  color: var(--viz-violet);
+}
+.sector-blocks > div > article:nth-child(6n + 4) > header button {
+  color: var(--viz-blue);
+}
+.sector-blocks > div > article:nth-child(6n + 5) > header button {
+  color: var(--viz-green);
+}
+.sector-blocks > div > article:nth-child(6n + 6) > header button {
+  color: var(--viz-rose);
+}
+
+/* Hover no longer recolours to red. */
+.market-row:hover .market-company strong,
+.bento-mover:hover b,
+.bento-traded li a:hover b,
+.sector-blocks li a:hover strong,
+.overview-events li a:hover strong,
+.multi-issuer-grid a:hover .multi-issuer-company strong,
+.calendar-company:hover,
+.stock-earn-company:hover {
+  color: var(--viz-teal);
+}
+.company-overview-news a:hover strong,
+.news-list a:hover strong {
+  color: var(--viz-teal);
+}
+
+/* The `li span` rule was also matching the logo element, stretching it. */
+.bento-traded li .equity-logo,
+.bento-mover .equity-logo {
+  flex: none;
+}
+.bento-traded li > a > span:not(.equity-logo) {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}

@@ -97,6 +97,18 @@ function apiKey() {
   return key;
 }
 
+/**
+ * Jupiter publishes the same reference data on a keyless, rate-limited host.
+ * Preferring the authenticated host when a key exists and falling back to the
+ * public one otherwise means a checkout with no credentials still renders real
+ * market data rather than a page of unavailable states.
+ */
+function marketDataHost() {
+  return process.env.JUPITER_API_KEY
+    ? { base: "https://api.jup.ag", headers: { "x-api-key": apiKey() } }
+    : { base: "https://lite-api.jup.ag", headers: {} as Record<string, string> };
+}
+
 function chunks<T>(values: T[], size: number) {
   return Array.from({ length: Math.ceil(values.length / size) }, (_, index) =>
     values.slice(index * size, (index + 1) * size),
@@ -112,15 +124,15 @@ export async function jupiterMetadata(representations: Representation[]) {
     chunks(unique, 50).map(async (batch) => {
       const observedAt = new Date().toISOString();
       const ids = batch.map((item) => item.mint).join(",");
-      const headers = { "x-api-key": apiKey() };
+      const { base, headers } = marketDataHost();
       const [priceResult, tokenResult] = await Promise.allSettled([
-        fetch(`https://api.jup.ag/price/v3?ids=${ids}`, {
+        fetch(`${base}/price/v3?ids=${ids}`, {
           headers,
           next: { revalidate: PRICE_TTL_SECONDS },
           signal: AbortSignal.timeout(8_000),
         }).then(async (response) => (response.ok ? response.json() : {})),
         fetch(
-          `https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(ids)}`,
+          `${base}/tokens/v2/search?query=${encodeURIComponent(ids)}`,
           {
             headers,
             next: { revalidate: 60 },
