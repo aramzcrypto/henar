@@ -77,29 +77,42 @@ async function recentEvents(): Promise<OverviewEvent[]> {
     }));
 }
 
-/** Companies issued by every provider, the clearest case for one market view. */
-function multiIssuerSummary(): MultiIssuerSummary {
+/**
+ * Companies issued by every provider, the clearest case for one market view.
+ * Priced in the same batched call the rest of the overview uses so the cards
+ * can lead with a figure rather than a label.
+ */
+async function multiIssuerSummary(): Promise<MultiIssuerSummary> {
+  const companies = multiIssuerEquities(MULTI_ISSUER_LIMIT);
+  const priced = await summarizeEquities(companies).catch(() => []);
+  const byTicker = new Map(priced.map((item) => [item.ticker, item]));
   return {
     twoIssuers: multiIssuerStats.twoIssuers,
     allIssuers: multiIssuerStats.allIssuers,
-    companies: multiIssuerEquities(MULTI_ISSUER_LIMIT).map((equity) => ({
-      ticker: equity.ticker,
-      name: equity.name,
-      logo: equity.logo,
-      tokens: equity.representations.map((representation) => ({
-        provider: representation.provider,
-        tokenSymbol: representation.tokenSymbol,
-      })),
-    })),
+    companies: companies.map((equity) => {
+      const live = byTicker.get(equity.ticker);
+      return {
+        ticker: equity.ticker,
+        name: equity.name,
+        logo: equity.logo,
+        price: live?.price ?? null,
+        change: live?.priceChange24hPct ?? null,
+        tokens: equity.representations.map((representation) => ({
+          provider: representation.provider,
+          tokenSymbol: representation.tokenSymbol,
+        })),
+      };
+    }),
   };
 }
 
 export default async function Page() {
   const all = listEquities();
-  const [items, overview, events] = await Promise.all([
+  const [items, overview, events, multiIssuer] = await Promise.all([
     summarizeEquities(all.slice(0, 50)),
     marketsOverview().catch(() => emptyOverview),
     recentEvents().catch(() => [] as OverviewEvent[]),
+    multiIssuerSummary(),
   ]);
   return (
     <div className="app page-markets">
@@ -112,7 +125,7 @@ export default async function Page() {
           sectors={sectorHighlights()}
           sectorOptions={sectorStats satisfies SectorOption[]}
           events={events}
-          multiIssuer={multiIssuerSummary()}
+          multiIssuer={multiIssuer}
         />
       </main>
     </div>

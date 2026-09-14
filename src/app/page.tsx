@@ -11,6 +11,7 @@ import {
   Repeat2,
 } from "lucide-react";
 import { HenarBrand } from "@/components/henar-brand";
+import { HeroGlobe } from "@/components/hero-globe";
 import { LandingMarketPreview } from "@/components/landing-market-preview";
 import { multiIssuerStats, universeStats } from "@/lib/equities/registry";
 import styles from "./landing.module.css";
@@ -76,6 +77,7 @@ export default function Home() {
 
       <main className={styles.main}>
         <section className={styles.hero}>
+          <HeroGlobe />
           <div className={styles.heroCopy}>
             <span className={styles.eyebrow}>Stocks · Onchain</span>
             <h1>

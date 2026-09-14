@@ -767,3 +767,15 @@
     padding: 90px 4%;
   }
 }
+
+/* The globe is positioned from globals.css; the hero only needs to clip
+   it and keep the copy above it. */
+.hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 1;
+}

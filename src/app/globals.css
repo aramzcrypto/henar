@@ -11039,3 +11039,154 @@ body {
 .staging-banner span {
   color: #5f5f66;
 }
+
+/* ---------------------------------------------------------------
+   Hero globe
+   A hemisphere anchored to the bottom edge: most of the sphere sits
+   below the fold so the horizon line reads as the section boundary.
+   --------------------------------------------------------------- */
+.hero-globe {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: min(1020px, 128vw);
+  aspect-ratio: 1;
+  /* Most of the sphere sits below the fold so the lit rim reads as a
+     horizon rather than a planet parked behind the headline. */
+  transform: translate(-50%, 72%);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Fade the sphere out toward its top edge instead of laying a scrim over
+   it: a mask has no box to give itself away. */
+.hero-globe {
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 14%,
+    #000 34%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 14%,
+    #000 34%
+  );
+}
+
+.hero-globe svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* The meridians sweep slowly, which reads as rotation without moving
+   any geometry the browser has to re-rasterise. */
+.globe-field {
+  transform-origin: 50% 50%;
+  animation: globe-spin 48s linear infinite;
+}
+
+@keyframes globe-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.globe-ring {
+  filter: drop-shadow(0 0 14px rgba(70, 179, 168, 0.45));
+}
+
+.globe-venue {
+  transform-origin: center;
+  animation: globe-pulse 4.5s ease-in-out infinite;
+}
+
+@keyframes globe-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+
+
+@media (prefers-reduced-motion: reduce) {
+  .globe-field,
+  .globe-venue {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero-globe {
+    width: 175vw;
+    transform: translate(-50%, 76%);
+  }
+}
+
+/* Multi-provider cards lead with the figure, then the issuer set. */
+.multi-issuer-grid {
+  gap: 12px;
+}
+.multi-issuer-grid a {
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 18px;
+}
+.multi-issuer-company strong {
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+.multi-issuer-company small {
+  font-size: 11.5px;
+}
+.multi-issuer-price {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+}
+.multi-issuer-price b {
+  font-family: var(--data);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.multi-issuer-price i {
+  font-family: var(--data);
+  font-size: 11.5px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+.multi-issuer-price i.up {
+  color: var(--viz-green);
+}
+.multi-issuer-price i.down {
+  color: var(--viz-rose);
+}
+.multi-issuer-price i.flat {
+  color: #78787f;
+}
+.multi-issuer-tokens {
+  margin-top: auto;
+}
+.multi-issuer-tokens em {
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: none;
+  background: #1e1e21;
+  font-size: 11px;
+}
+.multi-issuer-grid a:hover .multi-issuer-tokens em {
+  background: #26262a;
+}

@@ -231,6 +231,8 @@ export type MultiIssuerCompany = {
   ticker: string;
   name: string;
   logo: string | null;
+  price: number | null;
+  change: number | null;
   tokens: { provider: string; tokenSymbol: string }[];
 };
 
@@ -336,12 +338,28 @@ function MultiIssuerBlock({
               <EquityLogo
                 logo={company.logo}
                 ticker={company.ticker}
-                size={26}
+                size={30}
               />
               <span className="listing-text">
                 <strong>{company.ticker}</strong>
                 <small>{company.name}</small>
               </span>
+            </span>
+            <span className="multi-issuer-price">
+              <b>{company.price === null ? "—" : money(company.price)}</b>
+              <i
+                className={
+                  company.change === null
+                    ? "flat"
+                    : company.change >= 0
+                      ? "up"
+                      : "down"
+                }
+              >
+                {company.change === null
+                  ? `${company.tokens.length} representations`
+                  : `${company.change >= 0 ? "+" : ""}${company.change.toFixed(2)}% · ${company.tokens.length} issuers`}
+              </i>
             </span>
             <span className="multi-issuer-tokens">
               {company.tokens.map((token) => (
