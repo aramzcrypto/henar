@@ -4,8 +4,8 @@ Henar's work split into what existed before the hackathon and what was built
 during it. The boundary is **14 September 2026, 18:00 +03**. Everything before
 it is in git history; everything after is this hackathon's work.
 
-Timestamps come from commit dates in this repository. Where work is not yet
-committed it is described as in progress and marked as such.
+Timestamps come from commit dates in this repository, so every claim below can
+be checked against `git log`.
 
 ---
 
@@ -73,8 +73,9 @@ Work in this period is on the landing page: the surface a judge or a new user
 meets first. It was the weakest part of the product going in — a well-made
 brand page for a product whose entire claim is data.
 
-**Not yet committed.** 9 files changed (+1,210 / −379) and 6 new components
-totalling 492 lines.
+Committed in `88d605b`, `d18fbdf` and `a142e17`: 9 files changed
+(+1,210 / −379) and 6 new components totalling 492 lines. Deployed to
+production at https://henarapp.vercel.app on 14 September at 23:05.
 
 ### Quote aggregation
 
