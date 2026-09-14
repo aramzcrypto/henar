@@ -1,9 +1,7 @@
 .page {
   min-height: 100svh;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 82% 14%, rgba(237, 12, 60, 0.075), transparent 25%),
-    #0a0a0b;
+  background: #0a0a0b;
   color: var(--text);
 }
 
@@ -494,7 +492,7 @@
 .tradeMode:hover {
   padding-left: 14px;
   color: var(--accent-text);
-  background: linear-gradient(90deg, rgba(237, 12, 60, 0.05), transparent 70%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.035), transparent 70%);
 }
 
 .modeNumber {
@@ -778,4 +776,51 @@
 .heroCopy {
   position: relative;
   z-index: 1;
+}
+
+/* Catalog figures now support the Markets claim rather than floating on
+   top of the globe. */
+.sectionStats {
+  display: flex;
+  gap: 34px;
+  margin: 28px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid #26262a;
+}
+
+.sectionStats dt {
+  color: #6c6c72;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.sectionStats dd {
+  margin: 9px 0 0;
+  font-family: var(--data);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The issuer row sits directly under the subtitle, above the globe. */
+.networks {
+  margin-top: 40px;
+}
+
+.issuerRow {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+
+@media (max-width: 720px) {
+  .sectionStats {
+    gap: 22px;
+  }
+  .sectionStats dd {
+    font-size: 20px;
+  }
 }

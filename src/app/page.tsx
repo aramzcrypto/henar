@@ -86,28 +86,6 @@ export default function Home() {
             <p>
               The market and intelligence layer for stocks on Solana.
             </p>
-            <div className={styles.heroActions}>
-              <Link href="/markets" className={styles.primaryAction}>
-                Explore markets <ArrowRight size={15} />
-              </Link>
-              <Link href="/trade" className={styles.secondaryAction}>
-                Trade stocks
-              </Link>
-            </div>
-            <dl className={styles.heroStats}>
-              <div>
-                <dt>Companies</dt>
-                <dd>{universeStats.companies.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>Representations</dt>
-                <dd>{universeStats.representations.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>On all three issuers</dt>
-                <dd>{multiIssuerStats.allIssuers.toLocaleString()}</dd>
-              </div>
-            </dl>
             <div className={styles.networks} aria-label="Markets unified by Henar">
               <div className={styles.issuerRow}>
                 <span className={styles.networkLabel}>Across</span>
@@ -123,10 +101,10 @@ export default function Home() {
                   <Image src="/logos/issuers/ondo.svg" alt="" width={17} height={17} />
                   Ondo
                 </span>
+                <span className={styles.solanaLogo} aria-label="Solana">
+                  <Image src="/logos/issuers/solana.svg" alt="" width={73} height={15} />
+                </span>
               </div>
-              <span className={styles.solanaLogo} aria-label="Solana">
-                <Image src="/logos/issuers/solana.svg" alt="" width={81} height={17} />
-              </span>
             </div>
           </div>
         </section>
@@ -139,6 +117,20 @@ export default function Home() {
               Compare price, liquidity and execution across every verified
               issuer representation.
             </p>
+            <dl className={styles.sectionStats}>
+              <div>
+                <dt>Companies</dt>
+                <dd>{universeStats.companies.toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>Representations</dt>
+                <dd>{universeStats.representations.toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>On all three</dt>
+                <dd>{multiIssuerStats.allIssuers.toLocaleString()}</dd>
+              </div>
+            </dl>
             <Link href="/markets" className={styles.textLink}>
               View markets <ArrowRight size={14} />
             </Link>
