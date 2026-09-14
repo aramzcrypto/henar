@@ -515,6 +515,7 @@ function MarketsOverviewView({
         overview={overview}
         universe={universe}
         multiIssuerCount={multiIssuer.allIssuers}
+        events={events}
         onOpenAll={openAll}
       />
 

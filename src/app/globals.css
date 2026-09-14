@@ -11049,11 +11049,11 @@ body {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: min(660px, 82vw);
+  width: min(1180px, 150vw);
   aspect-ratio: 1;
   /* Most of the sphere sits below the fold so the lit rim reads as a
      horizon rather than a planet parked behind the headline. */
-  transform: translate(-50%, 24%);
+  transform: translate(-50%, 30%);
   opacity: 1;
   pointer-events: none;
   z-index: 0;
@@ -11079,11 +11079,16 @@ body {
      the issuer row, and the sphere dissolves before the hero's edge. */
   /* The sphere is sized to the space left below the copy, so it reads as a
      whole object whose lower edge dissolves rather than a cropped band. */
+  /* Large enough to read as a planet; only the lower edge is dissolved,
+     since the copy is now protected by its own scrim rather than by
+     hiding the top of the sphere. */
   --globe-fade: linear-gradient(
     180deg,
-    #000 0%,
-    #000 52%,
-    rgba(0, 0, 0, 0.55) 66%,
+    transparent 0%,
+    rgba(0, 0, 0, 0.5) 6%,
+    #000 16%,
+    #000 56%,
+    rgba(0, 0, 0, 0.5) 68%,
     transparent 80%
   );
   -webkit-mask-image: var(--globe-fade);
@@ -11112,8 +11117,8 @@ body {
 
 @media (max-width: 720px) {
   .hero-globe {
-    width: 108vw;
-    transform: translate(-50%, 28%);
+    width: 185vw;
+    transform: translate(-50%, 34%);
   }
 }
 
@@ -11314,5 +11319,71 @@ body {
   }
   .bento-split dl {
     gap: 16px;
+  }
+}
+
+/* Latest events tile: fills the gap beside Breadth and surfaces the
+   calendar, which is otherwise one tab deep. */
+.bento-events {
+  grid-column: span 3;
+  grid-row: span 2;
+}
+.bento-events ol {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bento-events li a {
+  display: grid;
+  grid-template-columns: 20px auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #202023;
+  color: var(--text);
+  text-decoration: none;
+}
+.bento-events li:first-child a {
+  border-top: none;
+}
+.bento-events b {
+  font-family: var(--data);
+  font-size: 12px;
+  font-weight: 600;
+}
+.bento-events u {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  color: #85858c;
+  font-size: 10.5px;
+  text-decoration: none;
+}
+.bento-events i {
+  justify-self: end;
+  font-family: var(--data);
+  font-size: 10.5px;
+  font-style: normal;
+  color: #6c6c72;
+}
+.bento-events li a:hover b {
+  color: var(--viz-teal);
+}
+.bento-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 12px;
+  color: #85858c;
+  font-size: 11.5px;
+  text-decoration: none;
+}
+.bento-more:hover {
+  color: var(--text);
+}
+
+@media (max-width: 1100px) {
+  .bento-events {
+    grid-column: span 6;
   }
 }

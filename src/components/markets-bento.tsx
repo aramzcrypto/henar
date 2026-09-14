@@ -61,15 +61,37 @@ function Mover({ equity }: { equity: EquitySummary }) {
   );
 }
 
+export type BentoEvent = {
+  id: string;
+  ticker: string | null;
+  companyName: string | null;
+  companyLogo: string | null;
+  label: string;
+  date: string;
+};
+
+function eventDay(date: string) {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  return Number.isNaN(parsed.getTime())
+    ? date
+    : parsed.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      });
+}
+
 export function MarketsBento({
   overview,
   universe,
   multiIssuerCount,
+  events,
   onOpenAll,
 }: {
   overview: MarketsOverview;
   universe: Universe;
   multiIssuerCount: number;
+  events: BentoEvent[];
   onOpenAll: () => void;
 }) {
   const live = useMemo(
@@ -244,6 +266,39 @@ export function MarketsBento({
           </ol>
         ) : (
           <p className="bento-empty">Unavailable</p>
+        )}
+      </section>
+
+      {/* The grid had a hole here; recent filings fill it and lead to the
+          calendar, which is otherwise buried behind a tab. */}
+      <section className="bento-tile bento-events">
+        <header>
+          <span>Latest events</span>
+        </header>
+        {events.length ? (
+          <>
+            <ol>
+              {events.slice(0, 4).map((event) => (
+                <li key={event.id}>
+                  <Link href={`/markets/${event.ticker}`}>
+                    <EquityLogo
+                      logo={event.companyLogo}
+                      ticker={event.ticker ?? "?"}
+                      size={20}
+                    />
+                    <b>{event.ticker}</b>
+                    <u>{event.label}</u>
+                    <i>{eventDay(event.date)}</i>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+            <Link className="bento-more" href="/markets/calendar">
+              Calendar <ArrowUpRight size={13} />
+            </Link>
+          </>
+        ) : (
+          <p className="bento-empty">No filings in range</p>
         )}
       </section>
 

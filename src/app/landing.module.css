@@ -824,3 +824,25 @@
     font-size: 20px;
   }
 }
+
+/* The globe is large enough to sit behind the copy, so the copy carries
+   its own scrim: a soft pool of canvas that keeps the headline, subtitle
+   and issuer logos legible without putting a visible box on the page. */
+.heroCopy::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 140%;
+  height: 165%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    58% 50% at 50% 46%,
+    #0a0a0b 0%,
+    rgba(10, 10, 11, 0.92) 42%,
+    rgba(10, 10, 11, 0.6) 66%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
