@@ -1,11 +1,4 @@
-import {
-  quoteJupiter,
-  quoteLifinity,
-  quoteMeteora,
-  quoteOpenBook,
-  quoteOrca,
-  quotePhoenix,
-} from "./adapters/jupiter";
+import { quoteJupiter } from "./adapters/jupiter";
 import { quoteRaydium } from "./adapters/raydium";
 import { quoteOpenOcean } from "./adapters/openocean";
 import { quoteTitan } from "./adapters/titan";
@@ -26,11 +19,6 @@ const adapters: Array<
   ["jupiter", quoteJupiter],
   ["raydium", quoteRaydium],
   ["openocean", quoteOpenOcean],
-  ["orca", quoteOrca],
-  ["meteora", quoteMeteora],
-  ["phoenix", quotePhoenix],
-  ["openbook", quoteOpenBook],
-  ["lifinity", quoteLifinity],
   ["titan", quoteTitan],
 ];
 
@@ -40,6 +28,15 @@ const indicativeSources = new Set<ExecutionSource>([
   "openocean",
   "titan",
 ]);
+const INDICATIVE_CACHE_MS = 5_000;
+const indicativeCache = new Map<
+  string,
+  { expiresAt: number; promise: Promise<AggregatedExecutionQuote> }
+>();
+
+function indicativeKey(request: ExecutionQuoteRequest) {
+  return `${request.inputMint}:${request.outputMint}:${request.amount}:${request.slippageBps}`;
+}
 
 async function aggregateWithAdapters(
   request: ExecutionQuoteRequest,
@@ -112,9 +109,25 @@ export async function aggregateExecutionQuotes(
 export async function aggregateIndicativeQuotes(
   request: ExecutionQuoteRequest,
 ): Promise<AggregatedExecutionQuote> {
-  return aggregateWithAdapters(
+  const key = indicativeKey(request);
+  const now = Date.now();
+  const cached = indicativeCache.get(key);
+  if (cached && cached.expiresAt > now) return cached.promise;
+  const promise = aggregateWithAdapters(
     request,
     adapters.filter(([source]) => indicativeSources.has(source)),
     1_500,
   );
+  indicativeCache.set(key, { expiresAt: now + INDICATIVE_CACHE_MS, promise });
+  if (indicativeCache.size > 2_000)
+    for (const [cacheKey, entry] of indicativeCache)
+      if (entry.expiresAt <= now) indicativeCache.delete(cacheKey);
+  try {
+    const result = await promise;
+    if (!result.selected) indicativeCache.delete(key);
+    return result;
+  } catch (error) {
+    indicativeCache.delete(key);
+    throw error;
+  }
 }

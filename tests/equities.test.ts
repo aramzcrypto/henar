@@ -203,7 +203,7 @@ test("quote aggregation compares representations and includes the fixed protocol
           stats24h: { buyVolume: 10, sellVolume: 20 },
         })),
       );
-    if (url.includes("/swap/v1/quote")) {
+    if (url.includes("/swap/v2/order")) {
       const request = new URL(url);
       const outputMint = request.searchParams.get("outputMint")!;
       const better = outputMint === equity.representations[0].mint;

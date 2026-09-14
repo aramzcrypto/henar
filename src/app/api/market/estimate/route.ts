@@ -6,7 +6,7 @@ import { connection, verifiedMint } from "@/lib/solana";
 import { USDC } from "@/lib/registry";
 import { parseUnits, formatUnits } from "@/lib/amount";
 import { safeError } from "@/lib/protocol/errors";
-import { aggregateExecutionQuotes } from "@/lib/execution/aggregate";
+import { aggregateIndicativeQuotes } from "@/lib/execution/aggregate";
 import { consumePublicQuoteBudget } from "@/lib/equities/rate-limit";
 import { MARKET_FEE_BPS, grossForNet, tradeFee } from "@/lib/trade-fee";
 import { feeOnInput } from "@/lib/payment-tokens";
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     async function quote(amount: bigint) {
       if (amount <= 0n || amount > 18446744073709551615n)
         throw new Error("Amount is outside the supported range.");
-      const aggregate = await aggregateExecutionQuotes({
+      const aggregate = await aggregateIndicativeQuotes({
         inputMint: p.inputMint,
         outputMint: p.outputMint,
         amount,

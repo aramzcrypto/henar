@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aggregateExecutionQuotes } from "../src/lib/execution/aggregate";
+import {
+  aggregateExecutionQuotes,
+  aggregateIndicativeQuotes,
+} from "../src/lib/execution/aggregate";
 import {
   aggregatePoolLiquidity,
   orcaLiquidity,
@@ -74,6 +77,7 @@ test("execution aggregation ranks exact integer output and preserves quote prove
   process.env.JUPITER_API_KEY = "test";
   delete process.env.TITAN_WS_URL;
   delete process.env.TITAN_API_KEY;
+  let jupiterRequests = 0;
   global.fetch = (async (input: string | URL | Request) => {
     const url = new URL(String(input));
     if (url.hostname === "transaction-v1.raydium.io")
@@ -94,6 +98,7 @@ test("execution aggregation ranks exact integer output and preserves quote prove
         },
       });
     if (url.hostname === "api.jup.ag") {
+      jupiterRequests += 1;
       const restricted = url.pathname.includes("/v1/");
       return Response.json({
         inputMint: USDC,
@@ -126,7 +131,11 @@ test("execution aggregation ranks exact integer output and preserves quote prove
     assert.equal(quote.selected?.source, "raydium");
     assert.equal(quote.selected?.quoteProvider, "raydium");
     assert.equal(quote.selected?.outputAmount, "110");
-    assert.equal(quote.candidates.length, 7);
+    assert.equal(
+      jupiterRequests,
+      1,
+      "independent quote aggregation must reserve Jupiter capacity",
+    );
     assert.deepEqual(
       quote.sources.find((source) => source.source === "titan"),
       {
@@ -139,6 +148,76 @@ test("execution aggregation ranks exact integer output and preserves quote prove
     global.fetch = previousFetch;
     if (previousKey) process.env.JUPITER_API_KEY = previousKey;
     else delete process.env.JUPITER_API_KEY;
+    if (previousTitanUrl) process.env.TITAN_WS_URL = previousTitanUrl;
+    else delete process.env.TITAN_WS_URL;
+    if (previousTitanKey) process.env.TITAN_API_KEY = previousTitanKey;
+    else delete process.env.TITAN_API_KEY;
+  }
+});
+
+test("concurrent identical indicative quotes share provider work", async () => {
+  const previousFetch = global.fetch;
+  const previousKey = process.env.JUPITER_API_KEY;
+  const previousOpenOcean = process.env.OPENOCEAN_API_URL;
+  const previousTitanUrl = process.env.TITAN_WS_URL;
+  const previousTitanKey = process.env.TITAN_API_KEY;
+  process.env.JUPITER_API_KEY = "test";
+  delete process.env.OPENOCEAN_API_URL;
+  delete process.env.TITAN_WS_URL;
+  delete process.env.TITAN_API_KEY;
+  let jupiterRequests = 0;
+  let raydiumRequests = 0;
+  global.fetch = (async (input: string | URL | Request) => {
+    const url = new URL(String(input));
+    if (url.hostname === "api.jup.ag") {
+      jupiterRequests += 1;
+      return Response.json({
+        inputMint: USDC,
+        outputMint: SOL,
+        inAmount: "2000000",
+        outAmount: "200",
+        otherAmountThreshold: "199",
+        slippageBps: 50,
+        routePlan: [],
+      });
+    }
+    if (url.hostname === "transaction-v1.raydium.io") {
+      raydiumRequests += 1;
+      return Response.json({
+        id: "shared-raydium-quote",
+        success: true,
+        data: {
+          inputMint: USDC,
+          inputAmount: "2000000",
+          outputMint: SOL,
+          outputAmount: "201",
+          otherAmountThreshold: "200",
+          slippageBps: 50,
+          routePlan: [],
+        },
+      });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  }) as typeof fetch;
+  try {
+    const request = {
+      inputMint: USDC,
+      outputMint: SOL,
+      amount: 2_000_000n,
+      slippageBps: 50,
+    };
+    await Promise.all([
+      aggregateIndicativeQuotes(request),
+      aggregateIndicativeQuotes(request),
+    ]);
+    assert.equal(jupiterRequests, 1);
+    assert.equal(raydiumRequests, 1);
+  } finally {
+    global.fetch = previousFetch;
+    if (previousKey) process.env.JUPITER_API_KEY = previousKey;
+    else delete process.env.JUPITER_API_KEY;
+    if (previousOpenOcean) process.env.OPENOCEAN_API_URL = previousOpenOcean;
+    else delete process.env.OPENOCEAN_API_URL;
     if (previousTitanUrl) process.env.TITAN_WS_URL = previousTitanUrl;
     else delete process.env.TITAN_WS_URL;
     if (previousTitanKey) process.env.TITAN_API_KEY = previousTitanKey;
