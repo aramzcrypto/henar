@@ -71,6 +71,7 @@ export async function gdeltNewsForEquity(
   });
   try {
     const response = await fetch(`${GDELT_CONTEXT_API}?${params}`, {
+      signal: AbortSignal.timeout(8_000),
       headers: { "User-Agent": "Henar/1.0 (https://henarapp.vercel.app)" },
       cache: "no-store",
     });

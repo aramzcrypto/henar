@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { listEquities } from "@/lib/equities/registry";
 import { summarizeEquities } from "@/lib/equities/jupiter";
+import { SECTORS } from "@/lib/equities/sectors";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ const querySchema = z.object({
   q: z.string().max(80).default(""),
   assetType: z.enum(["stock", "etf"]).optional(),
   provider: z.enum(["xstocks", "backpack", "ondo"]).optional(),
-  sector: z.string().max(80).optional(),
+  sector: z.enum(SECTORS).optional(),
   sort: z
     .enum([
       "ticker",
@@ -32,7 +33,8 @@ export async function GET(request: Request) {
       query: input.q,
       assetType: input.assetType,
       provider: input.provider,
-    }).filter((equity) => !input.sector || equity.sector === input.sector);
+      sector: input.sector,
+    });
     const items = await summarizeEquities(
       filtered.slice(input.offset, input.offset + input.limit),
     );

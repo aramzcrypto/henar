@@ -71,8 +71,14 @@ export function normalizeKamino(
     ];
   });
 }
-export async function kaminoOpportunities(equity: Equity) {
-  const snapshot = await cached("xstocks", async () => {
+/** Shared reserve snapshot so per-company and catalog-wide views hit one fetch. */
+export async function kaminoReserveSnapshot() {
+  const snapshot = await rawSnapshot();
+  return { reserves: schema.parse(snapshot.metrics), asOf: snapshot.asOf };
+}
+
+async function rawSnapshot() {
+  return cached("xstocks", async () => {
     const response = await fetch(KAMINO_METRICS_URL, {
       cache: "no-store",
       signal: AbortSignal.timeout(6_000),
@@ -83,5 +89,9 @@ export async function kaminoOpportunities(equity: Equity) {
     schema.parse(raw);
     return { metrics: raw, asOf: new Date().toISOString() };
   });
+}
+
+export async function kaminoOpportunities(equity: Equity) {
+  const snapshot = await rawSnapshot();
   return normalizeKamino(equity, snapshot.metrics, snapshot.asOf);
 }

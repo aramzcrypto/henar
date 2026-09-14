@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, use, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -12,6 +12,7 @@ import {
   Route,
 } from "lucide-react";
 import { routeLabel } from "@/lib/equities/route-label";
+import { CompanyFinancials } from "./company-financials";
 import { EquityLogo } from "./equity-logo";
 import type {
   DividendRecord,
@@ -19,13 +20,13 @@ import type {
   Equity,
   EquityResearch,
   FilingRecord,
-  FinancialPeriod,
   NewsItem,
   ResearchSection,
 } from "@/lib/equities/types";
 
 const tabs = [
   "Overview",
+  "Chart",
   "Financials",
   "Earnings",
   "News",
@@ -59,6 +60,19 @@ function value(
     notation: kind === "compact" ? "compact" : "standard",
     maximumFractionDigits: kind === "compact" ? 2 : number < 10 ? 3 : 2,
   }).format(number);
+}
+
+// Research streams in after the shell paints. Each tab resolves the shared
+// promise behind its own Suspense boundary so one slow section never blocks
+// the rest of the page.
+function ResearchPending({ label }: { label: string }) {
+  return (
+    <div className="research-pending" aria-busy="true">
+      <span>LOADING</span>
+      <h2>{label}</h2>
+      <p>Retrieving verified filings data.</p>
+    </div>
+  );
 }
 
 function Unavailable({ label }: { label: string }) {
@@ -153,41 +167,54 @@ function ResearchTable({
   );
 }
 
-function Financials({
-  section,
-}: {
-  section: ResearchSection<FinancialPeriod[]>;
-}) {
-  if (section.status !== "available" || !section.data)
-    return <Unavailable label="Financials" />;
-  return (
-    <ResearchTable
-      headings={["Period", "Fiscal year", "Revenue", "Net income"]}
-      rows={section.data.map((item) => [
-        date(item.periodEnd),
-        item.fiscalYear,
-        compactNumber(item.revenue, ` ${item.currency}`),
-        compactNumber(item.netIncome, ` ${item.currency}`),
-      ])}
-      sourceUrl={section.sourceUrl}
-    />
-  );
-}
-
 function Earnings({ section }: { section: ResearchSection<EarningsEvent[]> }) {
-  if (section.status !== "available" || !section.data)
+  if (section.status !== "available" || !section.data || !section.data.length)
     return <Unavailable label="Earnings" />;
+  const history = [...section.data].sort((a, b) =>
+    b.reportedAt.localeCompare(a.reportedAt),
+  );
+  const latest = history[0];
   return (
-    <ResearchTable
-      headings={["Reported", "Fiscal period", "Actual EPS", "Estimate"]}
-      rows={section.data.map((item) => [
-        date(item.reportedAt),
-        item.fiscalPeriod,
-        item.actualEps === null ? "—" : `$${item.actualEps}`,
-        item.estimatedEps === null ? "—" : `$${item.estimatedEps}`,
-      ])}
-      sourceUrl={section.sourceUrl}
-    />
+    <div className="research-section">
+      <div className="research-summary">
+        <div>
+          <dt>Last reported</dt>
+          <dd>{date(latest.reportedAt)}</dd>
+        </div>
+        <div>
+          <dt>Fiscal period</dt>
+          <dd>{latest.fiscalPeriod || "—"}</dd>
+        </div>
+        <div>
+          <dt>Actual EPS</dt>
+          <dd>{latest.actualEps === null ? "—" : `$${latest.actualEps}`}</dd>
+        </div>
+        <div>
+          <dt>Estimated EPS</dt>
+          <dd>
+            {latest.estimatedEps === null ? "—" : `$${latest.estimatedEps}`}
+          </dd>
+        </div>
+        <div>
+          <dt>Next earnings</dt>
+          <dd className="value-muted">Provider required</dd>
+        </div>
+      </div>
+      <p className="research-caption">
+        SEC EDGAR publishes results once filed. Forward dates, revenue estimates
+        and surprise need a calendar provider.
+      </p>
+      <ResearchTable
+        headings={["Reported", "Fiscal period", "Actual EPS", "Estimate"]}
+        rows={history.map((item) => [
+          date(item.reportedAt),
+          item.fiscalPeriod,
+          item.actualEps === null ? "—" : `$${item.actualEps}`,
+          item.estimatedEps === null ? "—" : `$${item.estimatedEps}`,
+        ])}
+        sourceUrl={section.sourceUrl}
+      />
+    </div>
   );
 }
 
@@ -196,33 +223,98 @@ function Dividends({
 }: {
   section: ResearchSection<DividendRecord[]>;
 }) {
-  if (section.status !== "available" || !section.data)
+  if (section.status !== "available" || !section.data || !section.data.length)
     return <Unavailable label="Dividends" />;
+  const history = [...section.data].sort((a, b) =>
+    b.periodEnd.localeCompare(a.periodEnd),
+  );
+  const latest = history[0];
+  // Cadence is inferred only from the gap between two filed periods.
+  const gapMonths =
+    history.length > 1
+      ? Math.round(
+          (Date.parse(`${history[0].periodEnd}T00:00:00Z`) -
+            Date.parse(`${history[1].periodEnd}T00:00:00Z`)) /
+            (30.44 * 86_400_000),
+        )
+      : null;
+  const frequency =
+    gapMonths === null
+      ? "—"
+      : gapMonths <= 1
+        ? "Monthly"
+        : gapMonths <= 4
+          ? "Quarterly"
+          : gapMonths <= 7
+            ? "Semi-annual"
+            : "Annual";
   return (
-    <ResearchTable
-      headings={["Reported period", "Filed", "Dividend per share"]}
-      rows={section.data.map((item) => [
-        date(item.periodEnd),
-        date(item.filedAt),
-        `${item.amount} ${item.currency}`,
-      ])}
-      sourceUrl={section.sourceUrl}
-    />
+    <div className="research-section">
+      <div className="research-summary">
+        <div>
+          <dt>Last dividend</dt>
+          <dd>
+            {latest.amount} {latest.currency}
+          </dd>
+        </div>
+        <div>
+          <dt>Period end</dt>
+          <dd>{date(latest.periodEnd)}</dd>
+        </div>
+        <div>
+          <dt>Frequency</dt>
+          <dd>{frequency}</dd>
+        </div>
+        <div>
+          <dt>Dividend yield</dt>
+          <dd className="value-muted">Unavailable</dd>
+        </div>
+        <div>
+          <dt>Ex-date</dt>
+          <dd className="value-muted">Unavailable</dd>
+        </div>
+      </div>
+      <p className="research-caption">
+        Amounts are declared dividends per share from filed XBRL data. Yield and
+        ex-dates require a market data provider.
+      </p>
+      <ResearchTable
+        headings={["Reported period", "Filed", "Dividend per share"]}
+        rows={history.map((item) => [
+          date(item.periodEnd),
+          date(item.filedAt),
+          `${item.amount} ${item.currency}`,
+        ])}
+        sourceUrl={section.sourceUrl}
+      />
+    </div>
   );
 }
+
+const FORM_DESCRIPTIONS: Record<string, string> = {
+  "10-K": "Annual report",
+  "10-Q": "Quarterly report",
+  "8-K": "Current report — material event",
+  "20-F": "Annual report (foreign issuer)",
+  "40-F": "Annual report (Canadian issuer)",
+  "6-K": "Interim report (foreign issuer)",
+};
 
 function Filings({ section }: { section: ResearchSection<FilingRecord[]> }) {
   if (section.status !== "available" || !section.data)
     return <Unavailable label="Filings" />;
   return (
     <ResearchTable
-      headings={["Filed", "Form", "Accession", "Document"]}
+      headings={["Form", "Filed", "Description", "Document"]}
       rows={section.data.map((item) => [
+        <span key={`${item.accessionNumber}-form`} className="filing-form">
+          {item.form}
+        </span>,
         date(item.filedAt),
-        item.form,
-        item.accessionNumber,
+        FORM_DESCRIPTIONS[item.form.replace("/A", "")] ??
+          "Periodic or current report",
         <a key={item.url} href={item.url} target="_blank" rel="noreferrer">
-          Open filing <ExternalLink size={12} />
+          Open <ExternalLink size={12} />
         </a>,
       ])}
       sourceUrl={section.sourceUrl}
@@ -230,23 +322,37 @@ function Filings({ section }: { section: ResearchSection<FilingRecord[]> }) {
   );
 }
 
+function relativeTime(iso: string) {
+  const then = Date.parse(iso);
+  if (Number.isNaN(then)) return date(iso.slice(0, 10));
+  const hours = Math.round((Date.now() - then) / 3_600_000);
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return date(iso.slice(0, 10));
+}
+
 function News({ section }: { section: ResearchSection<NewsItem[]> }) {
-  if (section.status !== "available" || !section.data)
+  if (section.status !== "available" || !section.data || !section.data.length)
     return <Unavailable label="News" />;
   return (
     <div className="research-section">
-      <SourceLine sourceUrl={section.sourceUrl} />
-      <div className="research-news">
+      <ol className="news-list">
         {section.data.map((item) => (
-          <a key={item.id} href={item.url} target="_blank" rel="noreferrer">
-            <span>
-              {item.publisher} · {date(item.publishedAt.slice(0, 10))}
-            </span>
-            <strong>{item.headline}</strong>
-            <ExternalLink size={14} />
-          </a>
+          <li key={item.id}>
+            <a href={item.url} target="_blank" rel="noreferrer">
+              <strong>{item.headline}</strong>
+              <span>
+                <em>{item.publisher}</em>
+                <i>{relativeTime(item.publishedAt)}</i>
+              </span>
+            </a>
+            <ExternalLink size={13} />
+          </li>
         ))}
-      </div>
+      </ol>
+      <SourceLine sourceUrl={section.sourceUrl} />
     </div>
   );
 }
@@ -667,12 +773,394 @@ function Mint({ value }: { value: string }) {
   );
 }
 
+type ResearchPromise = Promise<EquityResearch>;
+
+function FinancialsTab({ research }: { research: ResearchPromise }) {
+  return <CompanyFinancials section={use(research).financials} />;
+}
+function EarningsTab({ research }: { research: ResearchPromise }) {
+  return <Earnings section={use(research).earnings} />;
+}
+function DividendsTab({ research }: { research: ResearchPromise }) {
+  return <Dividends section={use(research).dividends} />;
+}
+function FilingsTab({ research }: { research: ResearchPromise }) {
+  return <Filings section={use(research).filings} />;
+}
+function NewsTab({ research }: { research: ResearchPromise }) {
+  return <News section={use(research).news} />;
+}
+
+function ProfileFacts({
+  equity,
+  research,
+}: {
+  equity: Equity;
+  research: ResearchPromise;
+}) {
+  const section = use(research).profile;
+  const profile = section.status === "available" ? section.data : null;
+  return (
+    <>
+      <dl>
+        <div>
+          <dt>Ticker</dt>
+          <dd>{equity.ticker}</dd>
+        </div>
+        <div>
+          <dt>CIK</dt>
+          <dd>{profile?.cik ?? equity.cik ?? "Unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Sector</dt>
+          <dd>{equity.sector ?? "Unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Industry</dt>
+          <dd>{profile?.industry ?? equity.industry ?? "Unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Headquarters</dt>
+          <dd>{profile?.headquarters ?? "Unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Employees</dt>
+          <dd>{profile?.employees?.toLocaleString("en-US") ?? "Unavailable"}</dd>
+        </div>
+      </dl>
+      <SourceLine sourceUrl={section.sourceUrl} />
+    </>
+  );
+}
+
+function ProfileFactsPending({ equity }: { equity: Equity }) {
+  return (
+    <dl aria-busy="true">
+      <div>
+        <dt>Ticker</dt>
+        <dd>{equity.ticker}</dd>
+      </div>
+      {["CIK", "Sector", "Industry", "Headquarters", "Employees"].map(
+        (label) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd className="value-pending">—</dd>
+          </div>
+        ),
+      )}
+    </dl>
+  );
+}
+
+const PRICE_WINDOWS: [keyof Comparison["representations"][number]["priceWindows"], string][] = [
+  ["m5", "5m"],
+  ["h1", "1h"],
+  ["h6", "6h"],
+  ["h24", "24h"],
+];
+
+/**
+ * Jupiter publishes price change over fixed windows but no OHLC series, so this
+ * compares verified movement per representation rather than drawing a price
+ * history it cannot source.
+ */
+function PriceMovement({
+  equity,
+  data,
+  error,
+}: {
+  equity: Equity;
+  data: Comparison | null;
+  error: string;
+}) {
+  if (!data)
+    return error ? (
+      <Unavailable label="Price movement" />
+    ) : (
+      <div className="research-pending" aria-busy="true">
+        <span>LOADING</span>
+        <h2>Price movement</h2>
+        <p>Reading live representation prices.</p>
+      </div>
+    );
+
+  const rows = equity.representations.map((representation) => ({
+    representation,
+    live: data.representations.find(
+      (row) => row.representationId === representation.id,
+    ),
+  }));
+  const peak = Math.max(
+    ...rows.flatMap(({ live }) =>
+      PRICE_WINDOWS.map(([key]) => Math.abs(live?.priceWindows?.[key] ?? 0)),
+    ),
+    0.5,
+  );
+
+  const anyMovement = rows.some(({ live }) =>
+    PRICE_WINDOWS.some(([key]) => live?.priceWindows?.[key] != null),
+  );
+
+  return (
+    <div className="price-movement">
+      <div className="price-movement-head">
+        <div>
+          <h2>Price movement</h2>
+          <p>
+            Verified change per issuer representation across the windows Jupiter
+            publishes.
+          </p>
+        </div>
+      </div>
+
+      {!anyMovement ? (
+        <p className="fin-empty">
+          No verified price movement is available for this company right now.
+        </p>
+      ) : (
+        <div className="price-movement-grid">
+          {rows.map(({ representation, live }) => (
+            <article key={representation.id}>
+              <header>
+                <span>
+                  <Image
+                    src={providerLogos[representation.provider]}
+                    alt=""
+                    width={18}
+                    height={18}
+                  />
+                  {labels[representation.provider]}
+                </span>
+                <b>{representation.tokenSymbol}</b>
+              </header>
+              <div className="price-movement-price">
+                <strong>{value(live?.referencePrice ?? null)}</strong>
+                <small>{value(live?.liquidityUsd ?? null, "compact")} liquidity</small>
+              </div>
+              <div className="price-movement-bars">
+                {PRICE_WINDOWS.map(([key, label]) => {
+                  const change = live?.priceWindows?.[key] ?? null;
+                  const height =
+                    change === null
+                      ? 0
+                      : Math.max((Math.abs(change) / peak) * 100, 3);
+                  return (
+                    <div key={key}>
+                      <span className="price-movement-track">
+                        <i
+                          className={
+                            change === null
+                              ? "flat"
+                              : change >= 0
+                                ? "up"
+                                : "down"
+                          }
+                          style={{ height: `${height}%` }}
+                        />
+                      </span>
+                      <b
+                        className={
+                          change === null
+                            ? "value-muted"
+                            : change >= 0
+                              ? "positive"
+                              : "negative"
+                        }
+                      >
+                        {change === null
+                          ? "—"
+                          : `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`}
+                      </b>
+                      <small>{label}</small>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <p className="calendar-note">
+        <span>
+          <strong>Full price history requires a market data provider.</strong>{" "}
+          Henar does not store or interpolate an OHLC series, so no candlestick
+          chart is shown until a verified feed is connected.
+        </span>
+      </p>
+    </div>
+  );
+}
+
+type Headline = {
+  price: number | null;
+  change: number | null;
+  volume: number | null;
+  liquidity: number | null;
+  marketCap: number | null;
+  holders: number | null;
+};
+
+function statNumber(raw: string | null | undefined) {
+  if (raw === null || raw === undefined) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * Blends live onchain figures with the latest filed fundamentals. Anything the
+ * filings do not contain — a P/E without a share count, a 52-week range without
+ * price history — stays explicitly unavailable.
+ */
+function KeyStats({
+  research,
+  headline,
+}: {
+  research: ResearchPromise;
+  headline: Headline;
+}) {
+  const resolved = use(research);
+  const periods = resolved.financials.data ?? [];
+  const latest = periods[0];
+  const eps = statNumber(latest?.eps);
+  const revenue = statNumber(latest?.revenue);
+  const netIncome = statNumber(latest?.netIncome);
+  const priceEarnings =
+    headline.price !== null && eps !== null && eps > 0
+      ? (headline.price / eps).toFixed(1)
+      : null;
+
+  const stats: [string, string][] = [
+    ["Price", value(headline.price)],
+    ["Market cap", value(headline.marketCap, "compact")],
+    [
+      "24h change",
+      headline.change === null ? "—" : `${headline.change.toFixed(2)}%`,
+    ],
+    ["24h volume", value(headline.volume, "compact")],
+    ["Liquidity", value(headline.liquidity, "compact")],
+    ["EPS (diluted)", eps === null ? "—" : `$${eps.toFixed(2)}`],
+    ["P/E", priceEarnings ?? "—"],
+    ["Revenue", value(revenue, "compact")],
+    ["Net income", value(netIncome, "compact")],
+    [
+      "Onchain holders",
+      headline.holders === null
+        ? "—"
+        : headline.holders.toLocaleString("en-US"),
+    ],
+  ];
+
+  return (
+    <dl className="company-keystats">
+      {stats.map(([label, text]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd className={text === "—" ? "value-muted" : undefined}>{text}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function KeyStatsPending() {
+  return (
+    <dl className="company-keystats" aria-busy="true">
+      {[
+        "Price",
+        "Market cap",
+        "24h change",
+        "24h volume",
+        "Liquidity",
+        "EPS (diluted)",
+        "P/E",
+        "Revenue",
+        "Net income",
+        "Onchain holders",
+      ].map((label) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd className="value-pending">—</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function OverviewEvent({
+  research,
+  onOpen,
+}: {
+  research: ResearchPromise;
+  onOpen: () => void;
+}) {
+  const section = use(research).earnings;
+  const latest = [...(section.data ?? [])].sort((a, b) =>
+    b.reportedAt.localeCompare(a.reportedAt),
+  )[0];
+  if (!latest) return null;
+  return (
+    <article>
+      <span>LATEST EVENT</span>
+      <h2>Earnings</h2>
+      <dl className="company-onchain-facts">
+        <div>
+          <dt>Reported</dt>
+          <dd>{date(latest.reportedAt)}</dd>
+        </div>
+        <div>
+          <dt>Fiscal period</dt>
+          <dd>{latest.fiscalPeriod || "—"}</dd>
+        </div>
+        <div>
+          <dt>Actual EPS</dt>
+          <dd>{latest.actualEps === null ? "—" : `$${latest.actualEps}`}</dd>
+        </div>
+        <div>
+          <dt>Next earnings</dt>
+          <dd className="value-muted">Provider required</dd>
+        </div>
+      </dl>
+      <button onClick={onOpen}>Earnings history</button>
+    </article>
+  );
+}
+
+function OverviewNews({
+  research,
+  onOpen,
+}: {
+  research: ResearchPromise;
+  onOpen: () => void;
+}) {
+  const section = use(research).news;
+  const items = (section.data ?? []).slice(0, 4);
+  if (!items.length) return null;
+  return (
+    <article>
+      <span>LATEST NEWS</span>
+      <h2>Coverage</h2>
+      <div className="company-overview-news">
+        {items.map((item) => (
+          <a key={item.id} href={item.url} target="_blank" rel="noreferrer">
+            <strong>{item.headline}</strong>
+            <small>
+              {item.publisher} · {date(item.publishedAt.slice(0, 10))}
+            </small>
+          </a>
+        ))}
+      </div>
+      <button onClick={onOpen}>All news</button>
+    </article>
+  );
+}
+
 export function MarketDetail({
   equity,
   research,
 }: {
   equity: Equity;
-  research: EquityResearch;
+  research: ResearchPromise;
 }) {
   const [tab, setTab] = useState<Tab>("Onchain");
   const [snapshot, setComparison] = useState<Comparison | null>(null);
@@ -771,8 +1259,32 @@ export function MarketDetail({
         : equity.representations[0],
     [comparison, equity.representations],
   );
-  const profile =
-    research.profile.status === "available" ? research.profile.data : null;
+  /**
+   * Header figures come from the deepest representation for price and change,
+   * and are summed across representations for volume and liquidity. A missing
+   * value stays null rather than becoming zero.
+   */
+  const headline = useMemo(() => {
+    const rows = comparison?.representations ?? [];
+    const sum = (pick: (row: (typeof rows)[number]) => number | null) => {
+      const values = rows
+        .map(pick)
+        .filter((value): value is number => value !== null);
+      return values.length ? values.reduce((total, v) => total + v, 0) : null;
+    };
+    const deepest = [...rows].sort(
+      (a, b) => (b.liquidityUsd ?? -1) - (a.liquidityUsd ?? -1),
+    )[0];
+    return {
+      price: deepest?.referencePrice ?? null,
+      change: deepest?.priceChange24hPct ?? null,
+      volume: sum((row) => row.volume24hUsd),
+      liquidity: sum((row) => row.liquidityUsd),
+      // Market cap is a property of the company, not a sum across mints.
+      marketCap: deepest?.marketCapUsd ?? null,
+      holders: sum((row) => row.holderCount),
+    };
+  }, [comparison]);
   return (
     <section className="market-detail">
       <Link href="/markets" className="back-markets">
@@ -780,47 +1292,102 @@ export function MarketDetail({
       </Link>
       <header className="company-header">
         <div className="company-identity">
-          <EquityLogo logo={equity.logo} ticker={equity.ticker} size={56} />
+          <EquityLogo
+            logo={equity.logo}
+            ticker={equity.ticker}
+            size={56}
+            priority
+          />
           <div>
-            <span>{equity.assetType.toUpperCase()}</span>
+            <span>
+              {equity.assetType.toUpperCase()}
+              {equity.sector ? ` · ${equity.sector}` : ""}
+            </span>
             <h1>{equity.name}</h1>
-            <p>
-              {equity.ticker} · {equity.representations.length} verified
-              representation{equity.representations.length === 1 ? "" : "s"}
-            </p>
+            <p>{equity.ticker}</p>
+          </div>
+          <div className="company-quote">
+            <strong>{value(headline.price)}</strong>
+            <small
+              className={
+                headline.change === null
+                  ? "value-muted"
+                  : headline.change >= 0
+                    ? "positive"
+                    : "negative"
+              }
+            >
+              {headline.change === null
+                ? "Change unavailable"
+                : `${headline.change >= 0 ? "+" : ""}${headline.change.toFixed(2)}%`}
+            </small>
           </div>
         </div>
-        <Link
-          className="company-trade"
-          href={`/trade?stock=${recommended?.mint ?? ""}`}
-        >
-          Trade {equity.ticker}
-          <ArrowUpRight size={16} />
-        </Link>
+        <div className="company-header-side">
+          <dl className="company-header-stats">
+            <div>
+              <dt>Market cap</dt>
+              <dd>{value(headline.marketCap, "compact")}</dd>
+            </div>
+            <div>
+              <dt>24h volume</dt>
+              <dd>{value(headline.volume, "compact")}</dd>
+            </div>
+            <div>
+              <dt>Liquidity</dt>
+              <dd>{value(headline.liquidity, "compact")}</dd>
+            </div>
+            <div>
+              <dt>Next earnings</dt>
+              <dd className="value-muted">—</dd>
+            </div>
+          </dl>
+          <Link
+            className="company-trade"
+            href={`/trade?stock=${recommended?.mint ?? ""}`}
+          >
+            Trade {equity.ticker}
+            <ArrowUpRight size={16} />
+          </Link>
+        </div>
       </header>
-      <div className="company-market-hours">
-        <span>
-          US regular session{" "}
-          <strong>{comparison?.traditionalMarket.status ?? "unknown"}</strong>
-        </span>
-        <span>
-          Solana{" "}
+      <div className="company-context">
+        <div>
+          <span>Traditional market</span>
           <strong>
-            {comparison?.representations.some(
-              (r) => r.marketStatus === "active",
-            )
-              ? "Route quoted"
+            {comparison?.traditionalMarket.status
+              ? `US regular session · ${comparison.traditionalMarket.status}`
+              : "US regular session · unknown"}
+          </strong>
+        </div>
+        <div>
+          <span>Solana</span>
+          <strong>
+            {equity.representations.length} representation
+            {equity.representations.length === 1 ? "" : "s"} ·{" "}
+            {comparison?.representations.some((r) => r.marketStatus === "active")
+              ? "Trading"
               : "No active route verified"}
           </strong>
-        </span>
-        {comparison?.traditionalMarket.status === "closed" &&
-          comparison.representations.some(
-            (r) => r.marketStatus === "active",
-          ) && (
-            <span>
-              Onchain quotes available while the regular session is closed
-            </span>
-          )}
+        </div>
+        <div className="company-context-issuers">
+          <span>Issuers</span>
+          <div>
+            {[
+              ...new Set(equity.representations.map((item) => item.provider)),
+            ].map((provider) => (
+              <em key={provider}>
+                <Image
+                  src={providerLogos[provider]}
+                  alt=""
+                  width={14}
+                  height={14}
+                />
+                {labels[provider]}
+              </em>
+            ))}
+          </div>
+        </div>
       </div>
       <nav className="company-tabs" aria-label={`${equity.ticker} sections`}>
         {tabs.map((item) => (
@@ -843,73 +1410,101 @@ export function MarketDetail({
         />
       ) : tab === "Overview" ? (
         <div className="company-overview">
-          <article>
-            <span>COMPANY</span>
-            <h2>{equity.name}</h2>
-            <dl>
-              <div>
-                <dt>Ticker</dt>
-                <dd>{equity.ticker}</dd>
+          <Suspense fallback={<KeyStatsPending />}>
+            <KeyStats research={research} headline={headline} />
+          </Suspense>
+          <div className="company-overview-grid">
+            <article>
+              <span>COMPANY</span>
+              <h2>{equity.name}</h2>
+              <Suspense fallback={<ProfileFactsPending equity={equity} />}>
+                <ProfileFacts equity={equity} research={research} />
+              </Suspense>
+            </article>
+            <article>
+              <span>ONCHAIN SNAPSHOT</span>
+              <h2>
+                {equity.representations.length} verified representation
+                {equity.representations.length === 1 ? "" : "s"}
+              </h2>
+              <div className="company-issuer-list">
+                {equity.representations.map((representation) => (
+                  <div key={representation.id}>
+                    <span>
+                      <Image
+                        src={providerLogos[representation.provider]}
+                        alt=""
+                        width={24}
+                        height={24}
+                      />
+                      <strong>{labels[representation.provider]}</strong>
+                    </span>
+                    <b>{representation.tokenSymbol}</b>
+                  </div>
+                ))}
               </div>
-              <div>
-                <dt>CIK</dt>
-                <dd>{profile?.cik ?? equity.cik ?? "Unavailable"}</dd>
-              </div>
-              <div>
-                <dt>Sector</dt>
-                <dd>{equity.sector ?? "Unavailable"}</dd>
-              </div>
-              <div>
-                <dt>Industry</dt>
-                <dd>{profile?.industry ?? equity.industry ?? "Unavailable"}</dd>
-              </div>
-              <div>
-                <dt>Headquarters</dt>
-                <dd>{profile?.headquarters ?? "Unavailable"}</dd>
-              </div>
-              <div>
-                <dt>Employees</dt>
-                <dd>
-                  {profile?.employees?.toLocaleString("en-US") ?? "Unavailable"}
-                </dd>
-              </div>
-            </dl>
-            <SourceLine sourceUrl={research.profile.sourceUrl} />
-          </article>
-          <article>
-            <span>ISSUERS & TICKERS</span>
-            <h2>{equity.representations.length} verified options</h2>
-            <div className="company-issuer-list">
-              {equity.representations.map((representation) => (
-                <div key={representation.id}>
-                  <span>
-                    <Image
-                      src={providerLogos[representation.provider]}
-                      alt=""
-                      width={24}
-                      height={24}
-                    />
-                    <strong>{labels[representation.provider]}</strong>
-                  </span>
-                  <b>{representation.tokenSymbol}</b>
+              <dl className="company-onchain-facts">
+                <div>
+                  <dt>Trading</dt>
+                  <dd>
+                    {comparison?.representations.some(
+                      (r) => r.marketStatus === "active",
+                    )
+                      ? "Route quoted"
+                      : "No active route verified"}
+                  </dd>
                 </div>
-              ))}
-            </div>
-            <button onClick={() => setTab("Onchain")}>
-              <Route size={15} /> Compare issuers
-            </button>
-          </article>
+                <div>
+                  <dt>Best route</dt>
+                  <dd>
+                    {comparison?.bestRoute
+                      ? routeLabel(comparison.bestRoute)
+                      : "Unavailable"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Earn opportunities</dt>
+                  <dd>
+                    {comparison?.earn
+                      ? comparison.earn.opportunities.length
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+              <button onClick={() => setTab("Onchain")}>
+                <Route size={15} /> Compare issuers
+              </button>
+            </article>
+            <Suspense fallback={null}>
+              <OverviewEvent research={research} onOpen={() => setTab("Earnings")} />
+            </Suspense>
+            <Suspense fallback={null}>
+              <OverviewNews research={research} onOpen={() => setTab("News")} />
+            </Suspense>
+          </div>
         </div>
+      ) : tab === "Chart" ? (
+        <PriceMovement equity={equity} data={comparison} error={error} />
       ) : tab === "Financials" ? (
-        <Financials section={research.financials} />
+        <Suspense fallback={<ResearchPending label="Financials" />}>
+          <FinancialsTab research={research} />
+        </Suspense>
       ) : tab === "Earnings" ? (
-        <Earnings section={research.earnings} />
+        <Suspense fallback={<ResearchPending label="Earnings" />}>
+          <EarningsTab research={research} />
+        </Suspense>
       ) : tab === "Dividends" ? (
-        <Dividends section={research.dividends} />
+        <Suspense fallback={<ResearchPending label="Dividends" />}>
+          <DividendsTab research={research} />
+        </Suspense>
       ) : tab === "Filings" ? (
-        <Filings section={research.filings} />
+        <Suspense fallback={<ResearchPending label="Filings" />}>
+          <FilingsTab research={research} />
+        </Suspense>
       ) : tab === "News" ? (
-        <News section={research.news} />
+        <Suspense fallback={<ResearchPending label="News" />}>
+          <NewsTab research={research} />
+        </Suspense>
       ) : null}
     </section>
   );

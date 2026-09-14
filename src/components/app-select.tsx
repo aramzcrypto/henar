@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, X } from "lucide-react";
 
-type Option = { value: string; label: string };
+type Option = { value: string; label: string; disabled?: boolean };
 /** Shared select: an app-styled menu on desktop and a bottom sheet on phones. */
 export function AppSelect({
   value,
@@ -194,8 +194,11 @@ export function AppSelect({
                     key={option.value}
                     role="option"
                     aria-selected={value === option.value}
+                    aria-disabled={option.disabled || undefined}
+                    className={option.disabled ? "app-select-option-disabled" : undefined}
                     tabIndex={-1}
                     onClick={() => {
+                      if (option.disabled) return;
                       onChange(option.value);
                       close();
                     }}

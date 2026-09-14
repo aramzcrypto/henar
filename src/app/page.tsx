@@ -2,13 +2,41 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight,
+  CalendarDays,
   Clock3,
   Crosshair,
+  FileText,
+  Layers,
+  Newspaper,
   Repeat2,
 } from "lucide-react";
 import { HenarBrand } from "@/components/henar-brand";
 import { LandingMarketPreview } from "@/components/landing-market-preview";
+import { multiIssuerStats, universeStats } from "@/lib/equities/registry";
 import styles from "./landing.module.css";
+
+const researchItems = [
+  {
+    icon: FileText,
+    name: "Financials",
+    description: "Income, balance sheet and cash flow from filed XBRL.",
+  },
+  {
+    icon: CalendarDays,
+    name: "Calendar",
+    description: "Earnings and macro events in month, week and day views.",
+  },
+  {
+    icon: Newspaper,
+    name: "News & filings",
+    description: "Coverage and every 10-K, 10-Q and 8-K as filed.",
+  },
+  {
+    icon: Layers,
+    name: "Onchain",
+    description: "Every issuer representation, compared side by side.",
+  },
+];
 
 const tradeModes = [
   {
@@ -38,6 +66,7 @@ export default function Home() {
         <nav className={styles.headerLinks} aria-label="Main navigation">
           <Link href="/markets">Markets</Link>
           <Link href="/trade">Trade</Link>
+          <Link href="/earn">Earn</Link>
           <Link href="/docs">Docs</Link>
         </nav>
         <Link href="/markets" className={styles.launchLink}>
@@ -50,11 +79,10 @@ export default function Home() {
           <div className={styles.heroCopy}>
             <span className={styles.eyebrow}>Stocks · Onchain</span>
             <h1>
-              One layer for every <span>stock market on Solana.</span>
+              One company. <span>Every representation.</span>
             </h1>
             <p>
-              Henar unifies markets, execution and yield across verified
-              tokenized stocks.
+              The market and intelligence layer for stocks on Solana.
             </p>
             <div className={styles.heroActions}>
               <Link href="/markets" className={styles.primaryAction}>
@@ -64,6 +92,20 @@ export default function Home() {
                 Trade stocks
               </Link>
             </div>
+            <dl className={styles.heroStats}>
+              <div>
+                <dt>Companies</dt>
+                <dd>{universeStats.companies.toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>Representations</dt>
+                <dd>{universeStats.representations.toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>On all three issuers</dt>
+                <dd>{multiIssuerStats.allIssuers.toLocaleString()}</dd>
+              </div>
+            </dl>
             <div className={styles.networks} aria-label="Markets unified by Henar">
               <div className={styles.issuerRow}>
                 <span className={styles.networkLabel}>Across</span>
@@ -92,14 +134,34 @@ export default function Home() {
             <span className={styles.eyebrow}>Markets</span>
             <h2>One company.<br />Every market.</h2>
             <p>
-              Compare live prices, liquidity and volume across verified Solana
-              representations.
+              Compare price, liquidity and execution across every verified
+              issuer representation.
             </p>
             <Link href="/markets" className={styles.textLink}>
               View markets <ArrowRight size={14} />
             </Link>
           </div>
           <LandingMarketPreview />
+        </section>
+
+        <section className={styles.researchSection}>
+          <div className={styles.sectionCopy}>
+            <span className={styles.eyebrow}>Research</span>
+            <h2>Know what you own.</h2>
+            <p>Filed fundamentals and events, straight from the source.</p>
+            <Link href="/markets/calendar" className={styles.textLink}>
+              Open calendar <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className={styles.researchGrid}>
+            {researchItems.map(({ icon: Icon, name, description }) => (
+              <div className={styles.researchItem} key={name}>
+                <Icon size={18} strokeWidth={1.6} />
+                <h3>{name}</h3>
+                <p>{description}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className={styles.tradeSection}>
@@ -122,6 +184,20 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className={styles.earnSection}>
+          <div className={styles.sectionCopy}>
+            <span className={styles.eyebrow}>Earn</span>
+            <h2>Yield into stocks.</h2>
+            <p>
+              Deposit USDC and direct the yield into stock exposure. Stock pools
+              across Solana are listed alongside it.
+            </p>
+            <Link href="/earn" className={styles.textLink}>
+              Open earn <ArrowRight size={14} />
+            </Link>
           </div>
         </section>
 

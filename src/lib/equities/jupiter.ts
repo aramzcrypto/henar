@@ -43,20 +43,37 @@ const priceEntrySchema = z.object({
     .optional(),
 });
 
+const statWindowSchema = z
+  .object({
+    priceChange: z.number().finite().optional(),
+    buyVolume: z.number().nonnegative().optional(),
+    sellVolume: z.number().nonnegative().optional(),
+  })
+  .optional();
+
 const tokenEntrySchema = z.object({
   id: z.string(),
   decimals: z.number().int().min(0).max(18).optional(),
   tokenProgram: z.string().optional(),
   liquidity: z.number().nonnegative().optional(),
-  stats24h: z
-    .object({
-      buyVolume: z.number().nonnegative().optional(),
-      sellVolume: z.number().nonnegative().optional(),
-    })
-    .optional(),
+  mcap: z.number().nonnegative().optional(),
+  fdv: z.number().nonnegative().optional(),
+  holderCount: z.number().nonnegative().optional(),
+  circSupply: z.number().nonnegative().optional(),
+  stats5m: statWindowSchema,
+  stats1h: statWindowSchema,
+  stats6h: statWindowSchema,
+  stats24h: statWindowSchema,
 });
 
 const topTradedSchema = z.array(z.object({ id: z.string() }));
+
+export type PriceWindows = {
+  m5: number | null;
+  h1: number | null;
+  h6: number | null;
+  h24: number | null;
+};
 
 type JupiterMetadata = {
   price: number | null;
@@ -67,6 +84,10 @@ type JupiterMetadata = {
   decimals: number | null;
   tokenProgram: string | null;
   multiplier: number;
+  marketCapUsd: number | null;
+  fullyDilutedUsd: number | null;
+  holderCount: number | null;
+  priceWindows: PriceWindows;
   asOf: string | null;
 };
 
@@ -129,7 +150,18 @@ export async function jupiterMetadata(representations: Representation[]) {
         const volume = token?.stats24h
           ? (token.stats24h.buyVolume ?? 0) + (token.stats24h.sellVolume ?? 0)
           : null;
+        const change = (window: z.infer<typeof statWindowSchema>) =>
+          typeof window?.priceChange === "number" ? window.priceChange : null;
         result.set(representation.mint, {
+          marketCapUsd: token?.mcap ?? null,
+          fullyDilutedUsd: token?.fdv ?? null,
+          holderCount: token?.holderCount ?? null,
+          priceWindows: {
+            m5: change(token?.stats5m),
+            h1: change(token?.stats1h),
+            h6: change(token?.stats6h),
+            h24: change(token?.stats24h) ?? price?.priceChange24h ?? null,
+          },
           price: price?.usdPrice ?? null,
           referencePrice: price?.stockData?.price ?? null,
           liquidity: price?.liquidity ?? token?.liquidity ?? null,
@@ -552,6 +584,15 @@ export async function onchainComparison(equity: Equity): Promise<{
         liquidityUsd: poolLiquidity ?? live?.liquidity ?? null,
         volume24hUsd: poolVolume ?? live?.volume24h ?? null,
         priceChange24hPct: live?.priceChange24h ?? null,
+        marketCapUsd: live?.marketCapUsd ?? null,
+        fullyDilutedUsd: live?.fullyDilutedUsd ?? null,
+        holderCount: live?.holderCount ?? null,
+        priceWindows: live?.priceWindows ?? {
+          m5: null,
+          h1: null,
+          h6: null,
+          h24: null,
+        },
         priceImpactPct: {
           "1000": normalizedPriceImpact(buy?.priceImpactPct ?? null),
           "10000": normalizedPriceImpact(value(1)?.priceImpactPct ?? null),

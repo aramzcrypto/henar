@@ -9,6 +9,10 @@ import {
   writeNewsCache,
   writeResearchCache,
 } from "./research-cache";
+import {
+  readResearchFileCache,
+  writeResearchFileCache,
+} from "./research-file-cache";
 
 function unavailable<T>(): ResearchSection<T> {
   return { status: "unavailable", data: null, asOf: null, sourceUrl: null };
@@ -25,21 +29,55 @@ export function researchForEquity(): EquityResearch {
   };
 }
 
-const cachedResearch = unstable_cache(async (equity: Equity) => {
-  let research = await readResearchCache(equity.ticker);
-  if (!research) {
-    research = await secResearchForEquity(equity);
-    await writeResearchCache(equity.ticker, research);
+// Concurrent requests for the same cold ticker previously each downloaded the
+// full SEC company-facts payload. They now share one in-flight promise.
+const inFlight = new Map<string, Promise<EquityResearch>>();
+
+function dedupe(ticker: string, load: () => Promise<EquityResearch>) {
+  const existing = inFlight.get(ticker);
+  if (existing) return existing;
+  const promise = load().finally(() => inFlight.delete(ticker));
+  inFlight.set(ticker, promise);
+  return promise;
+}
+
+async function loadSecResearch(equity: Equity): Promise<EquityResearch> {
+  const fromFile = await readResearchFileCache(equity.ticker);
+  if (fromFile) return fromFile;
+  const fromDatabase = await readResearchCache(equity.ticker);
+  if (fromDatabase) {
+    await writeResearchFileCache(equity.ticker, fromDatabase);
+    return fromDatabase;
   }
-  let news = await readNewsCache(equity.ticker);
-  if (!news) {
-    news = await gdeltNewsForEquity(equity);
-    if (news.status === "available" && news.data) {
-      await writeNewsCache(equity.ticker, news.data);
-    }
+  const research = await secResearchForEquity(equity);
+  await Promise.all([
+    writeResearchCache(equity.ticker, research),
+    writeResearchFileCache(equity.ticker, research),
+  ]);
+  return research;
+}
+
+const cachedResearch = unstable_cache(
+  async (equity: Equity) => {
+    const [research, news] = await Promise.all([
+      dedupe(equity.ticker, () => loadSecResearch(equity)),
+      loadNews(equity),
+    ]);
+    return { ...research, news };
+  },
+  ["henar-equity-research-v7"],
+  { revalidate: 3_600 },
+);
+
+async function loadNews(equity: Equity) {
+  const cached = await readNewsCache(equity.ticker);
+  if (cached) return cached;
+  const news = await gdeltNewsForEquity(equity);
+  if (news.status === "available" && news.data) {
+    await writeNewsCache(equity.ticker, news.data);
   }
-  return { ...research, news: news ?? unavailable() };
-}, ["henar-equity-research-v3"], { revalidate: 3_600 });
+  return news ?? unavailable();
+}
 
 export async function loadResearchForEquity(equity: Equity) {
   return cachedResearch(equity);

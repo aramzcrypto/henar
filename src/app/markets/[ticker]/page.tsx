@@ -19,7 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const equity = equityForTicker((await params).ticker);
   if (!equity) notFound();
-  const research = await loadResearchForEquity(equity);
+  // Research is streamed rather than awaited. SEC company facts are large and
+  // slow on a cold cache; blocking here delayed the whole page by seconds.
+  const research = loadResearchForEquity(equity);
   return (
     <div className="app page-markets">
       <AppHeader active="markets" />

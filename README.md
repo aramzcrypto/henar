@@ -1,17 +1,40 @@
 # Henar
 
-Henar is a unified market for tokenized equities on Solana. It groups verified representations of the same company into one market, compares execution and issuer details, and connects trading with yield-powered stock accumulation.
+**Henar is the market and intelligence layer for stocks on Solana.**
+
+> One company. Every representation. One market.
+
+A tokenized stock exists several times over. NVIDIA is `NVDAx` on xStocks, `NVDA` on Backpack Securities, and `NVDAon` on Ondo — different mints, different token programs, different issuer mechanics, different liquidity. Every venue today asks the user to pick a token. Henar asks them to pick a company, then does the comparison work underneath.
 
 - [Live application](https://henarapp.vercel.app)
 - [Markets](https://henarapp.vercel.app/markets)
 
+## What we are building
+
+Henar is not a DEX for tokenized stocks. It is the layer a user goes through before and after the trade:
+
+| | |
+| --- | --- |
+| **Discover** | 1,339 companies and ETFs, 2,212 verified issuer mints, grouped by underlying company |
+| **Research** | Financials, earnings, dividends, filings and news from SEC EDGAR; an earnings and macro calendar |
+| **Compare** | xStocks, Backpack and Ondo side by side — price, spread, liquidity, route, redemption terms |
+| **Trade** | Market, limit and DCA execution routed across Solana venues |
+| **Earn** | Yield strategies that turn idle USDC into stock exposure |
+| **Manage** | Holdings, protocol positions and settlement receipts in one place |
+
+The unit of the product is the company, not the mint. Issuer differences are preserved and surfaced where they matter — Henar normalizes the experience without claiming that one issuer's product is legally or technically the same as another's.
+
 ## Products
 
-- **Markets** — Browse 1,339 companies and ETFs across 2,212 verified xStocks, Backpack Securities, and Ondo representations. Company pages show issuer-specific tickers, live onchain activity, research, and redemption terms.
+- **Markets** — Company-first discovery across every verified representation. Overview, a full directory with sector classification, and a calendar of earnings and macro events. Company pages carry financials, earnings, news, dividends, filings, and an Onchain tab comparing every issuer representation.
 - **Trade** — Compare supported routes for market swaps, create yield-bearing limit orders, and schedule DCA purchases.
-- **Earn** — Deposit USDC into a pinned Kamino strategy and direct generated yield toward stocks or Packs.
+- **Earn** — A featured USDC strategy that turns yield into stock exposure, plus a directory of verified stock pools across Solana lending markets and vaults. Each pool has its own page and ticket; only the featured strategy is wired to the protocol today, and the rest are explicitly marked Coming soon.
 - **Packs** — Buy or earn sealed stock packs with onchain settlement and ORAO randomness.
 - **Stockfolio** — Read wallet holdings, protocol positions, sealed packs, and confirmed opening receipts.
+
+## Data policy
+
+Henar shows verified data or it shows nothing. Sector classification comes from each company's SEC-filed SIC code. Earnings come from filed XBRL facts. Prices and routes come from live quotes against exact verified mints. Where a source is not connected, the interface says so rather than estimating — "Unavailable", "Coming soon" and "External opportunity" are real states in this product, not placeholders.
 
 ## Submission status
 
@@ -51,6 +74,14 @@ npm run typecheck
 npm test
 npm run build
 npm run contracts:build
+```
+
+Two generated data sets are rebuilt offline rather than fetched per request:
+
+```sh
+npm run sectors:build       # SIC-based sector index from SEC EDGAR
+npm run calendar:warm       # pre-cache filings for calendar coverage
+npm run calendar:warm -- 200  # widen the pre-cached company set
 ```
 
 The repository also contains release checks for protocol configuration, routes, transaction size, treasury accounts, and deployment planning. See [validation evidence](docs/VALIDATION.md), [mainnet setup](docs/MAINNET.md), and [security review](docs/SECURITY_REVIEW_RETEST_2026-09-13.md).

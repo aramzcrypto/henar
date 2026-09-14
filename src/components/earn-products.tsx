@@ -8,6 +8,7 @@ import { LuckyAllocation, LuckyMode, type OpeningMode } from "./lucky-mode";
 import { batchPackQuote, giftDraft } from "@/lib/pack-actions";
 import {
   Info,
+  ArrowLeft,
   ChartNoAxesCombined,
   ArrowUpRight,
   Box,
@@ -312,10 +313,15 @@ export function EarnPage({
     setAmount("");
   }
   return (
-    <div className="earn-layout earn-dashboard">
+    <>
+      <Link href="/earn" className="back-markets">
+        <ArrowLeft size={15} /> Earn
+      </Link>
+      <div className="earn-layout earn-dashboard">
       <section className="earn-overview" aria-label="Earn overview">
         <div className="section-heading">
-          <h1>USDC Earn</h1>
+          <h1>Earn stocks</h1>
+          <small className="earn-powered">Powered by Kamino</small>
           <span className="product-status">
             <LockKeyhole size={12} />{" "}
             {live
@@ -866,7 +872,8 @@ export function EarnPage({
           </button>
         </ProductDialog>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 export function PacksPage({

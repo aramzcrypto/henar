@@ -3,6 +3,7 @@ import { adaptBackpack } from "./providers/backpack";
 import type { CatalogEntry } from "./providers/common";
 import { adaptOndo } from "./providers/ondo";
 import { adaptXStocks } from "./providers/xstocks";
+import { industryForTicker, sectorForTicker, type Sector } from "./sectors";
 import type { Equity, EquityProvider, Representation } from "./types";
 
 const catalog = rawCatalog as CatalogEntry[];
@@ -51,8 +52,9 @@ function buildRegistry() {
         cik: null,
         identifiers: { ticker },
         logo: representations.find((r) => r.logo)?.logo ?? null,
-        sector: null,
-        industry: null,
+        // Classification comes from the company's SEC-filed SIC code.
+        sector: sectorForTicker(ticker),
+        industry: industryForTicker(ticker),
         assetType: entries.every((entry) => entry.instrument === "ETF")
           ? "etf"
           : "stock",
@@ -76,6 +78,96 @@ const byMint = new Map(
   ),
 );
 
+// Universe totals are derived from a static catalog, so they are computed once
+// at module load instead of re-scanning every equity on each request.
+export const universeStats = (() => {
+  const stats = {
+    companies: equityRegistry.length,
+    representations: 0,
+    stocks: 0,
+    etfs: 0,
+    xstocks: 0,
+    backpack: 0,
+    ondo: 0,
+    classified: 0,
+  };
+  for (const equity of equityRegistry) {
+    stats.representations += equity.representations.length;
+    if (equity.assetType === "etf") stats.etfs += 1;
+    else stats.stocks += 1;
+    const providers = new Set(
+      equity.representations.map((representation) => representation.provider),
+    );
+    if (providers.has("xstocks")) stats.xstocks += 1;
+    if (providers.has("backpack")) stats.backpack += 1;
+    if (providers.has("ondo")) stats.ondo += 1;
+    if (equity.sector) stats.classified += 1;
+  }
+  return stats;
+})();
+
+/** Companies per sector, ordered by size. Sectors with no companies are omitted. */
+export const sectorStats = (() => {
+  const counts = new Map<Sector, number>();
+  for (const equity of equityRegistry) {
+    if (!equity.sector) continue;
+    counts.set(equity.sector, (counts.get(equity.sector) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([sector, companies]) => ({ sector, companies }))
+    .sort((a, b) => b.companies - a.companies);
+})();
+
+const bySector = new Map<Sector, Equity[]>();
+for (const equity of equityRegistry) {
+  if (!equity.sector) continue;
+  bySector.set(equity.sector, [...(bySector.get(equity.sector) ?? []), equity]);
+}
+
+/**
+ * Companies in a sector, most-represented first. Representation count is the
+ * only ranking signal available without a live market snapshot.
+ */
+export function equitiesForSector(sector: Sector, limit?: number) {
+  const items = [...(bySector.get(sector) ?? [])].sort(
+    (a, b) =>
+      b.representations.length - a.representations.length ||
+      a.ticker.localeCompare(b.ticker),
+  );
+  return limit === undefined ? items : items.slice(0, limit);
+}
+
+/**
+ * Companies carrying representations from more than one issuer. These are the
+ * cases where comparing execution across issuers actually matters.
+ */
+export const multiIssuerStats = (() => {
+  let twoIssuers = 0;
+  let allIssuers = 0;
+  for (const equity of equityRegistry) {
+    const providers = new Set(
+      equity.representations.map((representation) => representation.provider),
+    );
+    if (providers.size === 2) twoIssuers += 1;
+    if (providers.size >= 3) allIssuers += 1;
+  }
+  return { twoIssuers, allIssuers, total: twoIssuers + allIssuers };
+})();
+
+export function multiIssuerEquities(limit: number) {
+  return equityRegistry
+    .map((equity) => ({
+      equity,
+      issuers: new Set(
+        equity.representations.map((representation) => representation.provider),
+      ).size,
+    }))
+    .filter((entry) => entry.issuers >= 3)
+    .sort((a, b) => a.equity.ticker.localeCompare(b.equity.ticker))
+    .slice(0, limit)
+    .map((entry) => entry.equity);
+}
+
 export function equityForTicker(ticker: string) {
   return byTicker.get(ticker.trim().toUpperCase()) ?? null;
 }
@@ -88,6 +180,7 @@ export function listEquities(filters?: {
   query?: string;
   assetType?: "stock" | "etf";
   provider?: EquityProvider;
+  sector?: Sector;
 }) {
   const query = filters?.query?.trim().toLowerCase();
   return equityRegistry.filter(
@@ -96,6 +189,7 @@ export function listEquities(filters?: {
         equity.ticker.toLowerCase().includes(query) ||
         equity.name.toLowerCase().includes(query)) &&
       (!filters?.assetType || equity.assetType === filters.assetType) &&
+      (!filters?.sector || equity.sector === filters.sector) &&
       (!filters?.provider ||
         equity.representations.some(
           (representation) => representation.provider === filters.provider,

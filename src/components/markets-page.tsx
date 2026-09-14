@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { AppSelect } from "./app-select";
+import { MarketsTabs } from "./markets-tabs";
 import { EquityLogo } from "./equity-logo";
 import type { EquitySummary, MarketsOverview } from "@/lib/equities/types";
 
@@ -113,6 +114,13 @@ function EquityRow({ equity }: { equity: EquitySummary }) {
             {equity.ticker} · {equity.assetType.toUpperCase()}
           </small>
         </span>
+      </span>
+      <span className="market-sector">
+        {equity.sector ? (
+          <strong>{equity.sector}</strong>
+        ) : (
+          <small>Unclassified</small>
+        )}
       </span>
       <span className="market-price">
         <strong>{money(equity.price)}</strong>
@@ -313,16 +321,221 @@ function OverviewTable({ items }: { items: EquitySummary[] }) {
   );
 }
 
+
+export type SectorOption = { sector: string; companies: number };
+
+export type SectorHighlight = {
+  sector: string;
+  companies: number;
+  top: {
+    ticker: string;
+    name: string;
+    logo: string | null;
+    representationCount: number;
+  }[];
+};
+
+export type MultiIssuerCompany = {
+  ticker: string;
+  name: string;
+  logo: string | null;
+  tokens: { provider: string; tokenSymbol: string }[];
+};
+
+export type MultiIssuerSummary = {
+  twoIssuers: number;
+  allIssuers: number;
+  companies: MultiIssuerCompany[];
+};
+
+export type OverviewEvent = {
+  id: string;
+  ticker: string | null;
+  companyName: string | null;
+  companyLogo: string | null;
+  label: string;
+  date: string;
+};
+
+function SectorBlocks({
+  sectors,
+  onOpenSector,
+}: {
+  sectors: SectorHighlight[];
+  onOpenSector: (sector: string) => void;
+}) {
+  if (!sectors.length) return null;
+  return (
+    <section className="sector-blocks">
+      <header>
+        <strong>Sectors</strong>
+        <small>Classified from SEC-filed SIC codes</small>
+      </header>
+      <div>
+        {sectors.map((block) => (
+          <article key={block.sector}>
+            <header>
+              <button type="button" onClick={() => onOpenSector(block.sector)}>
+                {block.sector}
+                <ArrowRight size={12} />
+              </button>
+              <small>{block.companies.toLocaleString()}</small>
+            </header>
+            <ul>
+              {block.top.map((company) => (
+                <li key={company.ticker}>
+                  <Link href={`/markets/${company.ticker}`}>
+                    <EquityLogo
+                      logo={company.logo}
+                      ticker={company.ticker}
+                      size={22}
+                    />
+                    <span className="listing-text">
+                      <strong>{company.ticker}</strong>
+                      <small>{company.name}</small>
+                    </span>
+                    <b>
+                      {company.representationCount}
+                      <i>rep{company.representationCount === 1 ? "" : "s"}</i>
+                    </b>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const ISSUER_LABELS: Record<string, string> = {
+  xstocks: "xStocks",
+  backpack: "Backpack",
+  ondo: "Ondo",
+};
+
+function MultiIssuerBlock({
+  summary,
+  onOpen,
+}: {
+  summary: MultiIssuerSummary;
+  onOpen: () => void;
+}) {
+  if (!summary.companies.length) return null;
+  return (
+    <section className="multi-issuer">
+      <header>
+        <div>
+          <strong>Multi-provider stocks</strong>
+          <small>
+            {summary.allIssuers.toLocaleString()} companies are issued by all
+            three providers; {summary.twoIssuers.toLocaleString()} by two.
+          </small>
+        </div>
+        <button onClick={onOpen}>
+          All markets <ArrowRight size={13} />
+        </button>
+      </header>
+      <div className="multi-issuer-grid">
+        {summary.companies.map((company) => (
+          <Link key={company.ticker} href={`/markets/${company.ticker}`}>
+            <span className="multi-issuer-company">
+              <EquityLogo
+                logo={company.logo}
+                ticker={company.ticker}
+                size={26}
+              />
+              <span className="listing-text">
+                <strong>{company.ticker}</strong>
+                <small>{company.name}</small>
+              </span>
+            </span>
+            <span className="multi-issuer-tokens">
+              {company.tokens.map((token) => (
+                <em key={token.provider} title={ISSUER_LABELS[token.provider]}>
+                  {token.tokenSymbol}
+                </em>
+              ))}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function eventDay(date: string) {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  return Number.isNaN(parsed.getTime())
+    ? date
+    : parsed.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+}
+
+function UpcomingEvents({ events }: { events: OverviewEvent[] }) {
+  return (
+    <section className="overview-events">
+      <header>
+        <strong>Events</strong>
+        <Link href="/markets/calendar">
+          View calendar <ArrowRight size={13} />
+        </Link>
+      </header>
+      {events.length === 0 ? (
+        <p className="overview-events-empty">
+          No verified events filed in the next days. The calendar holds the full
+          history and coverage detail.
+        </p>
+      ) : (
+        <ul>
+          {events.map((event) => (
+            <li key={event.id}>
+              <Link href={`/markets/${event.ticker}`}>
+                <EquityLogo
+                  logo={event.companyLogo}
+                  ticker={event.ticker ?? "?"}
+                  size={24}
+                />
+                <span className="listing-text">
+                  <strong>{event.ticker}</strong>
+                  <small>{event.companyName}</small>
+                </span>
+                <span className="overview-event-meta">
+                  <strong>{event.label}</strong>
+                  <small>{eventDay(event.date)}</small>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function MarketsOverviewView({
   overview,
   universe,
+  sectors,
+  events,
+  multiIssuer,
   openAll,
   filterAll,
+  filterSector,
 }: {
   overview: MarketsOverview;
   universe: UniverseStats;
+  sectors: SectorHighlight[];
+  events: OverviewEvent[];
+  multiIssuer: MultiIssuerSummary;
   openAll: () => void;
   filterAll: (kind: "asset" | "provider", value: string) => void;
+  filterSector: (sector: string) => void;
 }) {
   const live = overview.items.filter((item) => item.price !== null);
   const gainers = [...live]
@@ -345,30 +558,27 @@ function MarketsOverviewView({
 
   return (
     <div className="markets-overview">
-      <section className="markets-overview-strip">
+      <section className="markets-statbar">
         <div>
-          <span>UNIFIED ONCHAIN EQUITIES</span>
-          <h2>One company. Every valid representation.</h2>
-          <p>xStocks · Backpack · Ondo</p>
+          <dt>Companies</dt>
+          <dd>{universe.companies.toLocaleString()}</dd>
         </div>
-        <dl>
-          <div>
-            <dt>Companies</dt>
-            <dd>{universe.companies.toLocaleString()}</dd>
-          </div>
-          <div>
-            <dt>Representations</dt>
-            <dd>{universe.representations.toLocaleString()}</dd>
-          </div>
-          <div>
-            <dt>Live matches</dt>
-            <dd>{overview.matchedCompanyCount.toLocaleString()}</dd>
-          </div>
-          <div>
-            <dt>Tracked volume</dt>
-            <dd>{money(overview.totalVolume24hUsd, true)}</dd>
-          </div>
-        </dl>
+        <div>
+          <dt>Representations</dt>
+          <dd>{universe.representations.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Issuers</dt>
+          <dd>3</dd>
+        </div>
+        <div>
+          <dt>Live matches</dt>
+          <dd>{overview.matchedCompanyCount.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Tracked 24h volume</dt>
+          <dd>{money(overview.totalVolume24hUsd, true)}</dd>
+        </div>
       </section>
 
       <div className="market-pulse-grid">
@@ -392,6 +602,12 @@ function MarketsOverviewView({
         />
         <MarketBreadth items={live} />
       </div>
+
+      <MultiIssuerBlock summary={multiIssuer} onOpen={openAll} />
+
+      <UpcomingEvents events={events} />
+
+      <SectorBlocks sectors={sectors} onOpenSector={filterSector} />
 
       <section className="market-categories">
         <header>
@@ -427,22 +643,31 @@ export function MarketsPage({
   initial,
   overview,
   universe,
+  sectors,
+  sectorOptions,
+  events,
+  multiIssuer,
 }: {
   initial: MarketsResponse;
   overview: MarketsOverview;
   universe: UniverseStats;
+  sectors: SectorHighlight[];
+  sectorOptions: SectorOption[];
+  events: OverviewEvent[];
+  multiIssuer: MultiIssuerSummary;
 }) {
   const [pageView, setPageView] = useState<"overview" | "all">("overview");
   const [data, setData] = useState(initial);
   const [query, setQuery] = useState("");
   const [assetType, setAssetType] = useState("all");
   const [provider, setProvider] = useState("all");
+  const [sector, setSector] = useState("all");
   const [sort, setSort] = useState("ticker");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const requestKey = useMemo(
-    () => JSON.stringify({ query, assetType, provider, sort }),
-    [query, assetType, provider, sort],
+    () => JSON.stringify({ query, assetType, provider, sector, sort }),
+    [query, assetType, provider, sector, sort],
   );
 
   useEffect(() => {
@@ -451,6 +676,7 @@ export function MarketsPage({
       !query &&
       assetType === "all" &&
       provider === "all" &&
+      sector === "all" &&
       sort === "ticker"
     ) {
       setData(initial);
@@ -463,6 +689,7 @@ export function MarketsPage({
       const params = new URLSearchParams({ q: query, sort, limit: "50" });
       if (assetType !== "all") params.set("assetType", assetType);
       if (provider !== "all") params.set("provider", provider);
+      if (sector !== "all") params.set("sector", sector);
       try {
         const response = await fetch(`/api/equities?${params}`, {
           signal: controller.signal,
@@ -480,11 +707,16 @@ export function MarketsPage({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [requestKey, initial, pageView, query, assetType, provider, sort]);
+  }, [requestKey, initial, pageView, query, assetType, provider, sector, sort]);
 
   const filterAll = (kind: "asset" | "provider", value: string) => {
     if (kind === "asset") setAssetType(value);
     else setProvider(value);
+    setPageView("all");
+  };
+
+  const filterSector = (value: string) => {
+    setSector(value);
     setPageView("all");
   };
 
@@ -495,24 +727,7 @@ export function MarketsPage({
           <h1>Markets</h1>
           <span>{universe.companies.toLocaleString()} verified companies</span>
         </div>
-        <div className="markets-page-tabs" role="tablist">
-          <button
-            role="tab"
-            aria-selected={pageView === "overview"}
-            className={pageView === "overview" ? "active" : ""}
-            onClick={() => setPageView("overview")}
-          >
-            Overview
-          </button>
-          <button
-            role="tab"
-            aria-selected={pageView === "all"}
-            className={pageView === "all" ? "active" : ""}
-            onClick={() => setPageView("all")}
-          >
-            All markets
-          </button>
-        </div>
+        <MarketsTabs active={pageView} onSelect={setPageView} />
       </div>
 
       {pageView === "overview" ? (
@@ -531,8 +746,12 @@ export function MarketsPage({
           <MarketsOverviewView
             overview={overview}
             universe={universe}
+            sectors={sectors}
+            events={events}
+            multiIssuer={multiIssuer}
             openAll={() => setPageView("all")}
             filterAll={filterAll}
+            filterSector={filterSector}
           />
         </>
       ) : (
@@ -568,13 +787,18 @@ export function MarketsPage({
                 { value: "ondo", label: "Ondo" },
               ]}
             />
-            <button
-              className="markets-sector"
-              disabled
-              title="Sector data source not connected"
-            >
-              All sectors
-            </button>
+            <AppSelect
+              label="Sector"
+              value={sector}
+              onChange={setSector}
+              options={[
+                { value: "all", label: "All sectors" },
+                ...sectorOptions.map((option) => ({
+                  value: option.sector,
+                  label: `${option.sector} (${option.companies})`,
+                })),
+              ]}
+            />
           </div>
           <div className="market-views" role="tablist" aria-label="Market view">
             {views.map(([value, label]) => (
@@ -607,6 +831,7 @@ export function MarketsPage({
           >
             <div className="market-list-head">
               <span>Company</span>
+              <span>Sector</span>
               <span>Reference</span>
               <span>Issuers & tickers</span>
               <span>24h volume</span>

@@ -113,7 +113,7 @@ export type Equity = {
   cik: string | null;
   identifiers: Record<string, string>;
   logo: string | null;
-  sector: string | null;
+  sector: import("./sectors").Sector | null;
   industry: string | null;
   assetType: EquityAssetType;
   description: string | null;
@@ -135,6 +135,16 @@ export type LiveRepresentation = {
   liquidityUsd: number | null;
   volume24hUsd: number | null;
   priceChange24hPct: number | null;
+  marketCapUsd: number | null;
+  fullyDilutedUsd: number | null;
+  holderCount: number | null;
+  /** Percent price change over each window Jupiter publishes. */
+  priceWindows: {
+    m5: number | null;
+    h1: number | null;
+    h6: number | null;
+    h24: number | null;
+  };
   priceImpactPct: Record<"1000" | "10000" | "50000", number | null>;
   jupiterRouteAvailable: boolean | null;
   executionSources: string[];
@@ -206,8 +216,24 @@ export type CompanyProfile = {
 export type FinancialPeriod = {
   periodEnd: string;
   fiscalYear: number;
+  fiscalPeriod: string | null;
+  /** "annual" for 10-K/20-F periods, "quarterly" otherwise. */
+  frame: "annual" | "quarterly";
   revenue: string | null;
+  grossProfit: string | null;
+  operatingIncome: string | null;
   netIncome: string | null;
+  eps: string | null;
+  /** Balance sheet. */
+  assets: string | null;
+  liabilities: string | null;
+  equity: string | null;
+  cash: string | null;
+  /** Cash flow. */
+  operatingCashFlow: string | null;
+  investingCashFlow: string | null;
+  financingCashFlow: string | null;
+  capitalExpenditure: string | null;
   currency: string;
 };
 export type EarningsEvent = {

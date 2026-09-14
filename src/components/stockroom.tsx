@@ -1057,11 +1057,13 @@ export function Stockroom({
             >
               <div className="ticket-toolbar">
                 <h1>
+                  {/* Company-first product language; the mint stays in the
+                      route and execution detail below. */}
                   {mode === "market"
                     ? receiveStock
-                      ? `Buy ${receive.symbol}`
+                      ? `Buy ${receiveStock.name}`
                       : paymentStock
-                        ? `Sell ${payment.symbol}`
+                        ? `Sell ${paymentStock.name}`
                         : "Swap assets"
                     : mode === "limit"
                       ? "Buy at your price"

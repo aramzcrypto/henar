@@ -66,10 +66,17 @@ function available<T>(
   return { status: "available", data, sourceUrl, asOf };
 }
 
+// SEC latency varies from under a second to tens of seconds. A bounded request
+// keeps a slow upstream from holding a streamed page response open.
+const SEC_TIMEOUT_MS = 15_000;
+
 async function secJson<T>(url: string, seconds: number): Promise<T> {
+  // Company facts decode to several megabytes, past the Next fetch-cache limit,
+  // so they are persisted by the parsed-result cache instead.
   const largeCompanyFacts = url.includes("/api/xbrl/companyfacts/");
   const response = await fetch(url, {
     headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(SEC_TIMEOUT_MS),
     ...(largeCompanyFacts
       ? { cache: "no-store" as const }
       : { next: { revalidate: seconds } }),
@@ -138,6 +145,17 @@ function latestPeriods(units: FactUnit[]) {
   );
 }
 
+/** One row per reporting period; XBRL repeats a period across filings. */
+function dedupeByPeriod(units: FactUnit[]) {
+  const seen = new Map<string, FactUnit>();
+  for (const item of units) {
+    if (!item.end) continue;
+    const key = `${item.end}:${item.fp ?? ""}`;
+    if (!seen.has(key)) seen.set(key, item);
+  }
+  return [...seen.values()];
+}
+
 function valueForPeriod(units: FactUnit[], end: string, fp?: string) {
   return latestPeriods(units).find(
     (item) => item.end === end && (!fp || !item.fp || item.fp === fp),
@@ -185,29 +203,118 @@ export function parseSecResearch(
       ["USD"],
     ),
   );
-  const incomeUnits = unitsFor(
+  // Each statement line is resolved independently against the same period so a
+  // company that omits one concept still reports the rest.
+  const series = {
+    netIncome: unitsFor(
+      facts,
+      [
+        "NetIncomeLoss",
+        "ProfitLoss",
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+      ],
+      ["USD"],
+    ),
+    grossProfit: unitsFor(facts, ["GrossProfit"], ["USD"]),
+    operatingIncome: unitsFor(
+      facts,
+      ["OperatingIncomeLoss", "IncomeLossFromContinuingOperations"],
+      ["USD"],
+    ),
+    assets: unitsFor(facts, ["Assets"], ["USD"]),
+    liabilities: unitsFor(facts, ["Liabilities"], ["USD"]),
+    equity: unitsFor(
+      facts,
+      [
+        "StockholdersEquity",
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+      ],
+      ["USD"],
+    ),
+    cash: unitsFor(
+      facts,
+      [
+        "CashAndCashEquivalentsAtCarryingValue",
+        "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+      ],
+      ["USD"],
+    ),
+    operatingCashFlow: unitsFor(
+      facts,
+      [
+        "NetCashProvidedByUsedInOperatingActivities",
+        "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations",
+      ],
+      ["USD"],
+    ),
+    investingCashFlow: unitsFor(
+      facts,
+      [
+        "NetCashProvidedByUsedInInvestingActivities",
+        "NetCashProvidedByUsedInInvestingActivitiesContinuingOperations",
+      ],
+      ["USD"],
+    ),
+    financingCashFlow: unitsFor(
+      facts,
+      [
+        "NetCashProvidedByUsedInFinancingActivities",
+        "NetCashProvidedByUsedInFinancingActivitiesContinuingOperations",
+      ],
+      ["USD"],
+    ),
+    capitalExpenditure: unitsFor(
+      facts,
+      [
+        "PaymentsToAcquirePropertyPlantAndEquipment",
+        "PaymentsToAcquireProductiveAssets",
+      ],
+      ["USD"],
+    ),
+  };
+  const epsSeries = unitsFor(
     facts,
-    ["NetIncomeLoss", "ProfitLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"],
-    ["USD"],
+    [
+      "EarningsPerShareDiluted",
+      "EarningsPerShareBasicAndDiluted",
+      "BasicEarningsLossPerShare",
+    ],
+    ["USD/shares", "USD / shares", "USD-per-shares"],
   );
-  const financials: FinancialPeriod[] = revenue.slice(0, 8).map((item) => ({
+  const at = (units: FactUnit[], item: FactUnit) =>
+    formatFact(valueForPeriod(units, item.end!, item.fp));
+
+  // `fy` on an XBRL fact is the fiscal year of the report the fact appeared in,
+  // not of the period it measures, so several periods in one filing share it.
+  // The period end is the only reliable year for labelling a column.
+  const financials: FinancialPeriod[] = dedupeByPeriod(revenue.slice(0, 24)).map((item) => ({
     periodEnd: item.end!,
-    fiscalYear: item.fy ?? Number(item.end!.slice(0, 4)),
+    fiscalYear: Number(item.end!.slice(0, 4)),
+    fiscalPeriod: item.fp ?? null,
+    frame: item.fp === "FY" ? ("annual" as const) : ("quarterly" as const),
     revenue: formatFact(item),
-    netIncome: formatFact(valueForPeriod(incomeUnits, item.end!, item.fp)),
+    grossProfit: at(series.grossProfit, item),
+    operatingIncome: at(series.operatingIncome, item),
+    netIncome: at(series.netIncome, item),
+    eps: at(epsSeries, item),
+    assets: at(series.assets, item),
+    liabilities: at(series.liabilities, item),
+    equity: at(series.equity, item),
+    cash: at(series.cash, item),
+    operatingCashFlow: at(series.operatingCashFlow, item),
+    investingCashFlow: at(series.investingCashFlow, item),
+    financingCashFlow: at(series.financingCashFlow, item),
+    capitalExpenditure: at(series.capitalExpenditure, item),
     currency: "USD",
   }));
 
-  const epsUnits = unitsFor(
-    facts,
-    ["EarningsPerShareDiluted", "EarningsPerShareBasicAndDiluted", "BasicEarningsLossPerShare"],
-    ["USD/shares", "USD / shares", "USD-per-shares"],
-  );
-  const earnings: EarningsEvent[] = latestPeriods(epsUnits)
-    .slice(0, 8)
+  // `fy` is the filing's fiscal year, so a prior-year comparative in the same
+  // filing carries the wrong label. The period end is authoritative.
+  const earnings: EarningsEvent[] = latestPeriods(epsSeries)
+    .slice(0, 12)
     .map((item) => ({
       reportedAt: item.filed!,
-      fiscalPeriod: `${item.fy ?? item.end!.slice(0, 4)} ${item.fp ?? ""}`.trim(),
+      fiscalPeriod: `${item.end!.slice(0, 4)} ${item.fp ?? ""}`.trim(),
       actualEps: formatFact(item),
       estimatedEps: null,
     }));
