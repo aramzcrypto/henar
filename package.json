@@ -50,6 +50,7 @@
     "@solana/web3.js": "1.99.0",
     "@titanexchange/sdk-ts": "^0.1.6",
     "buffer": "6.0.3",
+    "cobe": "^2.0.1",
     "decimal.js": "10.6.0",
     "lucide-react": "0.468.0",
     "next": "15.5.25",
