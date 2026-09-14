@@ -534,11 +534,8 @@ export function MarketsCalendar({
 
   return (
     <section className="markets-shell">
-      <div className="markets-heading markets-heading-compact">
-        <div>
-          <h1>Markets</h1>
-          <span>Earnings and macro events for verified companies</span>
-        </div>
+      <h1 className="sr-only">Markets calendar</h1>
+      <div className="markets-controls">
         <MarketsTabs active="calendar" />
       </div>
 

@@ -2,20 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  Activity,
   Building2,
-  Flame,
   Layers3,
   Search,
-  TrendingDown,
-  TrendingUp,
+  X,
 } from "lucide-react";
 import { AppSelect } from "./app-select";
+import { MarketsBento } from "./markets-bento";
 import { MarketsTabs } from "./markets-tabs";
 import { EquityLogo } from "./equity-logo";
 import type { EquitySummary, MarketsOverview } from "@/lib/equities/types";
@@ -157,111 +155,6 @@ function EquityRow({ equity }: { equity: EquitySummary }) {
   );
 }
 
-function PulseCard({
-  title,
-  icon,
-  items,
-  metric,
-}: {
-  title: string;
-  icon: ReactNode;
-  items: EquitySummary[];
-  metric: "volume" | "change";
-}) {
-  return (
-    <article className="market-pulse-card">
-      <header>
-        <span>{icon}</span>
-        <strong>{title}</strong>
-      </header>
-      {items.length ? (
-        <ol>
-          {items.slice(0, 5).map((equity) => (
-            <li key={equity.id}>
-              <Link href={`/markets/${equity.ticker}`}>
-                <EquityLogo
-                  logo={equity.logo}
-                  ticker={equity.ticker}
-                  size={26}
-                />
-                <span>
-                  <strong>{equity.name}</strong>
-                  <small>{equity.ticker}</small>
-                </span>
-                <b
-                  className={
-                    metric === "volume" || equity.priceChange24hPct === null
-                      ? ""
-                      : equity.priceChange24hPct >= 0
-                        ? "positive"
-                        : "negative"
-                  }
-                >
-                  {metric === "volume"
-                    ? money(equity.onchainVolume24hUsd, true)
-                    : changeLabel(equity.priceChange24hPct)}
-                </b>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <div className="market-pulse-empty">Unavailable</div>
-      )}
-    </article>
-  );
-}
-
-function MarketBreadth({ items }: { items: EquitySummary[] }) {
-  const priced = items.filter((item) => item.priceChange24hPct !== null);
-  const advancing = priced.filter((item) => item.priceChange24hPct! > 0).length;
-  const declining = priced.filter((item) => item.priceChange24hPct! < 0).length;
-  const unchanged = priced.length - advancing - declining;
-  const advanceShare = priced.length ? (advancing / priced.length) * 100 : 0;
-
-  return (
-    <article className="market-breadth-card">
-      <header>
-        <span>
-          <Activity size={16} />
-        </span>
-        <strong>Market breadth</strong>
-        <small>Live matches</small>
-      </header>
-      {priced.length ? (
-        <div className="market-breadth-content">
-          <div className="market-breadth-score">
-            <strong>{Math.round(advanceShare)}%</strong>
-            <span>advancing</span>
-          </div>
-          <div
-            className="market-breadth-bar"
-            aria-label={`${advancing} advancing and ${declining} declining`}
-          >
-            <i style={{ width: `${advanceShare}%` }} />
-          </div>
-          <dl>
-            <div>
-              <dt>Advancing</dt>
-              <dd className="positive">{advancing}</dd>
-            </div>
-            <div>
-              <dt>Declining</dt>
-              <dd className="negative">{declining}</dd>
-            </div>
-            <div>
-              <dt>Unchanged</dt>
-              <dd>{unchanged}</dd>
-            </div>
-          </dl>
-        </div>
-      ) : (
-        <div className="market-pulse-empty">Unavailable</div>
-      )}
-    </article>
-  );
-}
-
 function OverviewTable({ items }: { items: EquitySummary[] }) {
   return (
     <section className="overview-table-card">
@@ -339,6 +232,8 @@ export type MultiIssuerCompany = {
   ticker: string;
   name: string;
   logo: string | null;
+  price: number | null;
+  change: number | null;
   tokens: { provider: string; tokenSymbol: string }[];
 };
 
@@ -444,12 +339,28 @@ function MultiIssuerBlock({
               <EquityLogo
                 logo={company.logo}
                 ticker={company.ticker}
-                size={26}
+                size={30}
               />
               <span className="listing-text">
                 <strong>{company.ticker}</strong>
                 <small>{company.name}</small>
               </span>
+            </span>
+            <span className="multi-issuer-price">
+              <b>{company.price === null ? "—" : money(company.price)}</b>
+              <i
+                className={
+                  company.change === null
+                    ? "flat"
+                    : company.change >= 0
+                      ? "up"
+                      : "down"
+                }
+              >
+                {company.change === null
+                  ? `${company.tokens.length} representations`
+                  : `${company.change >= 0 ? "+" : ""}${company.change.toFixed(2)}% · ${company.tokens.length} issuers`}
+              </i>
             </span>
             <span className="multi-issuer-tokens">
               {company.tokens.map((token) => (
@@ -462,6 +373,59 @@ function MultiIssuerBlock({
         ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * Collapsed to an icon until used, so the control row stays quiet. Opening it
+ * focuses the field; leaving it empty and blurring collapses it again.
+ */
+function ExpandingSearch({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) field.current?.focus();
+  }, [open]);
+
+  return (
+    <div className={`markets-search-control${open || value ? " is-open" : ""}`}>
+      <button
+        type="button"
+        aria-label="Search markets"
+        aria-expanded={open || Boolean(value)}
+        onClick={() => setOpen(true)}
+      >
+        <Search size={16} />
+      </button>
+      <input
+        ref={field}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onBlur={() => {
+          if (!value) setOpen(false);
+        }}
+        placeholder="Search company or ticker"
+        aria-label="Search company or ticker"
+        tabIndex={open || value ? 0 : -1}
+      />
+      {value ? (
+        <button
+          type="button"
+          className="markets-search-clear"
+          aria-label="Clear search"
+          onClick={() => onChange("")}
+        >
+          <X size={14} />
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -537,17 +501,6 @@ function MarketsOverviewView({
   filterAll: (kind: "asset" | "provider", value: string) => void;
   filterSector: (sector: string) => void;
 }) {
-  const live = overview.items.filter((item) => item.price !== null);
-  const gainers = [...live]
-    .filter(
-      (item) => item.priceChange24hPct !== null && item.priceChange24hPct > 0,
-    )
-    .sort((a, b) => b.priceChange24hPct! - a.priceChange24hPct!);
-  const losers = [...live]
-    .filter(
-      (item) => item.priceChange24hPct !== null && item.priceChange24hPct < 0,
-    )
-    .sort((a, b) => a.priceChange24hPct! - b.priceChange24hPct!);
   const categories = [
     ["Stocks", universe.stocks, "asset", "stock"],
     ["ETFs", universe.etfs, "asset", "etf"],
@@ -558,50 +511,13 @@ function MarketsOverviewView({
 
   return (
     <div className="markets-overview">
-      <section className="markets-statbar">
-        <div>
-          <dt>Companies</dt>
-          <dd>{universe.companies.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>Representations</dt>
-          <dd>{universe.representations.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>Issuers</dt>
-          <dd>3</dd>
-        </div>
-        <div>
-          <dt>Live matches</dt>
-          <dd>{overview.matchedCompanyCount.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>Tracked 24h volume</dt>
-          <dd>{money(overview.totalVolume24hUsd, true)}</dd>
-        </div>
-      </section>
-
-      <div className="market-pulse-grid">
-        <PulseCard
-          title="Most traded"
-          icon={<Flame size={15} />}
-          items={overview.items}
-          metric="volume"
-        />
-        <PulseCard
-          title="Gainers"
-          icon={<TrendingUp size={15} />}
-          items={gainers}
-          metric="change"
-        />
-        <PulseCard
-          title="Losers"
-          icon={<TrendingDown size={15} />}
-          items={losers}
-          metric="change"
-        />
-        <MarketBreadth items={live} />
-      </div>
+      <MarketsBento
+        overview={overview}
+        universe={universe}
+        multiIssuerCount={multiIssuer.allIssuers}
+        events={events}
+        onOpenAll={openAll}
+      />
 
       <MultiIssuerBlock summary={multiIssuer} onOpen={openAll} />
 
@@ -722,27 +638,20 @@ export function MarketsPage({
 
   return (
     <section className="markets-shell">
-      <div className="markets-heading markets-heading-compact">
-        <div>
-          <h1>Markets</h1>
-          <span>{universe.companies.toLocaleString()} verified companies</span>
-        </div>
+      <h1 className="sr-only">Markets</h1>
+      <div className="markets-controls">
         <MarketsTabs active={pageView} onSelect={setPageView} />
+        <ExpandingSearch
+          value={query}
+          onChange={(next) => {
+            setQuery(next);
+            if (next) setPageView("all");
+          }}
+        />
       </div>
 
       {pageView === "overview" ? (
         <>
-          <label className="markets-search markets-overview-search">
-            <Search size={16} />
-            <input
-              placeholder="Search company or ticker"
-              aria-label="Search markets"
-              onChange={(event) => {
-                setQuery(event.target.value);
-                if (event.target.value) setPageView("all");
-              }}
-            />
-          </label>
           <MarketsOverviewView
             overview={overview}
             universe={universe}
@@ -757,15 +666,6 @@ export function MarketsPage({
       ) : (
         <>
           <div className="markets-toolbar">
-            <label className="markets-search">
-              <Search size={16} />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search company or ticker"
-                aria-label="Search markets"
-              />
-            </label>
             <AppSelect
               label="Asset type"
               value={assetType}
