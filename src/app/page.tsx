@@ -12,8 +12,12 @@ import {
 } from "lucide-react";
 import { HenarBrand } from "@/components/henar-brand";
 import { HeroGlobe } from "@/components/hero-globe";
-import { LandingMarketPreview } from "@/components/landing-market-preview";
-import { multiIssuerStats, universeStats } from "@/lib/equities/registry";
+import { LandingUnify } from "@/components/landing-unify";
+import {
+  equityForTicker,
+  multiIssuerStats,
+  universeStats,
+} from "@/lib/equities/registry";
 import styles from "./landing.module.css";
 
 const researchItems = [
@@ -56,6 +60,10 @@ const tradeModes = [
     description: "Build positions on a schedule.",
   },
 ];
+
+// A company that exists on all three issuers makes the point without
+// needing a caption.
+const example = equityForTicker("NVDA");
 
 export default function Home() {
   return (
@@ -109,6 +117,7 @@ export default function Home() {
           </div>
         </section>
 
+        {example ? (
         <section className={styles.marketsSection}>
           <div className={styles.sectionCopy}>
             <span className={styles.eyebrow}>Markets</span>
@@ -135,8 +144,17 @@ export default function Home() {
               View markets <ArrowRight size={14} />
             </Link>
           </div>
-          <LandingMarketPreview />
+          <LandingUnify
+            company={example.name}
+            ticker={example.ticker}
+            logo={example.logo}
+            representations={example.representations.map((item) => ({
+              provider: item.provider,
+              symbol: item.tokenSymbol,
+            }))}
+          />
         </section>
+        ) : null}
 
         <section className={styles.researchSection}>
           <div className={styles.sectionCopy}>

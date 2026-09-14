@@ -11889,3 +11889,116 @@ body {
 .company-keystats > div:nth-child(n + 6) {
   border-top: 1px solid #232326;
 }
+
+/* ---------------------------------------------------------------
+   Landing: the unification diagram
+   Three issuer tokens on the left, converging through the Henar mark
+   into one company. Static by design — it states the argument rather
+   than drawing a chart the visitor can already see on /markets.
+   --------------------------------------------------------------- */
+.unify {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 34px 30px;
+  border-radius: 22px;
+  background: var(--surface);
+}
+.unify-label {
+  display: block;
+  margin-bottom: 16px;
+  color: #6c6c72;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.unify-issuers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.unify-token {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 15px;
+  border-radius: 13px;
+  background: #1c1c1f;
+}
+.unify-token b {
+  font-family: var(--data);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.unify-token i {
+  margin-left: auto;
+  color: #85858c;
+  font-size: 11.5px;
+  font-style: normal;
+}
+.unify-wires {
+  width: 120px;
+  height: 220px;
+  align-self: center;
+}
+.unify-hub {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+.unify-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: #1c1c1f;
+  box-shadow: 0 0 0 1px rgba(70, 179, 168, 0.22);
+}
+.unify-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.unify-result span {
+  display: flex;
+  flex-direction: column;
+}
+.unify-result b {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.unify-result i {
+  margin-top: 3px;
+  color: #85858c;
+  font-size: 11.5px;
+  font-style: normal;
+}
+.unify-chain {
+  display: inline-flex;
+  opacity: 0.65;
+}
+
+@media (max-width: 940px) {
+  .unify {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    padding: 26px 22px;
+  }
+  /* The curves only make sense side by side; stacked, the order carries it. */
+  .unify-wires {
+    display: none;
+  }
+  .unify-hub {
+    padding-top: 22px;
+    border-top: 1px solid #232326;
+    width: 100%;
+  }
+}
