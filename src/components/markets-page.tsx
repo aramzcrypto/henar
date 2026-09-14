@@ -429,59 +429,6 @@ function ExpandingSearch({
   );
 }
 
-function eventDay(date: string) {
-  const parsed = new Date(`${date}T00:00:00Z`);
-  return Number.isNaN(parsed.getTime())
-    ? date
-    : parsed.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "UTC",
-      });
-}
-
-function UpcomingEvents({ events }: { events: OverviewEvent[] }) {
-  return (
-    <section className="overview-events">
-      <header>
-        <strong>Events</strong>
-        <Link href="/markets/calendar">
-          View calendar <ArrowRight size={13} />
-        </Link>
-      </header>
-      {events.length === 0 ? (
-        <p className="overview-events-empty">
-          No verified events filed in the next days. The calendar holds the full
-          history and coverage detail.
-        </p>
-      ) : (
-        <ul>
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link href={`/markets/${event.ticker}`}>
-                <EquityLogo
-                  logo={event.companyLogo}
-                  ticker={event.ticker ?? "?"}
-                  size={24}
-                />
-                <span className="listing-text">
-                  <strong>{event.ticker}</strong>
-                  <small>{event.companyName}</small>
-                </span>
-                <span className="overview-event-meta">
-                  <strong>{event.label}</strong>
-                  <small>{eventDay(event.date)}</small>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 function MarketsOverviewView({
   overview,
   universe,
@@ -520,8 +467,6 @@ function MarketsOverviewView({
       />
 
       <MultiIssuerBlock summary={multiIssuer} onOpen={openAll} />
-
-      <UpcomingEvents events={events} />
 
       <SectorBlocks sectors={sectors} onOpenSector={filterSector} />
 

@@ -12002,3 +12002,105 @@ body {
     width: 100%;
   }
 }
+
+/* ---------------------------------------------------------------
+   Portfolio
+   The page was four dashes and a connect prompt for anyone without a
+   wallet. Holdings are public chain state, so any address can be
+   inspected — read only, and never confused with being connected.
+   --------------------------------------------------------------- */
+.portfolio-connect {
+  gap: 0;
+}
+.view-wallet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 430px);
+  margin-top: 30px;
+  padding-top: 26px;
+  border-top: 1px solid #232326;
+}
+.view-wallet > span {
+  color: #6c6c72;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.view-wallet > div {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.view-wallet input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 15px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--data);
+  font-size: 12.5px;
+  outline: none;
+}
+.view-wallet input::placeholder {
+  color: #565660;
+  font-family: var(--font-sans);
+}
+.view-wallet input:focus {
+  box-shadow: inset 0 0 0 1px #3d3d43;
+}
+.view-wallet button {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: var(--button-bg);
+  color: var(--button-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.view-wallet button:disabled {
+  background: #26262a;
+  color: #6c6c72;
+  cursor: not-allowed;
+}
+.view-wallet small {
+  color: var(--accent-text);
+  font-size: 11.5px;
+}
+
+.portfolio-viewing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 11px 15px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.portfolio-viewing svg {
+  flex: none;
+  color: var(--viz-teal);
+}
+.portfolio-viewing b {
+  font-family: var(--data);
+  color: var(--text);
+  font-weight: 600;
+}
+.portfolio-viewing button {
+  margin-left: auto;
+  padding: 6px 13px;
+  border-radius: 8px;
+  background: #26262a;
+  color: var(--text);
+  font-size: 12px;
+}
+.portfolio-viewing button:hover {
+  background: #2e2e32;
+}

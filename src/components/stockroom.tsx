@@ -31,6 +31,7 @@ import {
   Check,
   ShieldCheck,
   Wallet,
+  Eye,
   User,
   LogOut,
   Box,
@@ -219,6 +220,49 @@ function usdEstimate(amount: string, unitPrice: number | null) {
   }
 }
 
+/**
+ * Lets anyone inspect a public address without connecting. Holdings are public
+ * chain state and /api/portfolio already reads by owner, so this needs no new
+ * data path — and nothing it shows is simulated.
+ */
+function ViewAnyWallet({ onView }: { onView: (address: string) => void }) {
+  const [value, setValue] = useState("");
+  const [error, setError] = useState("");
+  const valid = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value.trim());
+  return (
+    <form
+      className="view-wallet"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!valid) {
+          setError("That does not look like a Solana address.");
+          return;
+        }
+        setError("");
+        onView(value.trim());
+      }}
+    >
+      <span>or view any wallet, read only</span>
+      <div>
+        <input
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            if (error) setError("");
+          }}
+          placeholder="Solana address"
+          aria-label="Solana address to view"
+          spellCheck={false}
+        />
+        <button type="submit" disabled={!value.trim()}>
+          View
+        </button>
+      </div>
+      {error ? <small role="alert">{error}</small> : null}
+    </form>
+  );
+}
+
 export function Stockroom({
   page,
   config,
@@ -235,7 +279,11 @@ export function Stockroom({
     : config;
   const wallet = useWallet();
   const { connection } = useConnection();
-  const owner = wallet.publicKey?.toBase58();
+  const connected = wallet.publicKey?.toBase58();
+  // Holdings are public chain state, so any address can be inspected without a
+  // wallet. Viewing never enables signing: `connected` still gates every action.
+  const [viewing, setViewing] = useState("");
+  const owner = connected ?? (viewing || undefined);
   const [stock, setStock] = useState(stocks[0]);
   const [mode, setMode] = useState("market");
   useEffect(() => {
@@ -1711,11 +1759,23 @@ export function Stockroom({
         {page === "packs" && <PacksPage config={config} owner={owner} />}
         {page === "portfolio" && (
           <>
+            {!connected && viewing ? (
+              <div className="portfolio-viewing">
+                <Eye size={15} />
+                <span>
+                  Viewing <b>{`${viewing.slice(0, 4)}…${viewing.slice(-4)}`}</b>{" "}
+                  — read only. Connect a wallet to trade.
+                </span>
+                <button type="button" onClick={() => setViewing("")}>
+                  Exit
+                </button>
+              </div>
+            ) : null}
             <ProductSummary
               balances={owner && !balanceError ? balances : null}
             />
             {!owner ? (
-              <div className="portfolio-empty">
+              <div className="portfolio-empty portfolio-connect">
                 <Wallet size={30} />
                 <h2>Connect your wallet</h2>
                 <p>Your stocks will appear here.</p>
@@ -1724,6 +1784,7 @@ export function Stockroom({
                     ? "Connect wallet"
                     : undefined}
                 </WalletButton>
+                <ViewAnyWallet onView={setViewing} />
               </div>
             ) : balanceError ? (
               <div className="notice error-message">
