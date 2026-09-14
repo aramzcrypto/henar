@@ -7,18 +7,18 @@
   font-display: swap;
 }
 :root {
-  --bg: #0d0e10;
-  --surface: #15171a;
-  --surface2: #1c1e22;
-  --border: #2a2c31;
-  --text: #edeef0;
-  --muted: #84868e;
+  --bg: #0b0809;
+  --surface: #171314;
+  --surface2: #1e1719;
+  --border: #2d2427;
+  --text: #f0eae8;
+  --muted: #8a827e;
   --accent: #ed0c3c;
   --accent-text: #f56b88;
   --button-bg: #f5f5f5;
   --button-hover: #dedee1;
-  --button-ink: #15171a;
-  --selected-bg: #24262a;
+  --button-ink: #171314;
+  --selected-bg: #261d1f;
   --accent-hover: #f33359;
   --accent-soft: #32151e;
   --accent-border: #652034;
@@ -32,9 +32,11 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-family: var(--font-sans), "Avenir Next", "Segoe UI", sans-serif;
   font-size: 14px;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 .staging-banner {
   width: 100%;
@@ -310,7 +312,7 @@ main {
   color: var(--text);
 }
 .ticket-panel {
-  background: #1c1e22;
+  background: #1e1719;
   border: 1px solid #303239;
   border-radius: 12px;
   padding: 19px 22px 18px;
@@ -369,7 +371,7 @@ main {
   color: #c5c7cd;
 }
 .token-chip:hover {
-  background: #3a3d44;
+  background: #3d3134;
 }
 .usdc-icon {
   display: grid;
@@ -796,7 +798,7 @@ footer a {
 .modal {
   width: 430px;
   max-width: 100%;
-  background: #15171c;
+  background: #171315;
   border: 1px solid #383c45;
   border-radius: 16px;
   padding: 26px;
@@ -1559,7 +1561,7 @@ footer a {
   min-height: 34px;
   padding: 6px 10px;
   border-radius: 9px;
-  background: #15171c;
+  background: #171315;
   color: #858b97;
   font-size: 11px;
   white-space: nowrap;
@@ -2236,7 +2238,7 @@ footer a {
   margin: auto;
   border: 1px solid #333742;
   border-radius: 14px;
-  background: #15171c;
+  background: #171315;
   color: var(--text);
   padding: 25px;
 }
@@ -3361,7 +3363,7 @@ footer a {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #9ba4b5;
+  color: #a89f9a;
   font-size: 11px;
 }
 .backpack-offer-meta a {
@@ -3924,7 +3926,7 @@ footer a {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #9ba4b5;
+  color: #a89f9a;
 }
 .earn-tvl strong {
   display: block;
@@ -3977,7 +3979,7 @@ footer a {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #9ba4b5;
+  color: #a89f9a;
   font-size: 13px;
 }
 .earn-chart-empty > svg {
@@ -4129,7 +4131,7 @@ footer a {
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  color: #9ba4b5;
+  color: #a89f9a;
 }
 .earn-ticket .earn-info-popover {
   left: auto;
@@ -4201,7 +4203,7 @@ footer a {
   padding: 24px;
   border: 0;
   border-radius: 18px;
-  background: #15171c;
+  background: #171315;
   color: var(--text);
   box-shadow: 0 24px 100px #0008;
   overflow-y: auto;
@@ -4467,7 +4469,7 @@ footer a {
 }
 .app-header .header-wallet-menu .wallet-adapter-dropdown-list-item:hover {
   background: #22252b !important;
-  color: #ececef !important;
+  color: #efe9e7 !important;
 }
 .header-wallet-menu-icon {
   display: grid;
@@ -4612,7 +4614,7 @@ footer a {
     display: block;
     padding: 12px 16px;
     margin: 0;
-    background: #0c0e10ed;
+    background: #0b0809ed;
     backdrop-filter: blur(14px);
   }
   .mobile-action-dock .primary,
@@ -4709,7 +4711,7 @@ footer a {
     position: sticky;
     bottom: 0;
     padding-top: 14px;
-    background: #15171c;
+    background: #171315;
   }
   .modal-backdrop {
     z-index: 100;
@@ -5657,7 +5659,7 @@ footer a {
 .market-list-head {
   height: 42px;
   padding: 0 18px;
-  color: #666972;
+  color: #6c6460;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -5668,7 +5670,7 @@ footer a {
   border-radius: 10px;
 }
 .market-row:hover {
-  background: #15171a;
+  background: #171314;
 }
 .market-company,
 .market-company > span,
@@ -5706,7 +5708,7 @@ footer a {
   overflow: hidden;
   place-items: center;
   border-radius: 50%;
-  background: #202226;
+  background: #221a1c;
   color: #a6a9b0;
   font-size: 10px;
   font-style: normal;
@@ -5718,7 +5720,7 @@ footer a {
 }
 .market-price strong,
 .market-metric strong {
-  color: #d9dade;
+  color: #ddd6d4;
   font-size: 12px;
   font-weight: 510;
 }
@@ -5746,7 +5748,7 @@ footer a {
   padding: 4px 8px 4px 6px;
   border: 1px solid #292c31;
   border-radius: 7px;
-  background: #1c1e22;
+  background: #1e1719;
   color: #989ba3;
   font-size: 9px;
   font-style: normal;
@@ -5811,25 +5813,25 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #121416;
+  background: #131011;
 }
 .markets-page-tabs button {
   height: 38px;
   padding: 0 18px;
   border-radius: 6px;
-  color: #777a82;
+  color: #7d7570;
   font-size: 12px;
 }
 .markets-page-tabs button.active {
-  background: #24272d;
-  color: #ececef;
+  background: #271e21;
+  color: #efe9e7;
 }
 .markets-overview-search {
   width: 100%;
   height: 50px;
   margin-bottom: 14px;
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
 }
 .markets-overview-strip {
   display: grid;
@@ -5839,10 +5841,10 @@ footer a {
   padding: 31px 36px;
   border-radius: 14px;
   background:
-    radial-gradient(circle at 92% 50%, #23262c 0, transparent 28%), #15171a;
+    radial-gradient(circle at 92% 50%, #23262c 0, transparent 28%), #171314;
 }
 .markets-overview-strip > div > span {
-  color: #9399b8;
+  color: #a0958f;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -5888,7 +5890,7 @@ footer a {
 .market-categories,
 .overview-table-card {
   border-radius: 12px;
-  background: #121416;
+  background: #131011;
 }
 .market-pulse-card > header,
 .market-breadth-card > header,
@@ -5899,18 +5901,18 @@ footer a {
   gap: 8px;
   height: 50px;
   padding: 0 17px;
-  border-bottom: 1px solid #202226;
+  border-bottom: 1px solid #221a1c;
 }
 .market-pulse-card > header > span,
 .market-breadth-card > header > span,
 .overview-table-card > header svg {
-  color: #a9afd2;
+  color: #b3a8a3;
 }
 .market-pulse-card > header strong,
 .market-breadth-card > header strong,
 .market-categories > header strong,
 .overview-table-card > header strong {
-  color: #d9dade;
+  color: #ddd6d4;
   font-size: 13px;
   font-weight: 550;
 }
@@ -6036,7 +6038,7 @@ footer a {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1px;
-  background: #202226;
+  background: #221a1c;
 }
 .market-categories > div > button {
   display: grid;
@@ -6045,12 +6047,12 @@ footer a {
   gap: 10px;
   min-height: 76px;
   padding: 0 18px;
-  background: #121416;
+  background: #131011;
   color: #737780;
   text-align: left;
 }
 .market-categories > div > button:hover {
-  background: #17191d;
+  background: #191415;
 }
 .market-categories > div > button strong,
 .market-categories > div > button small {
@@ -6181,7 +6183,7 @@ footer a {
   overflow-x: auto;
   margin: 44px 0 30px;
   padding-bottom: 1px;
-  border-bottom: 1px solid #202226;
+  border-bottom: 1px solid #221a1c;
 }
 .company-tabs button {
   flex: 0 0 auto;
@@ -6210,7 +6212,7 @@ footer a {
   min-height: 96px;
   justify-content: center;
   padding: 0 22px;
-  background: #15171a;
+  background: #171314;
 }
 .onchain-summary small {
   color: #6c6f77;
@@ -6228,13 +6230,13 @@ footer a {
 .onchain-table-wrap {
   overflow-x: auto;
   border-radius: 12px;
-  background: #121416;
+  background: #131011;
 }
 .issuer-comparison {
   overflow: hidden;
   margin: 18px 0 12px;
   border-radius: 12px;
-  background: #121416;
+  background: #131011;
 }
 .issuer-comparison-head,
 .issuer-comparison-row {
@@ -6253,7 +6255,7 @@ footer a {
 }
 .issuer-comparison-row {
   min-height: 72px;
-  border-top: 1px solid #202226;
+  border-top: 1px solid #221a1c;
   color: #b7b9bf;
   font-size: 11px;
 }
@@ -6261,7 +6263,7 @@ footer a {
 .issuer-name img,
 .company-issuer-list img { object-fit: contain; }
 .issuer-name strong,
-.issuer-token { color: #ececef; font-weight: 560; }
+.issuer-token { color: #efe9e7; font-weight: 560; }
 .execution-details { margin-top: 10px; }
 .execution-details > summary {
   padding: 13px 4px;
@@ -6293,7 +6295,7 @@ footer a {
 .onchain-table td {
   height: 84px;
   padding: 9px 14px;
-  border-top: 1px solid #202226;
+  border-top: 1px solid #221a1c;
   color: #c7c9ce;
   text-align: right;
   white-space: nowrap;
@@ -6325,7 +6327,7 @@ footer a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #777a82;
+  color: #7d7570;
   font-size: 9px;
 }
 .route-status i {
@@ -6350,7 +6352,7 @@ footer a {
 .company-overview article {
   padding: 28px;
   border-radius: 12px;
-  background: #121416;
+  background: #131011;
 }
 .representation-terms article > div {
   display: flex;
@@ -6379,7 +6381,7 @@ footer a {
   grid-template-columns: 100px minmax(0, 1fr);
   gap: 12px;
   padding: 12px 0;
-  border-top: 1px solid #202226;
+  border-top: 1px solid #221a1c;
   font-size: 12px;
 }
 .representation-terms dt,
@@ -6444,7 +6446,7 @@ footer a {
   align-content: center;
   gap: 11px;
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   text-align: center;
 }
 .research-unavailable h2 {
@@ -6480,7 +6482,7 @@ footer a {
 .research-table-wrap {
   overflow-x: auto;
   border-radius: 12px;
-  background: #121416;
+  background: #131011;
 }
 .research-table {
   width: 100%;
@@ -6492,7 +6494,7 @@ footer a {
 .research-table td {
   height: 58px;
   padding: 0 20px;
-  border-bottom: 1px solid #202226;
+  border-bottom: 1px solid #221a1c;
   text-align: right;
   white-space: nowrap;
 }
@@ -6524,14 +6526,14 @@ footer a {
   display: grid;
   overflow: hidden;
   border-radius: 12px;
-  background: #121416;
+  background: #131011;
 }
 .research-news > a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 7px 18px;
   padding: 20px 22px;
-  border-bottom: 1px solid #202226;
+  border-bottom: 1px solid #221a1c;
 }
 .research-news > a:last-child {
   border-bottom: 0;
@@ -6556,7 +6558,7 @@ footer a {
   display: block;
   height: 76px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #121416 25%, #191b1e 50%, #121416 75%);
+  background: linear-gradient(90deg, #131011 25%, #191b1e 50%, #131011 75%);
   background-size: 200% 100%;
   animation: markets-shimmer 1.2s infinite linear;
 }
@@ -6719,7 +6721,7 @@ footer a {
   .issuer-comparison-row > span[data-label]::before {
     display: block;
     margin-bottom: 3px;
-    color: #666972;
+    color: #6c6460;
     content: attr(data-label);
     font-size: 8px;
     text-transform: uppercase;
@@ -7209,7 +7211,7 @@ footer a {
 }
 .lucky-mode > p,
 .lucky-odds p {
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
   font-size: 13px;
   line-height: 1.6;
   margin: 12px 0;
@@ -7221,7 +7223,7 @@ footer a {
 }
 .lucky-mode-note {
   display: block;
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
   font-size: 12px;
   line-height: 1.6;
   margin-top: 10px;
@@ -7234,7 +7236,7 @@ footer a {
 }
 .lucky-range > span {
   font-size: 12px;
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
 }
 .lucky-range strong {
   font-size: 28px;
@@ -7243,7 +7245,7 @@ footer a {
 }
 .lucky-range small {
   font-size: 13px;
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
 }
 .lucky-odds summary {
   cursor: pointer;
@@ -7251,7 +7253,7 @@ footer a {
   padding: 12px 0;
 }
 .lucky-odds summary span {
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
   font-size: 11px;
   margin-left: 8px;
 }
@@ -7268,7 +7270,7 @@ footer a {
   font-weight: 400;
 }
 .lucky-odds th {
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
 }
 .lucky-odds th:first-child,
 .lucky-odds td:first-child {
@@ -7287,7 +7289,7 @@ footer a {
 }
 .lucky-result-actions small {
   flex-basis: 100%;
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -7429,7 +7431,7 @@ footer a {
   gap: 12px;
   margin-top: 12px;
   font-size: 12px;
-  color: var(--muted, #92959f);
+  color: var(--muted, #989089);
 }
 .pack-mode-caption > span {
   line-height: 1.5;
@@ -7894,13 +7896,13 @@ footer a {
   height: 38px;
   padding: 0 18px;
   border-radius: 6px;
-  color: #777a82;
+  color: #7d7570;
   font-size: 12px;
   text-decoration: none;
 }
 .markets-page-tabs a.active {
-  background: #24272d;
-  color: #ececef;
+  background: #271e21;
+  color: #efe9e7;
 }
 .app-select-option-disabled {
   opacity: 0.45;
@@ -7929,8 +7931,8 @@ footer a {
   padding: 0 9px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #121416;
-  color: #b6b8bf;
+  background: #131011;
+  color: #bcb4b1;
   font-size: 12px;
 }
 .calendar-nav button:hover {
@@ -7954,18 +7956,18 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #121416;
+  background: #131011;
 }
 .calendar-modes button {
   height: 32px;
   padding: 0 16px;
   border-radius: 6px;
-  color: #777a82;
+  color: #7d7570;
   font-size: 12px;
 }
 .calendar-modes button.active {
-  background: #24272d;
-  color: #ececef;
+  background: #271e21;
+  color: #efe9e7;
 }
 
 .calendar-layout {
@@ -7986,7 +7988,7 @@ footer a {
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
 }
 .calendar-sidebar h3 {
   margin: 0 0 10px;
@@ -8005,13 +8007,13 @@ footer a {
   padding: 7px 10px;
   border: 1px solid transparent;
   border-radius: 6px;
-  background: #191c20;
-  color: #8d9098;
+  background: #1b1517;
+  color: #938a86;
   font-size: 12px;
   text-align: left;
 }
 .calendar-pill.active {
-  border-color: #33363d;
+  border-color: #362b2e;
   background: var(--selected-bg);
   color: var(--text);
 }
@@ -8026,7 +8028,7 @@ footer a {
   align-items: center;
   gap: 9px;
   padding: 5px 2px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 12px;
   cursor: pointer;
 }
@@ -8046,7 +8048,7 @@ footer a {
 }
 .calendar-check em {
   margin-left: auto;
-  color: #55575d;
+  color: #5b5350;
   font-size: 9.5px;
   font-style: normal;
   letter-spacing: 0.04em;
@@ -8054,15 +8056,15 @@ footer a {
 }
 .calendar-check-disabled {
   cursor: not-allowed;
-  color: #64666d;
+  color: #6a615e;
 }
 .calendar-hint {
   margin: 8px 0 0;
-  color: #55575d;
+  color: #5b5350;
   font-size: 10.5px;
 }
 .legend-earnings {
-  background: #5b8def;
+  background: #5b86e0;
 }
 .legend-macro {
   background: #c9a227;
@@ -8076,7 +8078,7 @@ footer a {
   padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #121416;
+  background: #131011;
   color: var(--muted);
   font-size: 11.5px;
   line-height: 1.5;
@@ -8086,7 +8088,7 @@ footer a {
   margin-top: 2px;
 }
 .calendar-note strong {
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-weight: 600;
 }
 
@@ -8102,7 +8104,7 @@ footer a {
 .calendar-month-head span {
   padding: 9px 10px;
   border-left: 1px solid var(--border);
-  background: #121416;
+  background: #131011;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -8138,7 +8140,7 @@ footer a {
   border-top: none;
 }
 .calendar-day:hover {
-  background: #16181c;
+  background: #181415;
 }
 .calendar-day-outside {
   opacity: 0.38;
@@ -8164,7 +8166,7 @@ footer a {
   font-weight: 700;
 }
 .calendar-day-number {
-  color: #9a9ca4;
+  color: #a09892;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
@@ -8182,8 +8184,8 @@ footer a {
   padding: 2px 5px;
   border-radius: 4px;
   border-left: 2px solid transparent;
-  background: #1a1d21;
-  color: #d3d5da;
+  background: #1c1618;
+  color: #d7d0ce;
   font-size: 11px;
   text-decoration: none;
   overflow: hidden;
@@ -8198,7 +8200,7 @@ footer a {
   background: var(--selected-bg);
 }
 .calendar-chip-earnings {
-  border-left-color: #5b8def;
+  border-left-color: #5b86e0;
 }
 .calendar-chip-macro {
   border-left-color: #c9a227;
@@ -8236,7 +8238,7 @@ footer a {
   gap: 0;
   display: block;
   border-bottom: 1px solid var(--border);
-  background: #121416;
+  background: #131011;
 }
 .calendar-week-day > header button {
   display: flex;
@@ -8272,8 +8274,8 @@ footer a {
   gap: 8px;
   padding: 6px 7px;
   border-radius: 5px;
-  border-left: 2px solid #5b8def;
-  background: #17191d;
+  border-left: 2px solid #5b86e0;
+  background: #191415;
   color: var(--text);
   text-decoration: none;
   min-width: 0;
@@ -8313,7 +8315,7 @@ footer a {
 }
 .calendar-empty-day {
   padding: 8px 7px;
-  color: #55575d;
+  color: #5b5350;
   font-size: 11px;
 }
 
@@ -8332,7 +8334,7 @@ footer a {
   align-items: center;
   gap: 8px;
   margin: 0 0 10px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 12px;
   font-weight: 600;
 }
@@ -8359,7 +8361,7 @@ footer a {
 .calendar-table th {
   padding: 9px 14px;
   border-bottom: 1px solid var(--border);
-  background: #121416;
+  background: #131011;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -8370,14 +8372,14 @@ footer a {
 }
 .calendar-table td {
   padding: 10px 14px;
-  border-bottom: 1px solid #1e2024;
+  border-bottom: 1px solid #201819;
   white-space: nowrap;
 }
 .calendar-table tbody tr:last-child td {
   border-bottom: none;
 }
 .calendar-table tbody tr:hover td {
-  background: #141619;
+  background: #161213;
 }
 .calendar-table .num {
   text-align: right;
@@ -8437,7 +8439,7 @@ footer a {
 }
 .calendar-sources {
   margin: 22px 0 0;
-  color: #5e6067;
+  color: #645c59;
   font-size: 11px;
 }
 
@@ -8446,7 +8448,7 @@ footer a {
   padding: 40px 22px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
 }
 .research-pending span {
   color: var(--muted);
@@ -8465,7 +8467,7 @@ footer a {
   font-size: 12.5px;
 }
 .value-pending {
-  color: #4a4c52;
+  color: #504846;
 }
 
 @media (max-width: 900px) {
@@ -8504,7 +8506,7 @@ footer a {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   overflow: hidden;
 }
 .markets-statbar > div {
@@ -8535,7 +8537,7 @@ footer a {
   padding: 3px 8px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 11px;
   font-weight: 500;
   overflow: hidden;
@@ -8543,7 +8545,7 @@ footer a {
   white-space: nowrap;
 }
 .market-sector small {
-  color: #55575d;
+  color: #5b5350;
   font-size: 11px;
 }
 
@@ -8568,7 +8570,7 @@ footer a {
   font-weight: 600;
 }
 .sector-blocks > header small {
-  color: #5e6067;
+  color: #645c59;
   font-size: 11px;
 }
 .overview-events > header a {
@@ -8590,7 +8592,7 @@ footer a {
 .sector-blocks article {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   overflow: hidden;
 }
 .sector-blocks article > header {
@@ -8630,7 +8632,7 @@ footer a {
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  border-top: 1px solid #1c1e22;
+  border-top: 1px solid #1e1719;
   color: var(--text);
   text-decoration: none;
 }
@@ -8639,7 +8641,7 @@ footer a {
 }
 .sector-blocks li a:hover,
 .overview-events li a:hover {
-  background: #16181c;
+  background: #181415;
 }
 .sector-blocks li .listing-text,
 .overview-events li .listing-text,
@@ -8683,7 +8685,7 @@ footer a {
 .overview-events {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   padding: 14px 0 4px;
 }
 .overview-events > header {
@@ -8752,14 +8754,14 @@ footer a {
   border-bottom: 1px solid var(--border);
 }
 .earn-featured-label span {
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .earn-featured-label small {
-  color: #5e6067;
+  color: #645c59;
   font-size: 11px;
 }
 .earn-powered {
@@ -8800,18 +8802,18 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #121416;
+  background: #131011;
 }
 .stock-earn-filters button {
   height: 32px;
   padding: 0 15px;
   border-radius: 6px;
-  color: #777a82;
+  color: #7d7570;
   font-size: 12px;
 }
 .stock-earn-filters button.active {
-  background: #24272d;
-  color: #ececef;
+  background: #271e21;
+  color: #efe9e7;
 }
 .stock-earn-scroll,
 .calendar-table-scroll,
@@ -8832,7 +8834,7 @@ footer a {
 .stock-earn-table th {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
-  background: #121416;
+  background: #131011;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -8843,7 +8845,7 @@ footer a {
 }
 .stock-earn-table td {
   padding: 11px 14px;
-  border-bottom: 1px solid #1e2024;
+  border-bottom: 1px solid #201819;
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -8851,7 +8853,7 @@ footer a {
   border-bottom: none;
 }
 .stock-earn-table tbody tr:hover td {
-  background: #141619;
+  background: #161213;
 }
 .stock-earn-table .num {
   text-align: right;
@@ -8901,14 +8903,14 @@ footer a {
 }
 .earn-tag-live {
   border-color: #24543c;
-  background: #12271d;
+  background: #10261c;
   color: #4fc98a;
 }
 .earn-tag-external {
-  color: #b6b8bf;
+  color: #bcb4b1;
 }
 .earn-tag-soon {
-  color: #6b6d74;
+  color: #716865;
 }
 .stock-earn-open {
   display: inline-flex;
@@ -8937,7 +8939,7 @@ footer a {
   padding: 9px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #121416;
+  background: #131011;
   color: var(--muted);
   font-size: 11.5px;
   line-height: 1.5;
@@ -8948,7 +8950,7 @@ footer a {
 }
 .stock-earn-source {
   margin: 12px 0 0;
-  color: #5e6067;
+  color: #645c59;
   font-size: 11px;
 }
 
@@ -9029,7 +9031,7 @@ footer a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 11.5px;
   font-style: normal;
 }
@@ -9040,7 +9042,7 @@ footer a {
   margin: 0 0 20px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   overflow: hidden;
 }
 .company-overview .company-keystats > div,
@@ -9070,7 +9072,7 @@ footer a {
   font-variant-numeric: tabular-nums;
 }
 .value-muted {
-  color: #5e6067;
+  color: #645c59;
 }
 
 .company-overview-grid {
@@ -9109,7 +9111,7 @@ footer a {
 }
 .company-overview-news a {
   padding: 9px 0;
-  border-top: 1px solid #1e2024;
+  border-top: 1px solid #201819;
   color: var(--text);
   text-decoration: none;
 }
@@ -9138,7 +9140,7 @@ footer a {
   margin-bottom: 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   overflow: hidden;
 }
 .research-summary > div {
@@ -9167,7 +9169,7 @@ footer a {
 }
 .research-caption {
   margin: 0 0 16px;
-  color: #5e6067;
+  color: #645c59;
   font-size: 11px;
 }
 .filing-form {
@@ -9193,27 +9195,27 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #121416;
+  background: #131011;
 }
 .fin-views button,
 .fin-frames button {
   height: 32px;
   padding: 0 15px;
   border-radius: 6px;
-  color: #777a82;
+  color: #7d7570;
   font-size: 12px;
 }
 .fin-views button.active,
 .fin-frames button.active {
-  background: #24272d;
-  color: #ececef;
+  background: #271e21;
+  color: #efe9e7;
 }
 .fin-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   overflow: hidden;
 }
 .fin-metrics > div {
@@ -9252,7 +9254,7 @@ footer a {
   padding: 16px 18px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
 }
 .fin-chart > header {
   height: auto;
@@ -9280,7 +9282,7 @@ footer a {
   margin: 0 6px 0 12px;
 }
 .fin-key-revenue {
-  background: #5b8def;
+  background: #5b86e0;
 }
 .fin-key-income {
   background: #3fbf7f;
@@ -9333,7 +9335,7 @@ footer a {
 .fin-table th {
   padding: 10px 15px;
   border-bottom: 1px solid var(--border);
-  background: #121416;
+  background: #131011;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -9349,14 +9351,14 @@ footer a {
 }
 .fin-table td {
   padding: 11px 15px;
-  border-bottom: 1px solid #1e2024;
+  border-bottom: 1px solid #201819;
   white-space: nowrap;
 }
 .fin-table tbody tr:last-child td {
   border-bottom: none;
 }
 .fin-table tbody tr:hover td {
-  background: #141619;
+  background: #161213;
 }
 .fin-empty {
   margin: 0;
@@ -9421,13 +9423,13 @@ footer a {
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border-top: 1px solid #1e2024;
+  border-top: 1px solid #201819;
 }
 .news-list li:first-child {
   border-top: none;
 }
 .news-list li:hover {
-  background: #141619;
+  background: #161213;
 }
 .news-list a {
   flex: 1;
@@ -9453,7 +9455,7 @@ footer a {
   font-size: 11px;
 }
 .news-list em {
-  color: #b6b8bf;
+  color: #bcb4b1;
 }
 .news-list i {
   color: var(--muted);
@@ -9476,13 +9478,13 @@ footer a {
   border: 1px solid var(--border);
   border-radius: 14px;
   background:
-    radial-gradient(circle at 92% 50%, #23262c 0, transparent 32%), #15171a;
+    radial-gradient(circle at 92% 50%, #23262c 0, transparent 32%), #171314;
   color: var(--text);
   text-decoration: none;
   transition: border-color 0.15s ease;
 }
 .earn-banner:hover {
-  border-color: #3a3d44;
+  border-color: #3d3134;
 }
 .earn-banner-label {
   display: inline-flex;
@@ -9503,7 +9505,7 @@ footer a {
 .earn-banner-main p {
   margin: 0;
   max-width: 470px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -9634,7 +9636,7 @@ footer a {
   padding: 20px 22px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
 }
 .pool-about > span {
   color: var(--muted);
@@ -9649,7 +9651,7 @@ footer a {
 }
 .pool-about p {
   margin: 0 0 10px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 12.5px;
   line-height: 1.6;
 }
@@ -9672,7 +9674,7 @@ footer a {
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #15171a;
+  background: #171314;
 }
 .pool-ticket-head {
   margin-bottom: 16px;
@@ -9693,7 +9695,7 @@ footer a {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #101214;
+  background: #120e0f;
 }
 .pool-amount input {
   flex: 1;
@@ -9706,7 +9708,7 @@ footer a {
   outline: none;
 }
 .pool-amount input:disabled {
-  color: #4a4c52;
+  color: #504846;
 }
 .pool-amount > div > span {
   color: var(--muted);
@@ -9757,8 +9759,8 @@ footer a {
   font-weight: 600;
 }
 .pool-ticket-cta:disabled {
-  background: #24262a;
-  color: #6b6d74;
+  background: #261d1f;
+  color: #716865;
   cursor: not-allowed;
 }
 .pool-ticket-note {
@@ -9830,7 +9832,7 @@ footer a {
 .multi-issuer > header small {
   display: block;
   margin-top: 4px;
-  color: #5e6067;
+  color: #645c59;
   font-size: 11px;
 }
 .multi-issuer > header button {
@@ -9855,12 +9857,12 @@ footer a {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
   color: var(--text);
   text-decoration: none;
 }
 .multi-issuer-grid a:hover {
-  border-color: #3a3d44;
+  border-color: #3d3134;
 }
 .multi-issuer-company {
   display: flex;
@@ -9891,7 +9893,7 @@ footer a {
   padding: 2px 7px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 10.5px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
@@ -9934,7 +9936,7 @@ footer a {
   padding: 16px 18px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #121416;
+  background: #131011;
 }
 .price-movement-grid article > header {
   height: auto;
@@ -9949,7 +9951,7 @@ footer a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #b6b8bf;
+  color: #bcb4b1;
   font-size: 12px;
 }
 .price-movement-grid article > header b {
@@ -10005,7 +10007,7 @@ footer a {
   background: var(--accent);
 }
 .price-movement-track i.flat {
-  background: #2a2c31;
+  background: #2d2427;
 }
 .price-movement-bars b {
   font-size: 11px;
@@ -10038,4 +10040,455 @@ footer a {
   .markets-heading-compact {
     min-width: 0;
   }
+}
+
+/* ---------------------------------------------------------------
+   Rhythm and numeric discipline
+   The overview reads as one undifferentiated mass when every block
+   sits at the same weight and spacing. This establishes a vertical
+   scale, gives the accent one structural job, and makes every
+   financial figure align on the digit.
+   --------------------------------------------------------------- */
+
+/* Every number that can be compared column-to-column must not jitter. */
+.markets-statbar dd,
+.market-pulse-card strong,
+.market-pulse-card small,
+.market-breadth-card strong,
+.market-row strong,
+.market-row small,
+.company-keystats dd,
+.company-header-stats dd,
+.company-quote strong,
+.company-quote small,
+.research-summary dd,
+.heroStats dd,
+.sector-blocks li b,
+.multi-issuer-tokens em,
+.overview-event-meta small {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Section rhythm: overview blocks were 22px apart regardless of weight. */
+.markets-overview > .market-pulse-grid {
+  margin-top: 26px;
+}
+.markets-overview > .multi-issuer,
+.markets-overview > .overview-events,
+.markets-overview > .sector-blocks,
+.markets-overview > .market-categories {
+  margin-top: 44px;
+}
+
+/* Section labels get room to read as labels rather than table rows. */
+.multi-issuer > header,
+.overview-events > header,
+.sector-blocks > header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #1e1719;
+}
+
+/* The accent gets one structural job: marking the section you are in. */
+.multi-issuer > header strong,
+.overview-events > header strong,
+.sector-blocks > header strong {
+  position: relative;
+  padding-left: 12px;
+}
+.multi-issuer > header strong::before,
+.overview-events > header strong::before,
+.sector-blocks > header strong::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+
+/* Pulse cards carried a hairline border and a fill; the fill alone is
+   enough separation on a near-black canvas. */
+.market-pulse-card > header,
+.market-breadth-card > header,
+.overview-table-card > header {
+  height: 46px;
+}
+
+/* Events was a bordered card while its sibling sections are flat, so the
+   three overview blocks read as different kinds of thing. Flatten it and
+   let the list carry the container, matching Sectors. */
+.overview-events {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+.overview-events > header {
+  padding: 0;
+}
+.overview-events ul {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #131011;
+  overflow: hidden;
+}
+.overview-events li:first-child a {
+  border-top: none;
+}
+.overview-events-empty {
+  padding: 22px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #131011;
+}
+
+
+/* ---------------------------------------------------------------
+   Theme: pomegranate terminal
+   The canvas is warm-dark rather than neutral grey, the accent is the
+   only saturated colour in the chrome, and every figure a trader would
+   compare is set in a fixed-width face. Display type carries the brand
+   through weight and tight tracking instead of decoration.
+   --------------------------------------------------------------- */
+:root {
+  --font-display: var(--font-sans), "Avenir Next", sans-serif;
+  --data: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --accent-glow: rgba(237, 12, 60, 0.16);
+}
+
+/* Display type: heavier, tighter, more confident at large sizes. */
+h1,
+.markets-heading h1,
+.company-identity h1,
+.earn-page-heading h1,
+.pool-identity h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.022em;
+}
+
+/* Data type: anything a user reads as a figure, code or symbol. */
+.markets-statbar dd,
+.company-keystats dd,
+.company-header-stats dd,
+.company-quote strong,
+.company-quote small,
+.research-summary dd,
+.fin-metrics dd,
+.fin-metrics small,
+.fin-table td.num,
+.fin-table th.num,
+.calendar-table .num,
+.stock-earn-table .num,
+.pool-ticket-facts dd,
+.market-row .market-price strong,
+.market-row .market-price small,
+.market-metric strong,
+.market-pulse-card strong,
+.market-pulse-card small,
+.market-breadth-card strong,
+.heroStats dd,
+.multi-issuer-tokens em,
+.calendar-day-number,
+.mint-value,
+.overview-event-meta strong,
+.overview-event-meta small,
+.sector-blocks li b,
+.price-movement-price strong,
+.price-movement-bars b,
+.pool-amount input {
+  font-family: var(--data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Tickers and issuer symbols read as codes, not prose. */
+.market-company small,
+.calendar-chip b,
+.calendar-week-earnings b,
+.stock-earn-company b,
+.stock-earn-rep,
+.multi-issuer-company strong,
+.sector-blocks li strong,
+.overview-events li strong,
+.filing-form {
+  font-family: var(--data);
+  letter-spacing: -0.01em;
+}
+
+/* Section ticks pick up the accent glow so the colour reads as a light
+   source rather than a flat swatch. */
+.multi-issuer > header strong::before,
+.overview-events > header strong::before,
+.sector-blocks > header strong::before {
+  box-shadow: 0 0 10px 1px var(--accent-glow);
+}
+
+/* Primary actions carry the brand instead of defaulting to white. */
+.company-trade,
+.earn-banner-cta {
+  letter-spacing: -0.01em;
+}
+
+/* Uppercase micro-labels get real tracking so they read as labels. */
+.markets-statbar dt,
+.company-keystats dt,
+.company-header-stats dt,
+.research-summary dt,
+.fin-metrics dt,
+.heroStats dt,
+.calendar-sidebar h3,
+.calendar-table th,
+.stock-earn-table th,
+.fin-table th,
+.calendar-month-head span {
+  font-family: var(--font-display);
+  letter-spacing: 0.11em;
+}
+
+/* ---------------------------------------------------------------
+   Tactility
+   Blocks that are clickable should say so before the click and
+   confirm it during. Movement stays small and fast — this is a
+   financial surface, not a toy — and is dropped entirely for anyone
+   who asks for reduced motion.
+   --------------------------------------------------------------- */
+:root {
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --fast: 130ms;
+}
+
+/* Stat bar: each cell lights warm on hover so the row feels alive. */
+.markets-statbar > div,
+.company-keystats > div,
+.research-summary > div {
+  transition: background var(--fast) var(--ease);
+}
+.markets-statbar > div:hover,
+.company-keystats > div:hover,
+.research-summary > div:hover {
+  background: #1a1416;
+}
+
+/* Pulse rows: an accent edge slides in from the left on hover. */
+.market-pulse-card .pulse-row,
+.market-pulse-card li,
+.overview-events li,
+.sector-blocks li {
+  position: relative;
+}
+.market-pulse-card .pulse-row::before,
+.overview-events li::before,
+.sector-blocks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition:
+    opacity var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+.market-pulse-card .pulse-row:hover::before,
+.overview-events li:hover::before,
+.sector-blocks li:hover::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/* Logos gain a touch of presence when their row is targeted. */
+.equity-logo img,
+.equity-logo span {
+  transition: transform var(--fast) var(--ease);
+}
+.market-row:hover .equity-logo img,
+.overview-events li:hover .equity-logo img,
+.sector-blocks li:hover .equity-logo img,
+.multi-issuer-grid a:hover .equity-logo img,
+.stock-earn-table tr:hover .equity-logo img,
+.calendar-chip:hover .equity-logo img {
+  transform: scale(1.12);
+}
+
+/* Company cards lift and warm their edge. */
+.multi-issuer-grid a,
+.sector-blocks article,
+.earn-banner,
+.price-movement-grid article {
+  transition:
+    transform var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.multi-issuer-grid a:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-border);
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 0, 0.8);
+}
+.multi-issuer-grid a:active {
+  transform: translateY(0);
+}
+.earn-banner:hover {
+  transform: translateY(-2px);
+}
+
+/* Issuer pills brighten together when their card is hovered. */
+.multi-issuer-tokens em {
+  transition:
+    color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.multi-issuer-grid a:hover .multi-issuer-tokens em {
+  color: var(--text);
+  border-color: #3d3134;
+}
+
+/* Table rows shift rather than just tint, so the pointer has weight. */
+.market-row,
+.stock-earn-table tbody tr,
+.calendar-table tbody tr,
+.news-list li {
+  transition:
+    background var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+.market-row:hover,
+.news-list li:hover {
+  transform: translateX(2px);
+}
+
+/* Buttons acknowledge the press. */
+.company-trade,
+.earn-banner-cta,
+.pool-ticket-cta,
+.primaryAction,
+.calendar-today,
+.calendar-modes button,
+.fin-views button,
+.fin-frames button,
+.stock-earn-filters button,
+.markets-page-tabs button,
+.markets-page-tabs a {
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+.company-trade:active,
+.earn-banner-cta:active,
+.calendar-today:active,
+.calendar-modes button:active,
+.fin-views button:active,
+.stock-earn-filters button:active,
+.markets-page-tabs button:active {
+  transform: scale(0.97);
+}
+
+/* Calendar chips feel like objects you can pick up. */
+.calendar-chip {
+  transition:
+    background var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+.calendar-chip:hover {
+  transform: translateX(2px);
+}
+.calendar-day {
+  transition: background var(--fast) var(--ease);
+}
+
+/* Financial bars grow in rather than appear. */
+.fin-bar-pair i,
+.price-movement-track i {
+  transition: filter var(--fast) var(--ease);
+}
+.fin-bars > div:hover i,
+.price-movement-bars > div:hover i {
+  filter: brightness(1.25);
+}
+
+/* Keyboard users get the same affordance as the pointer. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[role="tab"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .multi-issuer-grid a:hover,
+  .earn-banner:hover,
+  .market-row:hover,
+  .news-list li:hover,
+  .calendar-chip:hover {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Accent discipline
+   Red is already semantic here: it means a price fell. Using it for
+   structure made neutral sections read as warnings. The accent is now
+   reserved for the brand mark, negative values and primary actions;
+   structure is carried by weight, space and a warm neutral edge.
+   --------------------------------------------------------------- */
+.multi-issuer > header strong::before,
+.overview-events > header strong::before,
+.sector-blocks > header strong::before {
+  display: none;
+}
+.multi-issuer > header strong,
+.overview-events > header strong,
+.sector-blocks > header strong {
+  padding-left: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Row hover: a quiet warm edge, not an accent bar. */
+.market-pulse-card .pulse-row::before,
+.overview-events li::before,
+.sector-blocks li::before {
+  background: #4a3e40;
+}
+
+/* Cards lift on a neutral edge; no coloured outline. */
+.multi-issuer-grid a:hover {
+  border-color: #3d3134;
+  box-shadow: 0 8px 22px -14px rgba(0, 0, 0, 0.9);
+}
+
+/* Keyboard focus stays visible without shouting. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[role="tab"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 2px solid #6f6360;
+  outline-offset: 2px;
 }

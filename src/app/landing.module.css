@@ -3,7 +3,7 @@
   overflow: hidden;
   background:
     radial-gradient(circle at 82% 14%, rgba(237, 12, 60, 0.075), transparent 25%),
-    #0c0e10;
+    #0b0809;
   color: var(--text);
 }
 
@@ -218,7 +218,7 @@
   gap: clamp(70px, 10vw, 180px);
   align-items: center;
   padding: 150px 4%;
-  border-top: 1px solid #222429;
+  border-top: 1px solid #241c1e;
 }
 
 .sectionCopy {
@@ -237,7 +237,7 @@
 .sectionCopy > p {
   max-width: 410px;
   margin-top: 24px;
-  color: #898d96;
+  color: #8f8781;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -247,7 +247,7 @@
   align-items: center;
   gap: 17px;
   margin-top: 27px;
-  color: #e1e2e5;
+  color: #e5dfdd;
   font-size: 12px;
 }
 
@@ -477,7 +477,7 @@
 }
 
 .tradeModes {
-  border-top: 1px solid #2b2e33;
+  border-top: 1px solid #2e2528;
 }
 
 .tradeMode {
@@ -486,8 +486,8 @@
   grid-template-columns: 42px 40px 1fr;
   align-items: center;
   gap: 22px;
-  border-bottom: 1px solid #2b2e33;
-  color: #777c86;
+  border-bottom: 1px solid #2e2528;
+  color: #7d7570;
   transition: color 0.2s, padding 0.2s, background 0.2s;
 }
 
@@ -517,7 +517,7 @@
 .finalCta {
   min-height: 520px;
   padding: 120px 24px;
-  border-top: 1px solid #222429;
+  border-top: 1px solid #241c1e;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -680,7 +680,7 @@
   width: min(100%, 620px);
   margin: 42px auto 0;
   padding-top: 28px;
-  border-top: 1px solid #222429;
+  border-top: 1px solid #241c1e;
   text-align: center;
 }
 
@@ -704,14 +704,14 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
-  background: #2b2e33;
-  border: 1px solid #2b2e33;
+  background: #2e2528;
+  border: 1px solid #2e2528;
 }
 
 .researchItem {
   padding: 32px 30px;
-  background: #0d0e10;
-  color: #777c86;
+  background: #0b0809;
+  color: #7d7570;
   transition: color 0.2s, background 0.2s;
 }
 
@@ -722,7 +722,7 @@
 
 .researchItem h3 {
   margin: 18px 0 9px;
-  color: #e9eaed;
+  color: #ece6e4;
   font-size: 15px;
   font-weight: 520;
   letter-spacing: -0.02em;
@@ -730,7 +730,7 @@
 
 .researchItem p {
   margin: 0;
-  color: #898d96;
+  color: #8f8781;
   font-size: 13px;
   line-height: 1.65;
 }
@@ -739,7 +739,7 @@
   display: flex;
   justify-content: center;
   padding: 150px 4%;
-  border-top: 1px solid #222429;
+  border-top: 1px solid #241c1e;
   text-align: center;
 }
 
