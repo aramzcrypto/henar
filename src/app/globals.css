@@ -10492,3 +10492,306 @@ input:focus-visible,
   outline: 2px solid #6f6360;
   outline-offset: 2px;
 }
+
+/* ---------------------------------------------------------------
+   Bento
+   Tiles of deliberately unequal size and treatment. The volume tile
+   is the hero and carries the accent; the rest recede. Nothing here
+   is a uniform bordered card in a uniform grid.
+   --------------------------------------------------------------- */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: 128px;
+  gap: 10px;
+  margin-bottom: 44px;
+}
+.bento-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: #151011;
+  overflow: hidden;
+}
+.bento-tile > header {
+  height: auto;
+  padding: 0;
+  gap: 0;
+  display: block;
+  margin-bottom: auto;
+}
+.bento-tile > header span {
+  color: #8a827e;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.bento-figure {
+  font-family: var(--data);
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+.bento-figure-sm {
+  font-size: 30px;
+}
+.bento-tile p {
+  margin: 8px 0 0;
+  color: #8a827e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.bento-empty {
+  margin: auto 0 0;
+  color: #5b5350;
+  font-size: 12px;
+}
+
+/* Hero tile: wide, tall, accent-lit, with the market's shape at its foot. */
+.bento-volume {
+  grid-column: span 6;
+  grid-row: span 2;
+  justify-content: flex-start;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(237, 12, 60, 0.14), transparent 60%),
+    #171112;
+}
+.bento-volume .bento-figure {
+  margin-top: 14px;
+  font-size: 60px;
+}
+.bento-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 62px;
+  margin-top: auto;
+}
+.bento-bars i {
+  flex: 1;
+  min-height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, var(--accent), rgba(237, 12, 60, 0.25));
+  transition: filter var(--fast) var(--ease);
+}
+.bento-bars:hover i {
+  filter: saturate(0.5);
+}
+.bento-bars i:hover {
+  filter: brightness(1.4) saturate(1.2);
+}
+
+/* Catalog tile: three figures stacked, the whole tile is one button. */
+.bento-universe {
+  grid-column: span 3;
+  grid-row: span 2;
+  padding: 0;
+}
+.bento-universe button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  padding: 18px 20px;
+  text-align: left;
+  transition: background var(--fast) var(--ease);
+}
+.bento-universe button:hover {
+  background: #1c1517;
+}
+.bento-universe span {
+  display: block;
+  color: #8a827e;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.bento-universe strong {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--data);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+/* Movers: short tiles, three rows each. */
+.bento-movers {
+  grid-column: span 3;
+  gap: 2px;
+}
+.bento-movers > header {
+  margin-bottom: 10px;
+}
+.bento-mover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  color: var(--text);
+  text-decoration: none;
+}
+.bento-mover b {
+  flex: 1;
+  font-family: var(--data);
+  font-size: 12px;
+  font-weight: 600;
+}
+.bento-mover span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--data);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.bento-mover .up,
+.bento-breadth dd.up {
+  color: #3fbf7f;
+}
+.bento-mover .down,
+.bento-breadth dd.down {
+  color: var(--accent-text);
+}
+.bento-mover:hover b {
+  color: var(--accent-text);
+}
+
+/* Most traded: the tall scanning list. */
+.bento-traded {
+  grid-column: span 6;
+  grid-row: span 2;
+}
+.bento-traded ol {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.bento-traded li a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 0;
+  color: var(--text);
+  text-decoration: none;
+  border-top: 1px solid #201819;
+}
+.bento-traded li:first-child a {
+  border-top: none;
+}
+.bento-traded em {
+  width: 18px;
+  color: #5b5350;
+  font-family: var(--data);
+  font-size: 10.5px;
+  font-style: normal;
+}
+.bento-traded li span {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.bento-traded li b {
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.bento-traded li i {
+  color: #8a827e;
+  font-size: 11px;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bento-traded li u {
+  font-family: var(--data);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+.bento-traded li a:hover b {
+  color: var(--accent-text);
+}
+
+/* Breadth: one figure, one bar, two counts. */
+.bento-breadth {
+  grid-column: span 3;
+  grid-row: span 2;
+}
+.bento-breadth .bento-figure-sm {
+  margin-top: 14px;
+}
+.bento-breadth-bar {
+  height: 5px;
+  margin-top: auto;
+  border-radius: 3px;
+  background: rgba(237, 12, 60, 0.35);
+  overflow: hidden;
+}
+.bento-breadth-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #3fbf7f;
+}
+.bento-breadth dl {
+  display: flex;
+  gap: 22px;
+  margin: 14px 0 0;
+}
+.bento-breadth dt {
+  color: #8a827e;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.bento-breadth dd {
+  margin: 4px 0 0;
+  font-family: var(--data);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .bento {
+    grid-auto-rows: 118px;
+  }
+  .bento-volume,
+  .bento-traded {
+    grid-column: span 12;
+  }
+  .bento-universe,
+  .bento-breadth {
+    grid-column: span 6;
+  }
+  .bento-movers {
+    grid-column: span 6;
+    grid-row: span 2;
+  }
+}
+@media (max-width: 620px) {
+  .bento {
+    grid-auto-rows: auto;
+  }
+  .bento-tile {
+    grid-column: span 12 !important;
+    grid-row: auto !important;
+    min-height: 120px;
+  }
+  .bento-volume .bento-figure {
+    font-size: 44px;
+  }
+}

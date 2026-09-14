@@ -2,20 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  Activity,
   Building2,
-  Flame,
   Layers3,
   Search,
-  TrendingDown,
-  TrendingUp,
 } from "lucide-react";
 import { AppSelect } from "./app-select";
+import { MarketsBento } from "./markets-bento";
 import { MarketsTabs } from "./markets-tabs";
 import { EquityLogo } from "./equity-logo";
 import type { EquitySummary, MarketsOverview } from "@/lib/equities/types";
@@ -154,111 +151,6 @@ function EquityRow({ equity }: { equity: EquitySummary }) {
       </span>
       <ArrowUpRight className="market-row-arrow" size={16} />
     </Link>
-  );
-}
-
-function PulseCard({
-  title,
-  icon,
-  items,
-  metric,
-}: {
-  title: string;
-  icon: ReactNode;
-  items: EquitySummary[];
-  metric: "volume" | "change";
-}) {
-  return (
-    <article className="market-pulse-card">
-      <header>
-        <span>{icon}</span>
-        <strong>{title}</strong>
-      </header>
-      {items.length ? (
-        <ol>
-          {items.slice(0, 5).map((equity) => (
-            <li key={equity.id}>
-              <Link href={`/markets/${equity.ticker}`}>
-                <EquityLogo
-                  logo={equity.logo}
-                  ticker={equity.ticker}
-                  size={26}
-                />
-                <span>
-                  <strong>{equity.name}</strong>
-                  <small>{equity.ticker}</small>
-                </span>
-                <b
-                  className={
-                    metric === "volume" || equity.priceChange24hPct === null
-                      ? ""
-                      : equity.priceChange24hPct >= 0
-                        ? "positive"
-                        : "negative"
-                  }
-                >
-                  {metric === "volume"
-                    ? money(equity.onchainVolume24hUsd, true)
-                    : changeLabel(equity.priceChange24hPct)}
-                </b>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <div className="market-pulse-empty">Unavailable</div>
-      )}
-    </article>
-  );
-}
-
-function MarketBreadth({ items }: { items: EquitySummary[] }) {
-  const priced = items.filter((item) => item.priceChange24hPct !== null);
-  const advancing = priced.filter((item) => item.priceChange24hPct! > 0).length;
-  const declining = priced.filter((item) => item.priceChange24hPct! < 0).length;
-  const unchanged = priced.length - advancing - declining;
-  const advanceShare = priced.length ? (advancing / priced.length) * 100 : 0;
-
-  return (
-    <article className="market-breadth-card">
-      <header>
-        <span>
-          <Activity size={16} />
-        </span>
-        <strong>Market breadth</strong>
-        <small>Live matches</small>
-      </header>
-      {priced.length ? (
-        <div className="market-breadth-content">
-          <div className="market-breadth-score">
-            <strong>{Math.round(advanceShare)}%</strong>
-            <span>advancing</span>
-          </div>
-          <div
-            className="market-breadth-bar"
-            aria-label={`${advancing} advancing and ${declining} declining`}
-          >
-            <i style={{ width: `${advanceShare}%` }} />
-          </div>
-          <dl>
-            <div>
-              <dt>Advancing</dt>
-              <dd className="positive">{advancing}</dd>
-            </div>
-            <div>
-              <dt>Declining</dt>
-              <dd className="negative">{declining}</dd>
-            </div>
-            <div>
-              <dt>Unchanged</dt>
-              <dd>{unchanged}</dd>
-            </div>
-          </dl>
-        </div>
-      ) : (
-        <div className="market-pulse-empty">Unavailable</div>
-      )}
-    </article>
   );
 }
 
@@ -537,17 +429,6 @@ function MarketsOverviewView({
   filterAll: (kind: "asset" | "provider", value: string) => void;
   filterSector: (sector: string) => void;
 }) {
-  const live = overview.items.filter((item) => item.price !== null);
-  const gainers = [...live]
-    .filter(
-      (item) => item.priceChange24hPct !== null && item.priceChange24hPct > 0,
-    )
-    .sort((a, b) => b.priceChange24hPct! - a.priceChange24hPct!);
-  const losers = [...live]
-    .filter(
-      (item) => item.priceChange24hPct !== null && item.priceChange24hPct < 0,
-    )
-    .sort((a, b) => a.priceChange24hPct! - b.priceChange24hPct!);
   const categories = [
     ["Stocks", universe.stocks, "asset", "stock"],
     ["ETFs", universe.etfs, "asset", "etf"],
@@ -558,50 +439,12 @@ function MarketsOverviewView({
 
   return (
     <div className="markets-overview">
-      <section className="markets-statbar">
-        <div>
-          <dt>Companies</dt>
-          <dd>{universe.companies.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>Representations</dt>
-          <dd>{universe.representations.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>Issuers</dt>
-          <dd>3</dd>
-        </div>
-        <div>
-          <dt>Live matches</dt>
-          <dd>{overview.matchedCompanyCount.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>Tracked 24h volume</dt>
-          <dd>{money(overview.totalVolume24hUsd, true)}</dd>
-        </div>
-      </section>
-
-      <div className="market-pulse-grid">
-        <PulseCard
-          title="Most traded"
-          icon={<Flame size={15} />}
-          items={overview.items}
-          metric="volume"
-        />
-        <PulseCard
-          title="Gainers"
-          icon={<TrendingUp size={15} />}
-          items={gainers}
-          metric="change"
-        />
-        <PulseCard
-          title="Losers"
-          icon={<TrendingDown size={15} />}
-          items={losers}
-          metric="change"
-        />
-        <MarketBreadth items={live} />
-      </div>
+      <MarketsBento
+        overview={overview}
+        universe={universe}
+        multiIssuerCount={multiIssuer.allIssuers}
+        onOpenAll={openAll}
+      />
 
       <MultiIssuerBlock summary={multiIssuer} onOpen={openAll} />
 
