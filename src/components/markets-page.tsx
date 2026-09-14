@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDownRight,
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   Building2,
   Layers3,
   Search,
+  X,
 } from "lucide-react";
 import { AppSelect } from "./app-select";
 import { MarketsBento } from "./markets-bento";
@@ -375,6 +376,59 @@ function MultiIssuerBlock({
   );
 }
 
+/**
+ * Collapsed to an icon until used, so the control row stays quiet. Opening it
+ * focuses the field; leaving it empty and blurring collapses it again.
+ */
+function ExpandingSearch({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) field.current?.focus();
+  }, [open]);
+
+  return (
+    <div className={`markets-search-control${open || value ? " is-open" : ""}`}>
+      <button
+        type="button"
+        aria-label="Search markets"
+        aria-expanded={open || Boolean(value)}
+        onClick={() => setOpen(true)}
+      >
+        <Search size={16} />
+      </button>
+      <input
+        ref={field}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onBlur={() => {
+          if (!value) setOpen(false);
+        }}
+        placeholder="Search company or ticker"
+        aria-label="Search company or ticker"
+        tabIndex={open || value ? 0 : -1}
+      />
+      {value ? (
+        <button
+          type="button"
+          className="markets-search-clear"
+          aria-label="Clear search"
+          onClick={() => onChange("")}
+        >
+          <X size={14} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function eventDay(date: string) {
   const parsed = new Date(`${date}T00:00:00Z`);
   return Number.isNaN(parsed.getTime())
@@ -583,27 +637,20 @@ export function MarketsPage({
 
   return (
     <section className="markets-shell">
-      <div className="markets-heading markets-heading-compact">
-        <div>
-          <h1>Markets</h1>
-          <span>{universe.companies.toLocaleString()} verified companies</span>
-        </div>
+      <h1 className="sr-only">Markets</h1>
+      <div className="markets-controls">
         <MarketsTabs active={pageView} onSelect={setPageView} />
+        <ExpandingSearch
+          value={query}
+          onChange={(next) => {
+            setQuery(next);
+            if (next) setPageView("all");
+          }}
+        />
       </div>
 
       {pageView === "overview" ? (
         <>
-          <label className="markets-search markets-overview-search">
-            <Search size={16} />
-            <input
-              placeholder="Search company or ticker"
-              aria-label="Search markets"
-              onChange={(event) => {
-                setQuery(event.target.value);
-                if (event.target.value) setPageView("all");
-              }}
-            />
-          </label>
           <MarketsOverviewView
             overview={overview}
             universe={universe}
@@ -618,15 +665,6 @@ export function MarketsPage({
       ) : (
         <>
           <div className="markets-toolbar">
-            <label className="markets-search">
-              <Search size={16} />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search company or ticker"
-                aria-label="Search markets"
-              />
-            </label>
             <AppSelect
               label="Asset type"
               value={assetType}

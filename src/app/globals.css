@@ -11169,3 +11169,145 @@ body {
 .multi-issuer-grid a:hover .multi-issuer-tokens em {
   background: #26262a;
 }
+
+/* ---------------------------------------------------------------
+   Markets control row
+   The page title said nothing the navigation did not already say, so
+   the row is just: where you are, and how to search.
+   --------------------------------------------------------------- */
+.markets-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.markets-search-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border-radius: 12px;
+  background: transparent;
+  transition:
+    background var(--fast) var(--ease),
+    width var(--fast) var(--ease);
+  width: 44px;
+}
+.markets-search-control.is-open {
+  width: min(340px, 46vw);
+  background: var(--surface);
+}
+.markets-search-control > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  color: #85858c;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.markets-search-control > button:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+.markets-search-control.is-open > button {
+  background: transparent;
+  pointer-events: none;
+}
+.markets-search-control input {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 13.5px;
+  outline: none;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+.markets-search-control.is-open input {
+  width: 100%;
+  padding-right: 10px;
+  opacity: 1;
+}
+.markets-search-control input::placeholder {
+  color: #565660;
+}
+.markets-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 7px;
+  flex: none;
+  border-radius: 8px;
+  color: #85858c;
+}
+.markets-search-clear:hover {
+  color: var(--text);
+  background: #26262a;
+}
+
+/* Volume split: flat segments, labelled, no gradient. */
+.bento-split {
+  margin-top: auto;
+}
+.bento-split-bar {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  margin-bottom: 14px;
+}
+.bento-split-bar i {
+  height: 100%;
+  border-radius: 3px;
+  transition: filter var(--fast) var(--ease);
+}
+.bento-split-bar:hover i {
+  filter: saturate(0.45);
+}
+.bento-split-bar i:hover {
+  filter: brightness(1.25);
+}
+.bento-split dl {
+  display: flex;
+  gap: 26px;
+  margin: 0;
+}
+.bento-split dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #85858c;
+  font-size: 11px;
+}
+.bento-split dt i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+.bento-split dd {
+  margin: 5px 0 0 14px;
+  font-family: var(--data);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+  .markets-controls {
+    flex-wrap: wrap;
+  }
+  .markets-search-control.is-open {
+    width: 100%;
+  }
+  .bento-split dl {
+    gap: 16px;
+  }
+}

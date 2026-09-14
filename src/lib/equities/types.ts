@@ -172,6 +172,8 @@ export type EquitySummary = Omit<Equity, "representations"> & {
 
 export type MarketsOverview = {
   items: EquitySummary[];
+  /** 24h volume attributed to each issuer, keyed by provider id. */
+  providerVolume: Record<string, number>;
   totalVolume24hUsd: number | null;
   sourceTokenCount: number;
   matchedCompanyCount: number;

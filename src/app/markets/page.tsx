@@ -32,6 +32,7 @@ const EVENT_WINDOW_DAYS = 14;
 
 const emptyOverview = {
   items: [],
+  providerVolume: {},
   totalVolume24hUsd: null,
   sourceTokenCount: 0,
   matchedCompanyCount: 0,

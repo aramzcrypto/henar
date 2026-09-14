@@ -286,8 +286,30 @@ export async function marketsOverview(): Promise<MarketsOverview> {
   const availableVolumes = items
     .map((item) => item.onchainVolume24hUsd)
     .filter((value): value is number => value !== null);
+
+  // Which issuer the traded volume actually sits with. The metadata call is
+  // already cached from summarizeEquities, so this costs nothing extra.
+  const providerVolume: Record<string, number> = {};
+  try {
+    const metadata = await jupiterMetadata(
+      equities.flatMap((equity) => equity.representations),
+    );
+    for (const equity of equities) {
+      for (const representation of equity.representations) {
+        const volume = metadata.get(representation.mint)?.volume24h;
+        if (typeof volume === "number" && volume > 0) {
+          providerVolume[representation.provider] =
+            (providerVolume[representation.provider] ?? 0) + volume;
+        }
+      }
+    }
+  } catch {
+    // A missing split leaves the tile showing the headline figure alone.
+  }
+
   return {
     items,
+    providerVolume,
     totalVolume24hUsd: availableVolumes.length
       ? availableVolumes.reduce((sum, value) => sum + value, 0)
       : null,

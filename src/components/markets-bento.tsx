@@ -16,6 +16,18 @@ type Universe = {
   ondo: number;
 };
 
+const ISSUERS: Record<string, string> = {
+  xstocks: "xStocks",
+  backpack: "Backpack",
+  ondo: "Ondo",
+};
+
+const ISSUER_COLOURS: Record<string, string> = {
+  xstocks: "#46b3a8",
+  backpack: "#e0a355",
+  ondo: "#8b7fd4",
+};
+
 function compact(value: number | null) {
   if (value === null) return "—";
   if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
@@ -106,9 +118,24 @@ export function MarketsBento({
     };
   }, [live]);
 
-  // Column heights for the volume tile, normalised to the deepest market.
-  const bars = byVolume.slice(0, 12);
-  const peak = Math.max(...bars.map((b) => b.onchainVolume24hUsd ?? 0), 1);
+  // Where the traded volume actually sits, by issuer. Unlabelled bars of
+  // anonymous companies told the reader nothing; this answers a real question.
+  const split = useMemo(() => {
+    const entries = Object.entries(overview.providerVolume ?? {}).filter(
+      ([, v]) => v > 0,
+    );
+    const total = entries.reduce((sum, [, v]) => sum + v, 0);
+    if (!total) return [];
+    return entries
+      .map(([provider, volume]) => ({
+        provider,
+        label: ISSUERS[provider] ?? provider,
+        colour: ISSUER_COLOURS[provider] ?? "#78787f",
+        volume,
+        share: (volume / total) * 100,
+      }))
+      .sort((a, b) => b.volume - a.volume);
+  }, [overview.providerVolume]);
 
   return (
     <div className="bento">
@@ -124,17 +151,28 @@ export function MarketsBento({
           across {overview.matchedCompanyCount} companies with live onchain
           activity
         </p>
-        {bars.length > 1 ? (
-          <div className="bento-bars" aria-hidden>
-            {bars.map((item) => (
-              <i
-                key={item.id}
-                style={{
-                  height: `${Math.max(((item.onchainVolume24hUsd ?? 0) / peak) * 100, 4)}%`,
-                }}
-                title={`${item.ticker} ${compact(item.onchainVolume24hUsd)}`}
-              />
-            ))}
+        {split.length ? (
+          <div className="bento-split">
+            <div className="bento-split-bar">
+              {split.map((s) => (
+                <i
+                  key={s.provider}
+                  style={{ width: `${s.share}%`, background: s.colour }}
+                  title={`${s.label} ${compact(s.volume)}`}
+                />
+              ))}
+            </div>
+            <dl>
+              {split.map((s) => (
+                <div key={s.provider}>
+                  <dt>
+                    <i style={{ background: s.colour }} />
+                    {s.label}
+                  </dt>
+                  <dd>{s.share.toFixed(0)}%</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         ) : null}
       </section>
