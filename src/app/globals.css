@@ -7,18 +7,18 @@
   font-display: swap;
 }
 :root {
-  --bg: #0b0809;
-  --surface: #171314;
-  --surface2: #1e1719;
-  --border: #2d2427;
-  --text: #f0eae8;
-  --muted: #8a827e;
+  --bg: #0a0a0b;
+  --surface: #17171a;
+  --surface2: #1e1e21;
+  --border: #2a2a2e;
+  --text: #ededef;
+  --muted: #85858c;
   --accent: #ed0c3c;
   --accent-text: #f56b88;
   --button-bg: #f5f5f5;
   --button-hover: #dedee1;
-  --button-ink: #171314;
-  --selected-bg: #261d1f;
+  --button-ink: #17171a;
+  --selected-bg: #26262a;
   --accent-hover: #f33359;
   --accent-soft: #32151e;
   --accent-border: #652034;
@@ -46,9 +46,9 @@ body {
   justify-content: center;
   gap: 7px;
   padding: 7px 18px;
-  border-bottom: 1px solid #54202d;
-  background: #280d15;
-  color: #e8b9c3;
+  border-bottom: 1px solid #26262a;
+  background: #141416;
+  color: #9a9aa1;
   font-size: 11px;
   font-weight: 550;
   letter-spacing: 0.02em;
@@ -312,7 +312,7 @@ main {
   color: var(--text);
 }
 .ticket-panel {
-  background: #1e1719;
+  background: #1e1e21;
   border: 1px solid #303239;
   border-radius: 12px;
   padding: 19px 22px 18px;
@@ -371,7 +371,7 @@ main {
   color: #c5c7cd;
 }
 .token-chip:hover {
-  background: #3d3134;
+  background: #38383d;
 }
 .usdc-icon {
   display: grid;
@@ -798,7 +798,7 @@ footer a {
 .modal {
   width: 430px;
   max-width: 100%;
-  background: #171315;
+  background: #17171a;
   border: 1px solid #383c45;
   border-radius: 16px;
   padding: 26px;
@@ -1561,7 +1561,7 @@ footer a {
   min-height: 34px;
   padding: 6px 10px;
   border-radius: 9px;
-  background: #171315;
+  background: #17171a;
   color: #858b97;
   font-size: 11px;
   white-space: nowrap;
@@ -2238,7 +2238,7 @@ footer a {
   margin: auto;
   border: 1px solid #333742;
   border-radius: 14px;
-  background: #171315;
+  background: #17171a;
   color: var(--text);
   padding: 25px;
 }
@@ -3363,7 +3363,7 @@ footer a {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #a89f9a;
+  color: #a2a2a9;
   font-size: 11px;
 }
 .backpack-offer-meta a {
@@ -3926,7 +3926,7 @@ footer a {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #a89f9a;
+  color: #a2a2a9;
 }
 .earn-tvl strong {
   display: block;
@@ -3979,7 +3979,7 @@ footer a {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #a89f9a;
+  color: #a2a2a9;
   font-size: 13px;
 }
 .earn-chart-empty > svg {
@@ -4131,7 +4131,7 @@ footer a {
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  color: #a89f9a;
+  color: #a2a2a9;
 }
 .earn-ticket .earn-info-popover {
   left: auto;
@@ -4203,7 +4203,7 @@ footer a {
   padding: 24px;
   border: 0;
   border-radius: 18px;
-  background: #171315;
+  background: #17171a;
   color: var(--text);
   box-shadow: 0 24px 100px #0008;
   overflow-y: auto;
@@ -4469,7 +4469,7 @@ footer a {
 }
 .app-header .header-wallet-menu .wallet-adapter-dropdown-list-item:hover {
   background: #22252b !important;
-  color: #efe9e7 !important;
+  color: #ececee !important;
 }
 .header-wallet-menu-icon {
   display: grid;
@@ -4614,7 +4614,7 @@ footer a {
     display: block;
     padding: 12px 16px;
     margin: 0;
-    background: #0b0809ed;
+    background: #0a0a0bed;
     backdrop-filter: blur(14px);
   }
   .mobile-action-dock .primary,
@@ -4711,7 +4711,7 @@ footer a {
     position: sticky;
     bottom: 0;
     padding-top: 14px;
-    background: #171315;
+    background: #17171a;
   }
   .modal-backdrop {
     z-index: 100;
@@ -5659,7 +5659,7 @@ footer a {
 .market-list-head {
   height: 42px;
   padding: 0 18px;
-  color: #6c6460;
+  color: #676770;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -5670,7 +5670,7 @@ footer a {
   border-radius: 10px;
 }
 .market-row:hover {
-  background: #171314;
+  background: #17171a;
 }
 .market-company,
 .market-company > span,
@@ -5708,7 +5708,7 @@ footer a {
   overflow: hidden;
   place-items: center;
   border-radius: 50%;
-  background: #221a1c;
+  background: #222225;
   color: #a6a9b0;
   font-size: 10px;
   font-style: normal;
@@ -5720,7 +5720,7 @@ footer a {
 }
 .market-price strong,
 .market-metric strong {
-  color: #ddd6d4;
+  color: #d9d9dc;
   font-size: 12px;
   font-weight: 510;
 }
@@ -5748,7 +5748,7 @@ footer a {
   padding: 4px 8px 4px 6px;
   border: 1px solid #292c31;
   border-radius: 7px;
-  background: #1e1719;
+  background: #1e1e21;
   color: #989ba3;
   font-size: 9px;
   font-style: normal;
@@ -5813,25 +5813,25 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #131011;
+  background: #141416;
 }
 .markets-page-tabs button {
   height: 38px;
   padding: 0 18px;
   border-radius: 6px;
-  color: #7d7570;
+  color: #78787f;
   font-size: 12px;
 }
 .markets-page-tabs button.active {
-  background: #271e21;
-  color: #efe9e7;
+  background: #27272b;
+  color: #ececee;
 }
 .markets-overview-search {
   width: 100%;
   height: 50px;
   margin-bottom: 14px;
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
 }
 .markets-overview-strip {
   display: grid;
@@ -5841,10 +5841,10 @@ footer a {
   padding: 31px 36px;
   border-radius: 14px;
   background:
-    radial-gradient(circle at 92% 50%, #23262c 0, transparent 28%), #171314;
+    radial-gradient(circle at 92% 50%, #23262c 0, transparent 28%), #17171a;
 }
 .markets-overview-strip > div > span {
-  color: #a0958f;
+  color: #9a9aa1;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -5890,7 +5890,7 @@ footer a {
 .market-categories,
 .overview-table-card {
   border-radius: 12px;
-  background: #131011;
+  background: #141416;
 }
 .market-pulse-card > header,
 .market-breadth-card > header,
@@ -5901,18 +5901,18 @@ footer a {
   gap: 8px;
   height: 50px;
   padding: 0 17px;
-  border-bottom: 1px solid #221a1c;
+  border-bottom: 1px solid #222225;
 }
 .market-pulse-card > header > span,
 .market-breadth-card > header > span,
 .overview-table-card > header svg {
-  color: #b3a8a3;
+  color: #adadb4;
 }
 .market-pulse-card > header strong,
 .market-breadth-card > header strong,
 .market-categories > header strong,
 .overview-table-card > header strong {
-  color: #ddd6d4;
+  color: #d9d9dc;
   font-size: 13px;
   font-weight: 550;
 }
@@ -6038,7 +6038,7 @@ footer a {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1px;
-  background: #221a1c;
+  background: #222225;
 }
 .market-categories > div > button {
   display: grid;
@@ -6047,12 +6047,12 @@ footer a {
   gap: 10px;
   min-height: 76px;
   padding: 0 18px;
-  background: #131011;
+  background: #141416;
   color: #737780;
   text-align: left;
 }
 .market-categories > div > button:hover {
-  background: #191415;
+  background: #19191c;
 }
 .market-categories > div > button strong,
 .market-categories > div > button small {
@@ -6183,7 +6183,7 @@ footer a {
   overflow-x: auto;
   margin: 44px 0 30px;
   padding-bottom: 1px;
-  border-bottom: 1px solid #221a1c;
+  border-bottom: 1px solid #222225;
 }
 .company-tabs button {
   flex: 0 0 auto;
@@ -6212,7 +6212,7 @@ footer a {
   min-height: 96px;
   justify-content: center;
   padding: 0 22px;
-  background: #171314;
+  background: #17171a;
 }
 .onchain-summary small {
   color: #6c6f77;
@@ -6230,13 +6230,13 @@ footer a {
 .onchain-table-wrap {
   overflow-x: auto;
   border-radius: 12px;
-  background: #131011;
+  background: #141416;
 }
 .issuer-comparison {
   overflow: hidden;
   margin: 18px 0 12px;
   border-radius: 12px;
-  background: #131011;
+  background: #141416;
 }
 .issuer-comparison-head,
 .issuer-comparison-row {
@@ -6255,7 +6255,7 @@ footer a {
 }
 .issuer-comparison-row {
   min-height: 72px;
-  border-top: 1px solid #221a1c;
+  border-top: 1px solid #222225;
   color: #b7b9bf;
   font-size: 11px;
 }
@@ -6263,7 +6263,7 @@ footer a {
 .issuer-name img,
 .company-issuer-list img { object-fit: contain; }
 .issuer-name strong,
-.issuer-token { color: #efe9e7; font-weight: 560; }
+.issuer-token { color: #ececee; font-weight: 560; }
 .execution-details { margin-top: 10px; }
 .execution-details > summary {
   padding: 13px 4px;
@@ -6295,7 +6295,7 @@ footer a {
 .onchain-table td {
   height: 84px;
   padding: 9px 14px;
-  border-top: 1px solid #221a1c;
+  border-top: 1px solid #222225;
   color: #c7c9ce;
   text-align: right;
   white-space: nowrap;
@@ -6327,7 +6327,7 @@ footer a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #7d7570;
+  color: #78787f;
   font-size: 9px;
 }
 .route-status i {
@@ -6352,7 +6352,7 @@ footer a {
 .company-overview article {
   padding: 28px;
   border-radius: 12px;
-  background: #131011;
+  background: #141416;
 }
 .representation-terms article > div {
   display: flex;
@@ -6381,7 +6381,7 @@ footer a {
   grid-template-columns: 100px minmax(0, 1fr);
   gap: 12px;
   padding: 12px 0;
-  border-top: 1px solid #221a1c;
+  border-top: 1px solid #222225;
   font-size: 12px;
 }
 .representation-terms dt,
@@ -6446,7 +6446,7 @@ footer a {
   align-content: center;
   gap: 11px;
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   text-align: center;
 }
 .research-unavailable h2 {
@@ -6482,7 +6482,7 @@ footer a {
 .research-table-wrap {
   overflow-x: auto;
   border-radius: 12px;
-  background: #131011;
+  background: #141416;
 }
 .research-table {
   width: 100%;
@@ -6494,7 +6494,7 @@ footer a {
 .research-table td {
   height: 58px;
   padding: 0 20px;
-  border-bottom: 1px solid #221a1c;
+  border-bottom: 1px solid #222225;
   text-align: right;
   white-space: nowrap;
 }
@@ -6526,14 +6526,14 @@ footer a {
   display: grid;
   overflow: hidden;
   border-radius: 12px;
-  background: #131011;
+  background: #141416;
 }
 .research-news > a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 7px 18px;
   padding: 20px 22px;
-  border-bottom: 1px solid #221a1c;
+  border-bottom: 1px solid #222225;
 }
 .research-news > a:last-child {
   border-bottom: 0;
@@ -6558,7 +6558,7 @@ footer a {
   display: block;
   height: 76px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #131011 25%, #191b1e 50%, #131011 75%);
+  background: linear-gradient(90deg, #141416 25%, #191b1e 50%, #141416 75%);
   background-size: 200% 100%;
   animation: markets-shimmer 1.2s infinite linear;
 }
@@ -6721,7 +6721,7 @@ footer a {
   .issuer-comparison-row > span[data-label]::before {
     display: block;
     margin-bottom: 3px;
-    color: #6c6460;
+    color: #676770;
     content: attr(data-label);
     font-size: 8px;
     text-transform: uppercase;
@@ -7211,7 +7211,7 @@ footer a {
 }
 .lucky-mode > p,
 .lucky-odds p {
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
   font-size: 13px;
   line-height: 1.6;
   margin: 12px 0;
@@ -7223,7 +7223,7 @@ footer a {
 }
 .lucky-mode-note {
   display: block;
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
   font-size: 12px;
   line-height: 1.6;
   margin-top: 10px;
@@ -7236,7 +7236,7 @@ footer a {
 }
 .lucky-range > span {
   font-size: 12px;
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
 }
 .lucky-range strong {
   font-size: 28px;
@@ -7245,7 +7245,7 @@ footer a {
 }
 .lucky-range small {
   font-size: 13px;
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
 }
 .lucky-odds summary {
   cursor: pointer;
@@ -7253,7 +7253,7 @@ footer a {
   padding: 12px 0;
 }
 .lucky-odds summary span {
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
   font-size: 11px;
   margin-left: 8px;
 }
@@ -7270,7 +7270,7 @@ footer a {
   font-weight: 400;
 }
 .lucky-odds th {
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
 }
 .lucky-odds th:first-child,
 .lucky-odds td:first-child {
@@ -7289,7 +7289,7 @@ footer a {
 }
 .lucky-result-actions small {
   flex-basis: 100%;
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -7431,7 +7431,7 @@ footer a {
   gap: 12px;
   margin-top: 12px;
   font-size: 12px;
-  color: var(--muted, #989089);
+  color: var(--muted, #919198);
 }
 .pack-mode-caption > span {
   line-height: 1.5;
@@ -7896,13 +7896,13 @@ footer a {
   height: 38px;
   padding: 0 18px;
   border-radius: 6px;
-  color: #7d7570;
+  color: #78787f;
   font-size: 12px;
   text-decoration: none;
 }
 .markets-page-tabs a.active {
-  background: #271e21;
-  color: #efe9e7;
+  background: #27272b;
+  color: #ececee;
 }
 .app-select-option-disabled {
   opacity: 0.45;
@@ -7931,8 +7931,8 @@ footer a {
   padding: 0 9px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #131011;
-  color: #bcb4b1;
+  background: #141416;
+  color: #b7b7bd;
   font-size: 12px;
 }
 .calendar-nav button:hover {
@@ -7956,18 +7956,18 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #131011;
+  background: #141416;
 }
 .calendar-modes button {
   height: 32px;
   padding: 0 16px;
   border-radius: 6px;
-  color: #7d7570;
+  color: #78787f;
   font-size: 12px;
 }
 .calendar-modes button.active {
-  background: #271e21;
-  color: #efe9e7;
+  background: #27272b;
+  color: #ececee;
 }
 
 .calendar-layout {
@@ -7988,7 +7988,7 @@ footer a {
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
 }
 .calendar-sidebar h3 {
   margin: 0 0 10px;
@@ -8007,13 +8007,13 @@ footer a {
   padding: 7px 10px;
   border: 1px solid transparent;
   border-radius: 6px;
-  background: #1b1517;
-  color: #938a86;
+  background: #1b1b1e;
+  color: #8e8e95;
   font-size: 12px;
   text-align: left;
 }
 .calendar-pill.active {
-  border-color: #362b2e;
+  border-color: #313135;
   background: var(--selected-bg);
   color: var(--text);
 }
@@ -8028,7 +8028,7 @@ footer a {
   align-items: center;
   gap: 9px;
   padding: 5px 2px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 12px;
   cursor: pointer;
 }
@@ -8048,7 +8048,7 @@ footer a {
 }
 .calendar-check em {
   margin-left: auto;
-  color: #5b5350;
+  color: #565660;
   font-size: 9.5px;
   font-style: normal;
   letter-spacing: 0.04em;
@@ -8056,11 +8056,11 @@ footer a {
 }
 .calendar-check-disabled {
   cursor: not-allowed;
-  color: #6a615e;
+  color: #656569;
 }
 .calendar-hint {
   margin: 8px 0 0;
-  color: #5b5350;
+  color: #565660;
   font-size: 10.5px;
 }
 .legend-earnings {
@@ -8078,7 +8078,7 @@ footer a {
   padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #131011;
+  background: #141416;
   color: var(--muted);
   font-size: 11.5px;
   line-height: 1.5;
@@ -8088,7 +8088,7 @@ footer a {
   margin-top: 2px;
 }
 .calendar-note strong {
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-weight: 600;
 }
 
@@ -8104,7 +8104,7 @@ footer a {
 .calendar-month-head span {
   padding: 9px 10px;
   border-left: 1px solid var(--border);
-  background: #131011;
+  background: #141416;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -8140,7 +8140,7 @@ footer a {
   border-top: none;
 }
 .calendar-day:hover {
-  background: #181415;
+  background: #18181b;
 }
 .calendar-day-outside {
   opacity: 0.38;
@@ -8166,7 +8166,7 @@ footer a {
   font-weight: 700;
 }
 .calendar-day-number {
-  color: #a09892;
+  color: #9a9aa1;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
@@ -8184,8 +8184,8 @@ footer a {
   padding: 2px 5px;
   border-radius: 4px;
   border-left: 2px solid transparent;
-  background: #1c1618;
-  color: #d7d0ce;
+  background: #1c1c1f;
+  color: #d3d3d7;
   font-size: 11px;
   text-decoration: none;
   overflow: hidden;
@@ -8238,7 +8238,7 @@ footer a {
   gap: 0;
   display: block;
   border-bottom: 1px solid var(--border);
-  background: #131011;
+  background: #141416;
 }
 .calendar-week-day > header button {
   display: flex;
@@ -8275,7 +8275,7 @@ footer a {
   padding: 6px 7px;
   border-radius: 5px;
   border-left: 2px solid #5b86e0;
-  background: #191415;
+  background: #19191c;
   color: var(--text);
   text-decoration: none;
   min-width: 0;
@@ -8315,7 +8315,7 @@ footer a {
 }
 .calendar-empty-day {
   padding: 8px 7px;
-  color: #5b5350;
+  color: #565660;
   font-size: 11px;
 }
 
@@ -8334,7 +8334,7 @@ footer a {
   align-items: center;
   gap: 8px;
   margin: 0 0 10px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 12px;
   font-weight: 600;
 }
@@ -8361,7 +8361,7 @@ footer a {
 .calendar-table th {
   padding: 9px 14px;
   border-bottom: 1px solid var(--border);
-  background: #131011;
+  background: #141416;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -8372,14 +8372,14 @@ footer a {
 }
 .calendar-table td {
   padding: 10px 14px;
-  border-bottom: 1px solid #201819;
+  border-bottom: 1px solid #202023;
   white-space: nowrap;
 }
 .calendar-table tbody tr:last-child td {
   border-bottom: none;
 }
 .calendar-table tbody tr:hover td {
-  background: #161213;
+  background: #161618;
 }
 .calendar-table .num {
   text-align: right;
@@ -8439,7 +8439,7 @@ footer a {
 }
 .calendar-sources {
   margin: 22px 0 0;
-  color: #645c59;
+  color: #5f5f66;
   font-size: 11px;
 }
 
@@ -8448,7 +8448,7 @@ footer a {
   padding: 40px 22px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
 }
 .research-pending span {
   color: var(--muted);
@@ -8467,7 +8467,7 @@ footer a {
   font-size: 12.5px;
 }
 .value-pending {
-  color: #504846;
+  color: #4b4b51;
 }
 
 @media (max-width: 900px) {
@@ -8506,7 +8506,7 @@ footer a {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   overflow: hidden;
 }
 .markets-statbar > div {
@@ -8537,7 +8537,7 @@ footer a {
   padding: 3px 8px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 11px;
   font-weight: 500;
   overflow: hidden;
@@ -8545,7 +8545,7 @@ footer a {
   white-space: nowrap;
 }
 .market-sector small {
-  color: #5b5350;
+  color: #565660;
   font-size: 11px;
 }
 
@@ -8570,7 +8570,7 @@ footer a {
   font-weight: 600;
 }
 .sector-blocks > header small {
-  color: #645c59;
+  color: #5f5f66;
   font-size: 11px;
 }
 .overview-events > header a {
@@ -8592,7 +8592,7 @@ footer a {
 .sector-blocks article {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   overflow: hidden;
 }
 .sector-blocks article > header {
@@ -8632,7 +8632,7 @@ footer a {
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  border-top: 1px solid #1e1719;
+  border-top: 1px solid #1e1e21;
   color: var(--text);
   text-decoration: none;
 }
@@ -8641,7 +8641,7 @@ footer a {
 }
 .sector-blocks li a:hover,
 .overview-events li a:hover {
-  background: #181415;
+  background: #18181b;
 }
 .sector-blocks li .listing-text,
 .overview-events li .listing-text,
@@ -8685,7 +8685,7 @@ footer a {
 .overview-events {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   padding: 14px 0 4px;
 }
 .overview-events > header {
@@ -8754,14 +8754,14 @@ footer a {
   border-bottom: 1px solid var(--border);
 }
 .earn-featured-label span {
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .earn-featured-label small {
-  color: #645c59;
+  color: #5f5f66;
   font-size: 11px;
 }
 .earn-powered {
@@ -8802,18 +8802,18 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #131011;
+  background: #141416;
 }
 .stock-earn-filters button {
   height: 32px;
   padding: 0 15px;
   border-radius: 6px;
-  color: #7d7570;
+  color: #78787f;
   font-size: 12px;
 }
 .stock-earn-filters button.active {
-  background: #271e21;
-  color: #efe9e7;
+  background: #27272b;
+  color: #ececee;
 }
 .stock-earn-scroll,
 .calendar-table-scroll,
@@ -8834,7 +8834,7 @@ footer a {
 .stock-earn-table th {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
-  background: #131011;
+  background: #141416;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -8845,7 +8845,7 @@ footer a {
 }
 .stock-earn-table td {
   padding: 11px 14px;
-  border-bottom: 1px solid #201819;
+  border-bottom: 1px solid #202023;
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -8853,7 +8853,7 @@ footer a {
   border-bottom: none;
 }
 .stock-earn-table tbody tr:hover td {
-  background: #161213;
+  background: #161618;
 }
 .stock-earn-table .num {
   text-align: right;
@@ -8907,10 +8907,10 @@ footer a {
   color: #4fc98a;
 }
 .earn-tag-external {
-  color: #bcb4b1;
+  color: #b7b7bd;
 }
 .earn-tag-soon {
-  color: #716865;
+  color: #6c6c72;
 }
 .stock-earn-open {
   display: inline-flex;
@@ -8939,7 +8939,7 @@ footer a {
   padding: 9px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #131011;
+  background: #141416;
   color: var(--muted);
   font-size: 11.5px;
   line-height: 1.5;
@@ -8950,7 +8950,7 @@ footer a {
 }
 .stock-earn-source {
   margin: 12px 0 0;
-  color: #645c59;
+  color: #5f5f66;
   font-size: 11px;
 }
 
@@ -9031,7 +9031,7 @@ footer a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 11.5px;
   font-style: normal;
 }
@@ -9042,7 +9042,7 @@ footer a {
   margin: 0 0 20px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   overflow: hidden;
 }
 .company-overview .company-keystats > div,
@@ -9072,7 +9072,7 @@ footer a {
   font-variant-numeric: tabular-nums;
 }
 .value-muted {
-  color: #645c59;
+  color: #5f5f66;
 }
 
 .company-overview-grid {
@@ -9111,7 +9111,7 @@ footer a {
 }
 .company-overview-news a {
   padding: 9px 0;
-  border-top: 1px solid #201819;
+  border-top: 1px solid #202023;
   color: var(--text);
   text-decoration: none;
 }
@@ -9140,7 +9140,7 @@ footer a {
   margin-bottom: 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   overflow: hidden;
 }
 .research-summary > div {
@@ -9169,7 +9169,7 @@ footer a {
 }
 .research-caption {
   margin: 0 0 16px;
-  color: #645c59;
+  color: #5f5f66;
   font-size: 11px;
 }
 .filing-form {
@@ -9195,27 +9195,27 @@ footer a {
   display: flex;
   padding: 3px;
   border-radius: 8px;
-  background: #131011;
+  background: #141416;
 }
 .fin-views button,
 .fin-frames button {
   height: 32px;
   padding: 0 15px;
   border-radius: 6px;
-  color: #7d7570;
+  color: #78787f;
   font-size: 12px;
 }
 .fin-views button.active,
 .fin-frames button.active {
-  background: #271e21;
-  color: #efe9e7;
+  background: #27272b;
+  color: #ececee;
 }
 .fin-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   overflow: hidden;
 }
 .fin-metrics > div {
@@ -9254,7 +9254,7 @@ footer a {
   padding: 16px 18px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
 }
 .fin-chart > header {
   height: auto;
@@ -9335,7 +9335,7 @@ footer a {
 .fin-table th {
   padding: 10px 15px;
   border-bottom: 1px solid var(--border);
-  background: #131011;
+  background: #141416;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -9351,14 +9351,14 @@ footer a {
 }
 .fin-table td {
   padding: 11px 15px;
-  border-bottom: 1px solid #201819;
+  border-bottom: 1px solid #202023;
   white-space: nowrap;
 }
 .fin-table tbody tr:last-child td {
   border-bottom: none;
 }
 .fin-table tbody tr:hover td {
-  background: #161213;
+  background: #161618;
 }
 .fin-empty {
   margin: 0;
@@ -9423,13 +9423,13 @@ footer a {
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border-top: 1px solid #201819;
+  border-top: 1px solid #202023;
 }
 .news-list li:first-child {
   border-top: none;
 }
 .news-list li:hover {
-  background: #161213;
+  background: #161618;
 }
 .news-list a {
   flex: 1;
@@ -9455,7 +9455,7 @@ footer a {
   font-size: 11px;
 }
 .news-list em {
-  color: #bcb4b1;
+  color: #b7b7bd;
 }
 .news-list i {
   color: var(--muted);
@@ -9478,13 +9478,13 @@ footer a {
   border: 1px solid var(--border);
   border-radius: 14px;
   background:
-    radial-gradient(circle at 92% 50%, #23262c 0, transparent 32%), #171314;
+    radial-gradient(circle at 92% 50%, #23262c 0, transparent 32%), #17171a;
   color: var(--text);
   text-decoration: none;
   transition: border-color 0.15s ease;
 }
 .earn-banner:hover {
-  border-color: #3d3134;
+  border-color: #38383d;
 }
 .earn-banner-label {
   display: inline-flex;
@@ -9505,7 +9505,7 @@ footer a {
 .earn-banner-main p {
   margin: 0;
   max-width: 470px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -9636,7 +9636,7 @@ footer a {
   padding: 20px 22px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
 }
 .pool-about > span {
   color: var(--muted);
@@ -9651,7 +9651,7 @@ footer a {
 }
 .pool-about p {
   margin: 0 0 10px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 12.5px;
   line-height: 1.6;
 }
@@ -9674,7 +9674,7 @@ footer a {
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #171314;
+  background: #17171a;
 }
 .pool-ticket-head {
   margin-bottom: 16px;
@@ -9695,7 +9695,7 @@ footer a {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #120e0f;
+  background: #111113;
 }
 .pool-amount input {
   flex: 1;
@@ -9708,7 +9708,7 @@ footer a {
   outline: none;
 }
 .pool-amount input:disabled {
-  color: #504846;
+  color: #4b4b51;
 }
 .pool-amount > div > span {
   color: var(--muted);
@@ -9759,8 +9759,8 @@ footer a {
   font-weight: 600;
 }
 .pool-ticket-cta:disabled {
-  background: #261d1f;
-  color: #716865;
+  background: #26262a;
+  color: #6c6c72;
   cursor: not-allowed;
 }
 .pool-ticket-note {
@@ -9832,7 +9832,7 @@ footer a {
 .multi-issuer > header small {
   display: block;
   margin-top: 4px;
-  color: #645c59;
+  color: #5f5f66;
   font-size: 11px;
 }
 .multi-issuer > header button {
@@ -9857,12 +9857,12 @@ footer a {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   color: var(--text);
   text-decoration: none;
 }
 .multi-issuer-grid a:hover {
-  border-color: #3d3134;
+  border-color: #38383d;
 }
 .multi-issuer-company {
   display: flex;
@@ -9893,7 +9893,7 @@ footer a {
   padding: 2px 7px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 10.5px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
@@ -9936,7 +9936,7 @@ footer a {
   padding: 16px 18px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
 }
 .price-movement-grid article > header {
   height: auto;
@@ -9951,7 +9951,7 @@ footer a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #bcb4b1;
+  color: #b7b7bd;
   font-size: 12px;
 }
 .price-movement-grid article > header b {
@@ -10007,7 +10007,7 @@ footer a {
   background: var(--accent);
 }
 .price-movement-track i.flat {
-  background: #2d2427;
+  background: #2a2a2e;
 }
 .price-movement-bars b {
   font-size: 11px;
@@ -10087,7 +10087,7 @@ footer a {
 .sector-blocks > header {
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #1e1719;
+  border-bottom: 1px solid #1e1e21;
 }
 
 /* The accent gets one structural job: marking the section you are in. */
@@ -10134,7 +10134,7 @@ footer a {
 .overview-events ul {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
   overflow: hidden;
 }
 .overview-events li:first-child a {
@@ -10144,7 +10144,7 @@ footer a {
   padding: 22px 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #131011;
+  background: #141416;
 }
 
 
@@ -10277,7 +10277,7 @@ h3 {
 .markets-statbar > div:hover,
 .company-keystats > div:hover,
 .research-summary > div:hover {
-  background: #1a1416;
+  background: #1d1d21;
 }
 
 /* Pulse rows: an accent edge slides in from the left on hover. */
@@ -10355,7 +10355,7 @@ h3 {
 }
 .multi-issuer-grid a:hover .multi-issuer-tokens em {
   color: var(--text);
-  border-color: #3d3134;
+  border-color: #38383d;
 }
 
 /* Table rows shift rather than just tint, so the pointer has weight. */
@@ -10474,12 +10474,12 @@ input:focus-visible,
 .market-pulse-card .pulse-row::before,
 .overview-events li::before,
 .sector-blocks li::before {
-  background: #4a3e40;
+  background: #45454b;
 }
 
 /* Cards lift on a neutral edge; no coloured outline. */
 .multi-issuer-grid a:hover {
-  border-color: #3d3134;
+  border-color: #38383d;
   box-shadow: 0 8px 22px -14px rgba(0, 0, 0, 0.9);
 }
 
@@ -10489,7 +10489,7 @@ button:focus-visible,
 input:focus-visible,
 [role="tab"]:focus-visible,
 [role="option"]:focus-visible {
-  outline: 2px solid #6f6360;
+  outline: 2px solid #63636a;
   outline-offset: 2px;
 }
 
@@ -10512,7 +10512,7 @@ input:focus-visible,
   flex-direction: column;
   padding: 18px 20px;
   border-radius: 16px;
-  background: #151011;
+  background: #141416;
   overflow: hidden;
 }
 .bento-tile > header {
@@ -10523,7 +10523,7 @@ input:focus-visible,
   margin-bottom: auto;
 }
 .bento-tile > header span {
-  color: #8a827e;
+  color: #85858c;
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.13em;
@@ -10541,13 +10541,13 @@ input:focus-visible,
 }
 .bento-tile p {
   margin: 8px 0 0;
-  color: #8a827e;
+  color: #85858c;
   font-size: 12px;
   line-height: 1.5;
 }
 .bento-empty {
   margin: auto 0 0;
-  color: #5b5350;
+  color: #565660;
   font-size: 12px;
 }
 
@@ -10558,7 +10558,7 @@ input:focus-visible,
   justify-content: flex-start;
   background:
     radial-gradient(120% 90% at 100% 0%, rgba(237, 12, 60, 0.14), transparent 60%),
-    #171112;
+    #151517;
 }
 .bento-volume .bento-figure {
   margin-top: 14px;
@@ -10603,11 +10603,11 @@ input:focus-visible,
   transition: background var(--fast) var(--ease);
 }
 .bento-universe button:hover {
-  background: #1c1517;
+  background: #1e1e22;
 }
 .bento-universe span {
   display: block;
-  color: #8a827e;
+  color: #85858c;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -10683,14 +10683,14 @@ input:focus-visible,
   padding: 7px 0;
   color: var(--text);
   text-decoration: none;
-  border-top: 1px solid #201819;
+  border-top: 1px solid #202023;
 }
 .bento-traded li:first-child a {
   border-top: none;
 }
 .bento-traded em {
   width: 18px;
-  color: #5b5350;
+  color: #565660;
   font-family: var(--data);
   font-size: 10.5px;
   font-style: normal;
@@ -10708,7 +10708,7 @@ input:focus-visible,
   font-weight: 600;
 }
 .bento-traded li i {
-  color: #8a827e;
+  color: #85858c;
   font-size: 11px;
   font-style: normal;
   overflow: hidden;
@@ -10752,7 +10752,7 @@ input:focus-visible,
   margin: 14px 0 0;
 }
 .bento-breadth dt {
-  color: #8a827e;
+  color: #85858c;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -10814,7 +10814,7 @@ input:focus-visible,
   /* Canvas drops so unbordered fills separate on their own. */
   --bg: #0a0708;
   --surface: #161112;
-  --surface-2: #1c1618;
+  --surface-2: #1c1c1f;
 }
 body {
   background: var(--bg);
@@ -10856,7 +10856,7 @@ body {
 .research-summary > div,
 .fin-metrics > div,
 .markets-statbar > div {
-  border-color: #241c1e;
+  border-color: #232326;
 }
 
 /* Bigger, softer geometry throughout. */
@@ -11006,4 +11006,36 @@ body {
   align-items: baseline;
   gap: 8px;
   min-width: 0;
+}
+
+/* Surfaces are neutral. Red is reserved for the logo, a falling price
+   and the today marker; nothing structural carries a warm cast. */
+:root {
+  --bg: #0a0a0b;
+  --surface: #141416;
+  --surface-2: #1c1c1f;
+  --border: #26262a;
+}
+.bento-tile {
+  background: var(--surface);
+}
+.bento-volume {
+  background:
+    radial-gradient(130% 100% at 100% 0%, rgba(224, 163, 85, 0.15), transparent 62%),
+    var(--surface);
+}
+.bento-universe {
+  background:
+    radial-gradient(120% 110% at 0% 100%, rgba(139, 127, 212, 0.14), transparent 62%),
+    var(--surface);
+}
+.bento-traded {
+  background:
+    radial-gradient(110% 100% at 100% 100%, rgba(70, 179, 168, 0.11), transparent 60%),
+    var(--surface);
+}
+
+/* The banner separator matches the chrome rather than the accent. */
+.staging-banner span {
+  color: #5f5f66;
 }
