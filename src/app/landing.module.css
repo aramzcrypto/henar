@@ -846,3 +846,10 @@
   pointer-events: none;
   z-index: -1;
 }
+
+
+/* No rule between the hero and the page: the globe's own fade is the
+   transition. Declared last so it beats the shared section border above. */
+.marketsSection {
+  border-top: none;
+}

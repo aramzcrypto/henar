@@ -11054,7 +11054,7 @@ body {
   /* Most of the sphere sits below the fold so the lit rim reads as a
      horizon rather than a planet parked behind the headline. */
   transform: translate(-50%, 30%);
-  opacity: 1;
+  opacity: 0.82;
   pointer-events: none;
   z-index: 0;
 }
@@ -11082,14 +11082,17 @@ body {
   /* Large enough to read as a planet; only the lower edge is dissolved,
      since the copy is now protected by its own scrim rather than by
      hiding the top of the sphere. */
+  /* Fully dissolved well before the hero's lower edge, so the sphere ends
+     on a fade rather than on the clip. */
   --globe-fade: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(0, 0, 0, 0.5) 6%,
-    #000 16%,
-    #000 56%,
-    rgba(0, 0, 0, 0.5) 68%,
-    transparent 80%
+    rgba(0, 0, 0, 0.45) 6%,
+    #000 15%,
+    #000 38%,
+    rgba(0, 0, 0, 0.55) 50%,
+    rgba(0, 0, 0, 0.18) 60%,
+    transparent 67%
   );
   -webkit-mask-image: var(--globe-fade);
   mask-image: var(--globe-fade);
@@ -11385,5 +11388,208 @@ body {
 @media (max-width: 1100px) {
   .bento-events {
     grid-column: span 6;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Mobile
+   Declared last so it wins over the desktop geometry above. The bento
+   becomes a single column of content-sized tiles; fixed row heights
+   were clipping tiles that held more than 150px of content.
+   --------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .bento {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .bento-tile {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    min-height: 0;
+    padding: 18px 18px 20px;
+    border-radius: 18px;
+  }
+  .bento-volume .bento-figure {
+    font-size: 42px;
+  }
+  .bento-figure {
+    font-size: 34px;
+  }
+  .bento-universe {
+    padding: 0;
+  }
+  .bento-universe button {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 22px 30px;
+    padding: 18px;
+  }
+  .bento-universe strong {
+    font-size: 22px;
+  }
+  .bento-split dl {
+    gap: 20px;
+  }
+  .bento-traded ol,
+  .bento-events ol {
+    margin-top: 10px;
+  }
+
+  /* Control row: tabs scroll, search keeps its own line when open. */
+  .markets-controls {
+    gap: 10px;
+  }
+  .markets-search-control.is-open {
+    width: min(220px, 52vw);
+  }
+
+  /* Company page */
+  .company-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .company-identity {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .company-quote {
+    width: 100%;
+    padding-left: 0;
+    margin-left: 0;
+    border-left: none;
+  }
+  .company-quote strong {
+    font-size: 30px;
+  }
+  .company-header-side {
+    width: 100%;
+  }
+  .company-header-stats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .company-trade {
+    width: 100%;
+    justify-content: center;
+  }
+  .company-context {
+    gap: 18px;
+  }
+  .company-keystats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .company-keystats > div:nth-child(odd) {
+    border-left: none;
+  }
+  .company-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .company-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .company-tabs button {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  /* Financials and research */
+  .fin-toolbar {
+    gap: 8px;
+  }
+  .fin-views,
+  .fin-frames,
+  .stock-earn-filters,
+  .calendar-modes {
+    overflow-x: auto;
+    scrollbar-width: none;
+    max-width: 100%;
+  }
+  .fin-views::-webkit-scrollbar,
+  .fin-frames::-webkit-scrollbar,
+  .stock-earn-filters::-webkit-scrollbar,
+  .calendar-modes::-webkit-scrollbar {
+    display: none;
+  }
+  .fin-views button,
+  .fin-frames button,
+  .stock-earn-filters button {
+    flex: none;
+    white-space: nowrap;
+  }
+  .research-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .research-summary > div:nth-child(odd) {
+    border-left: none;
+  }
+  .fin-bars {
+    min-height: 118px;
+  }
+  .fin-bar-pair {
+    height: 96px;
+  }
+
+  /* Earn */
+  .earn-banner {
+    padding: 24px 22px;
+    border-radius: 18px;
+  }
+  .earn-banner-main h2 {
+    font-size: 24px;
+  }
+  .earn-banner-side {
+    width: 100%;
+  }
+  .earn-banner-cta {
+    width: 100%;
+    justify-content: center;
+  }
+  .pool-identity h1 {
+    font-size: 24px;
+  }
+  .pool-facts .company-keystats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Calendar sidebar sits above the grid and lays out horizontally. */
+  .calendar-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 18px 26px;
+  }
+  .calendar-sidebar section {
+    flex: 1 1 40%;
+    min-width: 132px;
+  }
+  .calendar-day {
+    min-height: 64px;
+    padding: 5px 6px;
+  }
+  .calendar-chip {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+  .calendar-nav h2 {
+    font-size: 15px;
+  }
+
+  /* Section headings */
+  .multi-issuer > header strong,
+  .overview-events > header strong,
+  .sector-blocks > header strong,
+  .earn-pool-list h2,
+  .stock-earn-head h2 {
+    font-size: 16px;
+  }
+  .multi-issuer,
+  .overview-events,
+  .sector-blocks,
+  .markets-overview > .market-categories {
+    margin-top: 30px;
   }
 }
