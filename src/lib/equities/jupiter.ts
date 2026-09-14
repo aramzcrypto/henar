@@ -224,7 +224,18 @@ export async function summarizeEquities(
       }))
       .filter((entry) => entry.live)
       .sort((a, b) => (b.live?.liquidity ?? -1) - (a.live?.liquidity ?? -1));
-    const primary = ranked[0]?.live;
+    /* The reference is the underlying stock's price, which belongs to the
+       company rather than to any one mint: the same figure comes back from
+       every representation that reports it. Taking it from the most liquid
+       representation alone leaves a company blank whenever that one mint has
+       no feed, so read across them and use the first that reports. */
+    const first = <T,>(read: (live: JupiterMetadata) => T | null): T | null => {
+      for (const entry of ranked) {
+        const value = entry.live ? read(entry.live) : null;
+        if (value !== null && value !== undefined) return value;
+      }
+      return null;
+    };
     return {
       ...equity,
       representationCount: representations.length,
@@ -237,8 +248,11 @@ export async function summarizeEquities(
         provider: representation.provider,
         tokenSymbol: representation.tokenSymbol,
       })),
-      price: primary?.referencePrice ?? primary?.price ?? null,
-      priceChange24hPct: primary?.priceChange24h ?? null,
+      price:
+        first((live) => live.referencePrice) ??
+        first((live) => live.price) ??
+        null,
+      priceChange24hPct: first((live) => live.priceChange24h) ?? null,
       onchainVolume24hUsd: sumAvailable(
         representations.map(
           (representation) =>
@@ -557,6 +571,15 @@ export async function onchainComparison(equity: Equity): Promise<{
     }),
   );
   const poolResults = await poolPromise;
+  /* One reference for the company, not one per mint. The figure is the
+     underlying stock's price, so every representation that reports it reports
+     the same number; a representation with no feed of its own is still a claim
+     on the same security. Without this a mint that no DEX indexes - Backpack's
+     tokens trade on its own venue rather than an AMM - shows no reference at
+     all, and its premium against the underlying cannot be computed. */
+  const companyReference =
+    quoteSets.find(({ live }) => (live?.referencePrice ?? 0) > 0)?.live
+      ?.referencePrice ?? null;
   const rows = quoteSets.map(
     ({ representation, live, settled }, rowIndex): LiveRepresentation => {
       const value = (index: number) =>
@@ -606,10 +629,10 @@ export async function onchainComparison(equity: Equity): Promise<{
           representation.decimals,
         executableBuyPrice: buyPrice,
         executableSellPrice: sellPrice,
-        referencePrice: live?.referencePrice ?? null,
+        referencePrice: live?.referencePrice ?? companyReference,
         premiumDiscountPct:
-          buyPrice !== null && live?.referencePrice
-            ? (buyPrice / live.referencePrice - 1) * 100
+          buyPrice !== null && (live?.referencePrice ?? companyReference)
+            ? (buyPrice / (live?.referencePrice ?? companyReference)! - 1) * 100
             : null,
         spreadPct:
           mid && buyPrice !== null && sellPrice !== null
