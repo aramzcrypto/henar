@@ -11120,8 +11120,9 @@ body {
 
 @media (max-width: 720px) {
   .hero-globe {
-    width: 185vw;
-    transform: translate(-50%, 34%);
+    width: 150vw;
+    transform: translate(-50%, 26%);
+    opacity: 0.9;
   }
 }
 
@@ -11740,4 +11741,151 @@ body {
 }
 .calendar-chip .equity-logo {
   flex: none;
+}
+
+/* ---------------------------------------------------------------
+   Company page
+   Price movement now sits with the rest of the onchain data, and the
+   overview breathes: larger cards, real gaps, fewer hairlines.
+   --------------------------------------------------------------- */
+.company-onchain {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.company-onchain .price-movement-head h2 {
+  font-size: 15px;
+}
+.company-onchain .price-movement-head p {
+  font-size: 12px;
+}
+
+/* Overview: bigger cards, more air, no hairline boxes. */
+.company-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.company-keystats {
+  gap: 0;
+  border-radius: 18px;
+  margin-bottom: 0;
+}
+.company-keystats > div {
+  padding: 18px 20px;
+}
+.company-keystats dd {
+  margin-top: 9px;
+  font-size: 17px;
+}
+.company-overview-grid {
+  gap: 18px;
+}
+.company-overview article {
+  padding: 26px 28px;
+  border: none;
+  border-radius: 18px;
+  background: var(--surface);
+}
+.company-overview article > span {
+  color: #85858c;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+.company-overview h2 {
+  margin: 12px 0 22px;
+  font-size: 22px;
+}
+.company-overview dl > div {
+  border-top-color: #232326;
+  padding: 13px 0;
+}
+.company-issuer-list {
+  gap: 8px;
+}
+.company-issuer-list > div {
+  padding: 12px 14px;
+  border: none;
+  border-radius: 12px;
+  background: #1c1c1f;
+}
+.company-onchain-facts {
+  gap: 0;
+  margin-top: 18px;
+  padding-top: 6px;
+  border-top: 1px solid #232326;
+}
+.company-overview article button {
+  margin-top: 20px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #26262a;
+  color: var(--text);
+  font-size: 12.5px;
+}
+.company-overview article button:hover {
+  background: #2e2e32;
+}
+
+/* Financials: roomier metrics, softer statement tables. */
+.fin-metrics {
+  border-radius: 18px;
+  gap: 0;
+}
+.fin-metrics > div {
+  padding: 20px 22px;
+  border-color: #232326;
+}
+.fin-metrics dd {
+  font-size: 22px;
+  margin-top: 9px;
+}
+.fin-chart {
+  border-radius: 18px;
+  padding: 22px 24px 16px;
+}
+.fin-table-scroll {
+  border-radius: 18px;
+}
+.fin-table th {
+  background: transparent;
+  border-bottom: 1px solid #232326;
+  padding: 13px 18px;
+}
+.fin-table td {
+  padding: 13px 18px;
+  border-bottom: 1px solid #1c1c1f;
+}
+.fin-table tbody tr:hover td {
+  background: #1c1c1f;
+}
+.research-summary {
+  border-radius: 18px;
+  margin-bottom: 18px;
+}
+.research-summary > div {
+  padding: 18px 20px;
+  border-color: #232326;
+}
+.research-table-wrap {
+  border-radius: 18px;
+  overflow: hidden;
+}
+.news-list {
+  border-radius: 18px;
+}
+
+
+/* Ten figures in a nine-column grid left one orphaned on its own row.
+   Five across, two rows, balances it. */
+.company-keystats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.company-keystats > div:nth-child(5n + 1) {
+  border-left: none;
+}
+.company-keystats > div:nth-child(n + 6) {
+  border-top: 1px solid #232326;
 }

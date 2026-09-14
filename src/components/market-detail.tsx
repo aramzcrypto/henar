@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, use, useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft,
   ArrowUpRight,
   Check,
   Copy,
@@ -26,7 +25,6 @@ import type {
 
 const tabs = [
   "Overview",
-  "Chart",
   "Financials",
   "Earnings",
   "News",
@@ -1287,9 +1285,6 @@ export function MarketDetail({
   }, [comparison]);
   return (
     <section className="market-detail">
-      <Link href="/markets" className="back-markets">
-        <ArrowLeft size={15} /> Markets
-      </Link>
       <header className="company-header">
         <div className="company-identity">
           <EquityLogo
@@ -1402,12 +1397,15 @@ export function MarketDetail({
         ))}
       </nav>
       {tab === "Onchain" ? (
-        <OnchainTable
-          equity={equity}
-          data={comparison}
-          loading={!comparison && !error}
-          error={error}
-        />
+        <div className="company-onchain">
+          <PriceMovement equity={equity} data={comparison} error={error} />
+          <OnchainTable
+            equity={equity}
+            data={comparison}
+            loading={!comparison && !error}
+            error={error}
+          />
+        </div>
       ) : tab === "Overview" ? (
         <div className="company-overview">
           <Suspense fallback={<KeyStatsPending />}>
@@ -1483,8 +1481,6 @@ export function MarketDetail({
             </Suspense>
           </div>
         </div>
-      ) : tab === "Chart" ? (
-        <PriceMovement equity={equity} data={comparison} error={error} />
       ) : tab === "Financials" ? (
         <Suspense fallback={<ResearchPending label="Financials" />}>
           <FinancialsTab research={research} />
