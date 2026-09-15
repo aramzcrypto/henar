@@ -49,3 +49,9 @@ export {
 } from "./engine";
 
 export { VENUE_NATIVE_SOURCES, venueNativeDiscovery } from "./types";
+export {
+  valueWhirlpool,
+  type PoolValuation,
+  type PoolValuationMethod,
+  type WhirlpoolValuationInput,
+} from "./valuation";

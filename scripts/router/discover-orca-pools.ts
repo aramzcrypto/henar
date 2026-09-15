@@ -21,7 +21,9 @@
  * state produce byte-identical files apart from `fetchedAt`.
  */
 import { writeFile } from "node:fs/promises";
+import { valueWhirlpool } from "@henar/router-core";
 import { equityRegistry } from "../../src/lib/equities/registry";
+import { jupiterMetadata } from "../../src/lib/equities/jupiter";
 
 const OUTPUT = "src/data/router/orca-discovery.json";
 const WHIRLPOOL_PROGRAM = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";
@@ -54,6 +56,15 @@ type DiscoveredPool = {
   vaultB: string;
   tvlUsd: number | null;
   volume24hUsd: number | null;
+  /** How tvlUsd was arrived at, kept with the figure it produced. */
+  valuation: {
+    method: string;
+    detail: string;
+    priceSource: string | null;
+    referencePriceUsd: number | null;
+    scaledUiMultiplier: number | null;
+    at: string;
+  } | null;
   discoverySource: "ORCA_ONCHAIN";
   fetchedAt: string;
 };
@@ -134,8 +145,9 @@ async function main() {
       vaultB: pool.tokenB.vault,
       // Whirlpool feeRate is hundredths of a bp (10000 = 1%).
       feeBps: pool.feeRate === null ? null : Math.round(pool.feeRate / 100),
-      // Priced below, from the USDC vault, for USDC-paired pools only.
+      // Valued below, both sides, for USDC-paired pools only.
       tvlUsd: null,
+      valuation: null,
       volume24hUsd: null,
       discoverySource: "ORCA_ONCHAIN",
       fetchedAt,
@@ -147,30 +159,60 @@ async function main() {
     (x, y) => x.stockMint.localeCompare(y.stockMint) || x.address.localeCompare(y.address),
   );
 
-  /* TVL from the pool's own USDC vault: a two-sided pool's USDC leg is about
-     half its value at the current price, so twice the balance is the figure —
-     chain data, and labelled as such. Only USDC-paired pools are priced,
-     because only those can enter the executable registry today, and an
-     unpriced pool stays disabled rather than being enabled on a guess. */
+  /* Value both vaults. A Whirlpool's range can sit entirely on one side of
+     the market, so doubling the USDC leg is not an estimate of the other —
+     see valueWhirlpool. The stock side needs decimals, the Scaled UI Amount
+     multiplier and a verified reference price; without them the pool is
+     recorded with no TVL and stays disabled rather than enabled on a guess. */
   const usdcPools = unique.filter((pool) => pool.counterMint === USDC_MINT_ADDRESS);
   if (usdcPools.length) {
     const { Connection, PublicKey } = await import("@solana/web3.js");
     const connection = new Connection(process.env.SOLANA_RPC_URL!, "confirmed");
-    const vaultOf = new Map(
-      usdcPools.map((pool) => [pool.address, pool.counterMint === pool.baseMint ? pool.vaultA : pool.vaultB]),
-    );
-    for (let i = 0; i < usdcPools.length; i += 100) {
-      const chunk = usdcPools.slice(i, i + 100);
-      const infos = await connection.getMultipleAccountsInfo(
-        chunk.map((pool) => new PublicKey(vaultOf.get(pool.address)!)),
-        "confirmed",
+
+    // Reference prices, decimals and multipliers for the stock side.
+    const reps = [...new Map(
+      usdcPools.map((pool) => [pool.stockMint, { mint: pool.stockMint, id: pool.representationId, provider: pool.provider, tokenSymbol: pool.tokenSymbol }]),
+    ).values()];
+    let live: Awaited<ReturnType<typeof jupiterMetadata>> | null = null;
+    try {
+      live = await jupiterMetadata(reps as never);
+    } catch (error) {
+      process.stdout.write(
+        `  reference prices unavailable (${error instanceof Error ? error.message : error}); Orca pools stay unvalued\n`,
       );
+    }
+    const pricedAt = new Date().toISOString();
+
+    const readAmount = (info: { data: Buffer } | null) =>
+      // SPL token account: amount is a u64 little-endian at offset 64.
+      info && info.data.length >= 72 ? info.data.readBigUInt64LE(64) : null;
+
+    for (let i = 0; i < usdcPools.length; i += 50) {
+      const chunk = usdcPools.slice(i, i + 50);
+      const keys = chunk.flatMap((pool) => [new PublicKey(pool.vaultA), new PublicKey(pool.vaultB)]);
+      const infos = await connection.getMultipleAccountsInfo(keys, "confirmed");
       chunk.forEach((pool, index) => {
-        const info = infos[index];
-        if (!info || info.data.length < 72) return;
-        // SPL token account: amount is a u64 little-endian at offset 64.
-        const amount = info.data.readBigUInt64LE(64);
-        pool.tvlUsd = (Number(amount) / 1_000_000) * 2;
+        const a = readAmount(infos[index * 2] ?? null);
+        const b = readAmount(infos[index * 2 + 1] ?? null);
+        if (a === null || b === null) return;
+        const usdcIsA = pool.counterMint === pool.baseMint;
+        const metadata = live?.get(pool.stockMint) ?? null;
+        const valuation = valueWhirlpool({
+          usdcRawAmount: usdcIsA ? a : b,
+          stockRawAmount: usdcIsA ? b : a,
+          stockDecimals: metadata?.decimals ?? null,
+          scaledUiMultiplier: metadata?.multiplier ?? 1,
+          referencePriceUsd: metadata?.referencePrice ?? null,
+        });
+        pool.tvlUsd = valuation.tvlUsd;
+        pool.valuation = {
+          method: valuation.method,
+          detail: valuation.detail,
+          priceSource: metadata?.referencePrice ? "jupiter:stockData.price" : null,
+          referencePriceUsd: metadata?.referencePrice ?? null,
+          scaledUiMultiplier: metadata?.multiplier ?? null,
+          at: pricedAt,
+        };
       });
     }
   }
