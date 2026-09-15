@@ -8,6 +8,7 @@ import { TokenLogo } from "@/components/token-logo";
 import {
   ExecutionSourceLogo,
   getExecutionSourceBrand,
+  HENAR_ROUTE_SOURCE,
 } from "@/components/execution-source-logo";
 import Link from "next/link";
 import Image from "next/image";
@@ -394,7 +395,53 @@ export function Stockroom({
     const via = venues.length > 1 ? `${venues.length} pools · ${venues.join(" + ")}` : venues[0];
     return source ? `${getExecutionSourceBrand(source).label} · ${via}` : via;
   }, [estimate]);
+  /* A route Henar's own optimizer constructed, fetched alongside the
+     indicative estimate rather than inside it: the estimate fires as the user
+     types, and adding five pool reads to that path would slow every keystroke.
+     Only a genuinely distinct construction is kept, which is why a single-leg
+     result is discarded rather than shown as a Henar quote duplicating the
+     venue it resolved to. */
+  const [henarRoute, setHenarRoute] = useState<{
+    output: string;
+    minimumOutput: string | null;
+    priceImpactBps: number | null;
+    feeBps: number;
+    legs: { venue: string; pool: string | null; percent: number }[];
+  } | null>(null);
   const [quoteRefresh, setQuoteRefresh] = useState(0);
+  /* Every source competes on final net user output, Henar's own construction
+     included. It earns its place in the ranking rather than sitting above the
+     list: if a venue delivers more, that venue is the best quote and says so.
+     A Henar row therefore means the optimizer built something no single venue
+     offered, and that it won on the number that matters. */
+  const rankedCandidates = useMemo(() => {
+    const venueQuotes = estimate?.candidates ?? [];
+    if (!venueQuotes.length) return [];
+    const rows = venueQuotes.map((candidate) => ({
+      key: `${candidate.source}-${candidate.quoteProvider}`,
+      source: candidate.source,
+      output: candidate.output,
+      minimumOutput: candidate.minimumOutput,
+      priceImpactBps: candidate.priceImpactPct === null ? null : Math.round(Number(candidate.priceImpactPct) * 10_000),
+      providerFeeBps: candidate.providerFeeBps,
+      legs: candidate.route.map((step) => ({ venue: step.venue, pool: step.pool, percent: step.percent })),
+      henar: false,
+    }));
+    if (henarRoute)
+      rows.push({
+        key: "henar-router",
+        source: HENAR_ROUTE_SOURCE,
+        output: henarRoute.output,
+        minimumOutput: henarRoute.minimumOutput ?? "0",
+        priceImpactBps: henarRoute.priceImpactBps,
+        providerFeeBps: 0,
+        legs: henarRoute.legs,
+        henar: true,
+      });
+    return rows.sort((a, b) => new Decimal(b.output).comparedTo(new Decimal(a.output)));
+  }, [estimate, henarRoute]);
+
+
   const [estimateError, setEstimateError] = useState("");
   const [estimating, setEstimating] = useState(false);
   const displayedAmount = editingOutput ? (estimate?.input ?? "") : amount;
@@ -482,6 +529,46 @@ export function Stockroom({
     const controller = new AbortController();
     setEstimating(true);
     const timer = setTimeout(async () => {
+      /* Ask Henar's own optimizer in parallel. It is a separate request on
+         purpose: a failure or a slow answer must never hold up or break the
+         venue comparison the user is watching. */
+      const stockMint = payment.mint === PAYMENT_USDC.mint ? receive.mint : payment.mint;
+      const routerSide = payment.mint === PAYMENT_USDC.mint ? "buy" : receive.mint === PAYMENT_USDC.mint ? "sell" : null;
+      if (routerSide && !editingOutput) {
+        void (async () => {
+          try {
+            const raw = parseUnits(value, payment.decimals);
+            if (raw <= 0n) return;
+            const response = await fetch("/api/router/quote", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mint: stockMint, side: routerSide, amount: raw.toString() }),
+              signal: controller.signal,
+            });
+            if (!response.ok) throw new Error("router unavailable");
+            const quote = await response.json();
+            const legs: { venue: string; poolAddress: string | null; percentBps: number }[] = quote.route ?? [];
+            // One leg is whatever single venue already appears in the list;
+            // branding it as ours would duplicate that venue under two names.
+            if (controller.signal.aborted) return;
+            if (legs.length < 2 || !quote.netUserOutput) {
+              setHenarRoute(null);
+              return;
+            }
+            setHenarRoute({
+              output: formatUnits(BigInt(quote.netUserOutput), receive.decimals),
+              minimumOutput: quote.minNetUserOutput ? formatUnits(BigInt(quote.minNetUserOutput), receive.decimals) : null,
+              priceImpactBps: quote.priceImpactBps ?? null,
+              feeBps: quote.fees?.henarBps ?? tradeFeeBps,
+              legs: legs.map((leg) => ({ venue: leg.venue, pool: leg.poolAddress, percent: leg.percentBps / 100 })),
+            });
+          } catch {
+            if (!controller.signal.aborted) setHenarRoute(null);
+          }
+        })();
+      } else {
+        setHenarRoute(null);
+      }
       try {
         const response = await fetch("/api/market/estimate", {
           method: "POST",
@@ -528,6 +615,8 @@ export function Stockroom({
     stockDecimals,
     tradeFeeBps,
     quoteRefresh,
+    payment.decimals,
+    receive.decimals,
   ]);
   const [paymentPicker, setPaymentPicker] = useState(false);
   const [assetPickerSide, setAssetPickerSide] = useState<"input" | "output">(
@@ -1675,31 +1764,43 @@ export function Stockroom({
                       {estimating ? "Updating" : "Live"}
                     </button>
                   </div>
-                  {estimate?.candidates?.length ? (
+                  {rankedCandidates.length ? (
                     <div
                       className="quote-list"
-                      key={`${estimate.candidates[0].source}-${estimate.candidates[0].output}`}
+                      key={`${rankedCandidates[0].source}-${rankedCandidates[0].output}`}
                       aria-live="polite"
                     >
-                      {estimate.candidates.slice(0, 3).map((candidate, index) => {
-                        const venues = Array.from(
-                          new Set(candidate.route.map((step) => step.venue)),
-                        ).slice(0, 2);
+                      {rankedCandidates.slice(0, 4).map((candidate, index) => {
                         const source = getExecutionSourceBrand(candidate.source).label;
+                        /* A Henar row states what the optimizer built: the
+                           allocation is the product, not a footnote. */
+                        const allocation = candidate.henar
+                          ? candidate.legs
+                              .map((leg) => `${Math.round(leg.percent ?? 0)}% ${getExecutionSourceBrand(leg.venue).label}`)
+                              .join(" + ")
+                          : Array.from(new Set(candidate.legs.map((step) => step.venue))).slice(0, 2).join(" · ");
                         return (
                           <div
                             className={index === 0 ? "quote-row best" : "quote-row"}
-                            key={`${candidate.source}-${candidate.quoteProvider}`}
+                            key={candidate.key}
                           >
                             <ExecutionSourceLogo source={candidate.source} />
                             <div className="quote-route">
                               <strong>{source}</strong>
                               <span>
-                                {venues.length ? venues.join(" · ") : "Direct route"}
-                                {candidate.providerFeeBps > 0
-                                  ? ` · ${percent(candidate.providerFeeBps)} provider fee`
-                                  : ""}
+                                {allocation || "Direct route"}
+                                {candidate.henar
+                                  ? ` · ${candidate.legs.length} pools${candidate.priceImpactBps === null ? "" : ` · ${(candidate.priceImpactBps / 100).toFixed(2)}% impact`}`
+                                  : candidate.providerFeeBps > 0
+                                    ? ` · ${percent(candidate.providerFeeBps)} provider fee`
+                                    : ""}
                               </span>
+                              {candidate.henar && (
+                                <small className="quote-route-detail">
+                                  Min {new Decimal(candidate.minimumOutput || "0").toSignificantDigits(8).toFixed()} {receive.symbol}
+                                  {" · "}Henar fee {percent(tradeFeeBps)} · atomic
+                                </small>
+                              )}
                             </div>
                             {index === 0 && <span className="best-badge">Best</span>}
                             <div className="quote-output">

@@ -1,10 +1,18 @@
 import Image from "next/image";
 import type { ExecutionSource } from "@/lib/execution/types";
 
+/**
+ * Henar is not an ExecutionSource: it is not a venue we quote, it is a route
+ * our own optimizer constructed across several of them. It only ever appears
+ * when the engine built something no single venue offered.
+ */
+export const HENAR_ROUTE_SOURCE = "henar";
+
 export const executionSourceBrand: Record<
-  ExecutionSource,
+  ExecutionSource | typeof HENAR_ROUTE_SOURCE,
   { label: string; logo: string | null }
 > = {
+  [HENAR_ROUTE_SOURCE]: { label: "Henar Router", logo: "/brand/henar.png" },
   jupiter: { label: "Jupiter", logo: "/dex/jupiter.png" },
   raydium: { label: "Raydium", logo: "/dex/raydium.svg" },
   orca: { label: "Orca", logo: "/dex/orca.png" },
