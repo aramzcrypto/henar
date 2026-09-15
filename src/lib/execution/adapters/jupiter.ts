@@ -84,11 +84,16 @@ export async function quoteJupiter(
     value.outputMint !== request.outputMint ||
     value.inAmount !== request.amount.toString() ||
     output <= 0n ||
+    /* Only a WIDER slippage than asked is a terms mismatch.
+       Jupiter's v2 order endpoint answers a firm RFQ with slippageBps 0 and
+       otherAmountThreshold equal to outAmount, which is strictly better
+       protection than the 50 bps requested. Demanding equality rejected those
+       quotes outright, so Jupiter vanished from the comparison on exactly the
+       pairs and sizes where it had a firm price: AAPLx at $10,000 showed
+       Raydium and OpenOcean only, and the best quote badge went to a route
+       that Jupiter beat. A tighter floor is never a reason to refuse. */
     (value.slippageBps !== undefined &&
-      value.slippageBps !== request.slippageBps &&
-      // Jupiter's v2 order endpoint may widen slippage dynamically on larger
-      // sizes. Callers that set their own floor (the Henar Router) opt out of
-      // this equality check; the production path keeps it.
+      value.slippageBps > request.slippageBps &&
       !options?.allowSlippageAdjustment)
   )
     throw new Error("Jupiter quote terms did not match the request.");

@@ -12,6 +12,7 @@ import {
   OPENOCEAN_PROVIDER_FEE_BPS,
   quoteOpenOcean,
 } from "../src/lib/execution/adapters/openocean";
+import { quoteJupiter } from "../src/lib/execution/adapters/jupiter";
 
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const SOL = "So11111111111111111111111111111111111111112";
@@ -348,5 +349,56 @@ test("Raydium remains available when Jupiter and Titan are not configured", asyn
     else delete process.env.TITAN_WS_URL;
     if (previousTitanKey) process.env.TITAN_API_KEY = previousTitanKey;
     else delete process.env.TITAN_API_KEY;
+  }
+});
+
+/**
+ * Regression: a firm quote is not a terms mismatch.
+ *
+ * Jupiter answers a firm RFQ with slippageBps 0 and otherAmountThreshold
+ * equal to outAmount — strictly better protection than the 50 bps asked for.
+ * The adapter demanded equality, so those quotes were rejected and Jupiter
+ * disappeared from the comparison on exactly the pairs where it had a firm
+ * price. AAPLx at $10,000 listed Raydium and OpenOcean only, and "best quote"
+ * went to a route Jupiter beat. Only a wider slippage than requested is a
+ * mismatch.
+ */
+test("jupiter: a tighter slippage than requested is accepted, a wider one is refused", async () => {
+  const previousFetch = global.fetch;
+  const previousKey = process.env.JUPITER_API_KEY;
+  process.env.JUPITER_API_KEY = "test-key";
+  const order = (slippageBps: number, outAmount = "3001307742") => ({
+    inputMint: USDC,
+    outputMint: SOL,
+    inAmount: "10000000000",
+    outAmount,
+    otherAmountThreshold: outAmount,
+    slippageBps,
+    priceImpactPct: "0",
+    routePlan: [],
+  });
+  try {
+    const request = { inputMint: USDC, outputMint: SOL, amount: 10_000_000_000n, slippageBps: 50 };
+
+    // Firm quote: no slippage at all, threshold equal to the output.
+    global.fetch = (async () => Response.json(order(0))) as typeof fetch;
+    const firm = await quoteJupiter(request);
+    assert.equal(firm.outputAmount, "3001307742");
+    assert.equal(firm.minimumOutputAmount, "3001307742");
+
+    // Equal to the request: still fine.
+    global.fetch = (async () => Response.json(order(50))) as typeof fetch;
+    assert.equal((await quoteJupiter(request)).outputAmount, "3001307742");
+
+    // Wider than asked: refused, because that is less protection than agreed.
+    global.fetch = (async () => Response.json(order(500))) as typeof fetch;
+    await assert.rejects(quoteJupiter(request), /did not match/);
+
+    // Unless the caller sets its own floor and opts in.
+    assert.equal((await quoteJupiter(request, { allowSlippageAdjustment: true })).outputAmount, "3001307742");
+  } finally {
+    global.fetch = previousFetch;
+    if (previousKey === undefined) delete process.env.JUPITER_API_KEY;
+    else process.env.JUPITER_API_KEY = previousKey;
   }
 });

@@ -68,8 +68,8 @@ import {
 } from "@/lib/payment-tokens";
 import type { MarketReview } from "@/lib/market";
 import { quoteAuthorization } from "@/lib/wallet-access-client";
-import { RouterComparison } from "./router-comparison";
 import { validateMarketTransaction } from "@/lib/market-transaction";
+import { buildRouterTrade, prepareRouterTransaction, type RouterBuild } from "@/lib/router-trade";
 import { inspectRouteWallet } from "@/lib/wallet-route-state";
 import { PublicKey } from "@solana/web3.js";
 import { unpackMint } from "@solana/spl-token";
@@ -408,7 +408,44 @@ export function Stockroom({
     feeBps: number;
     legs: { venue: string; pool: string | null; percent: number }[];
   } | null>(null);
+  /* What the router can actually execute, and for how much. Kept separately
+     from the displayed Henar row: the row appears only for a distinct
+     construction, while execution follows the best net output among routes
+     that can be built, whether that is a split or a single native pool. */
+  const [routerExecutable, setRouterExecutable] = useState<{
+    netOutput: string;
+    legs: number;
+    venues: string[];
+  } | null>(null);
+  /** A built Henar route awaiting confirmation, in place of a market review. */
+  const [routerReview, setRouterReview] = useState<RouterBuild | null>(null);
+  /* The router quotes one representation against USDC. Anything else is
+     outside its scope and executes through the market path. */
+  const routerSide: "buy" | "sell" | null =
+    payment.mint === PAYMENT_USDC.mint ? "buy" : receive.mint === PAYMENT_USDC.mint ? "sell" : null;
+  const routerMint = payment.mint === PAYMENT_USDC.mint ? receive.mint : payment.mint;
   const [quoteRefresh, setQuoteRefresh] = useState(0);
+  /* Which builder executes, decided by net user output.
+     Only two routes can actually be built: one Henar holds (a single native
+     pool or a split), and a Jupiter route through /api/market. Whichever
+     returns more to the user is the one the trade button uses. Quote-only
+     sources are ranked for information and are never executed. */
+  const marketBestOutput = useMemo(() => {
+    const jupiter = estimate?.candidates?.find((c) => c.source === "jupiter");
+    // /api/market always builds through Jupiter, so that is the comparable.
+    return jupiter?.output ?? null;
+  }, [estimate]);
+  const executeVia: "router" | "market" = useMemo(() => {
+    if (!routerExecutable) return "market";
+    if (!marketBestOutput) return "router";
+    try {
+      return new Decimal(routerExecutable.netOutput).gt(new Decimal(marketBestOutput)) ? "router" : "market";
+    } catch {
+      return "market";
+    }
+  }, [routerExecutable, marketBestOutput]);
+
+
   /* Every source competes on final net user output, Henar's own construction
      included. It earns its place in the ranking rather than sitting above the
      list: if a venue delivers more, that venue is the best quote and says so.
@@ -484,6 +521,7 @@ export function Stockroom({
   function editInput(value: string) {
     setEditingOutput(false);
     setEstimate(null);
+    setRouterReview(null);
     setAmount(value);
   }
   useEffect(() => {
@@ -532,8 +570,6 @@ export function Stockroom({
       /* Ask Henar's own optimizer in parallel. It is a separate request on
          purpose: a failure or a slow answer must never hold up or break the
          venue comparison the user is watching. */
-      const stockMint = payment.mint === PAYMENT_USDC.mint ? receive.mint : payment.mint;
-      const routerSide = payment.mint === PAYMENT_USDC.mint ? "buy" : receive.mint === PAYMENT_USDC.mint ? "sell" : null;
       if (routerSide && !editingOutput) {
         void (async () => {
           try {
@@ -542,7 +578,7 @@ export function Stockroom({
             const response = await fetch("/api/router/quote", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ mint: stockMint, side: routerSide, amount: raw.toString() }),
+              body: JSON.stringify({ mint: routerMint, side: routerSide, amount: raw.toString() }),
               signal: controller.signal,
             });
             if (!response.ok) throw new Error("router unavailable");
@@ -552,6 +588,20 @@ export function Stockroom({
                resolves to one venue the server sends nothing here, because
                that venue is already in the list and showing the same
                execution twice under two names flatters us and misleads. */
+            /* Executable when the guard approved a route Henar can build.
+               Jupiter is ranked too, but it is built through /api/market, so
+               it is not what this field is about. */
+            const mode = quote.executionProtection?.mode ?? null;
+            const legs: { venue: string; poolAddress: string | null; percentBps: number }[] = quote.route ?? [];
+            setRouterExecutable(
+              mode === "execute" && quote.netUserOutput && legs.length
+                ? {
+                    netOutput: formatUnits(BigInt(quote.netUserOutput), receive.decimals),
+                    legs: legs.length,
+                    venues: [...new Set(legs.map((leg) => leg.venue))],
+                  }
+                : null,
+            );
             const built = quote.henarRoute;
             if (!built || built.legs.length < 2 || !built.executable) {
               setHenarRoute(null);
@@ -565,11 +615,15 @@ export function Stockroom({
               legs: built.legs.map((leg: { venue: string; poolAddress: string | null; percentBps: number }) => ({ venue: leg.venue, pool: leg.poolAddress, percent: leg.percentBps / 100 })),
             });
           } catch {
-            if (!controller.signal.aborted) setHenarRoute(null);
+            if (!controller.signal.aborted) {
+              setHenarRoute(null);
+              setRouterExecutable(null);
+            }
           }
         })();
       } else {
         setHenarRoute(null);
+        setRouterExecutable(null);
       }
       try {
         const response = await fetch("/api/market/estimate", {
@@ -619,6 +673,8 @@ export function Stockroom({
     quoteRefresh,
     payment.decimals,
     receive.decimals,
+    routerMint,
+    routerSide,
   ]);
   const [paymentPicker, setPaymentPicker] = useState(false);
   const [assetPickerSide, setAssetPickerSide] = useState<"input" | "output">(
@@ -977,7 +1033,10 @@ export function Stockroom({
   try {
     fee = formatUnits(feeFor(parseUnits(displayedAmount, 6), tradeFeeBps), 6);
   } catch {}
-  const expired = review ? now >= review.expiresAt : false;
+  /* A built route awaiting confirmation, whichever builder produced it. */
+  const routerExpired = routerReview ? now >= Date.parse(routerReview.plan.expiresAt) : false;
+  const expired = review ? now >= review.expiresAt : routerExpired;
+  const built = Boolean(review) || Boolean(routerReview);
   async function getQuote() {
     if (!owner || operation.current) return;
     operation.current = true;
@@ -985,9 +1044,27 @@ export function Stockroom({
     setBusy(true);
     setError("");
     setReview(null);
+    setRouterReview(null);
     try {
       const authorization = await quoteAuthorization(owner, wallet.signMessage);
       if (token !== generation.current) return;
+      /* The route with the best net output is the route that gets built. */
+      if (executeVia === "router" && routerSide) {
+        const build = await buildRouterTrade({
+          mint: routerMint,
+          side: routerSide,
+          amount: parseUnits(displayedAmount, payment.decimals),
+          owner,
+          authorization,
+        });
+        if (token === generation.current) {
+          setRouterReview(build);
+          setReview(null);
+          setNow(Date.now());
+        }
+        return;
+      }
+      setRouterReview(null);
       const res = await fetch("/api/market", {
         method: "POST",
         headers: {
@@ -1017,13 +1094,52 @@ export function Stockroom({
     }
   }
   async function buy() {
-    if (!review || !wallet.signTransaction || !owner || operation.current)
+    if ((!review && !routerReview) || !wallet.signTransaction || !owner || operation.current)
       return;
     operation.current = true;
     setBusy(true);
     setError("");
     const token = generation.current;
     try {
+      /* A Henar route is validated against its own plan by the router
+         transaction validator, which checks the fee, the per-leg floors and
+         that nothing but the user signs. Submission and confirmation are
+         shared with the market path below. */
+      if (routerReview) {
+        setStatus("Checking transaction…");
+        const routerTx = await prepareRouterTransaction(
+          routerReview,
+          {
+            owner,
+            inputMint: payment.mint,
+            outputMint: receive.mint,
+            amount: parseUnits(displayedAmount, payment.decimals),
+          },
+          connection,
+        );
+        if (token !== generation.current) throw new Error("Quote changed. Nothing was signed.");
+        setStatus("Confirm in your wallet");
+        const signedRouterTx = await wallet.signTransaction(routerTx);
+        const routerSig = utils.bytes.bs58.encode(signedRouterTx.signatures[0]);
+        setSignature(routerSig);
+        setRouterReview(null);
+        await connection.sendRawTransaction(signedRouterTx.serialize(), { skipPreflight: false, maxRetries: 2 });
+        setStatus("Submitted · awaiting confirmation");
+        const routerDeadline = Date.now() + 60_000;
+        while (Date.now() < routerDeadline) {
+          const result = await connection.getSignatureStatuses([routerSig]);
+          const value = result.value[0];
+          if (value?.err) throw new Error("Transaction failed onchain. Inspect it on Solscan.");
+          if (value?.confirmationStatus === "confirmed" || value?.confirmationStatus === "finalized") {
+            setStatus("Confirmed");
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+        setStatus("Confirmation pending. Check Solscan before retrying.");
+        return;
+      }
+      if (!review) throw new Error("Request a fresh quote.");
       if (
         review.owner !== owner ||
         review.mint !== receive.mint ||
@@ -1427,25 +1543,6 @@ export function Stockroom({
                   </span>
                 </div>
               </div>
-              {mode === "market" && (
-                <RouterComparison
-                  mint={stock.mint}
-                  side={
-                    payment.mint === PAYMENT_USDC.mint && receive.mint === stock.mint
-                      ? "buy"
-                      : payment.mint === stock.mint && receive.mint === PAYMENT_USDC.mint
-                        ? "sell"
-                        : null
-                  }
-                  amountUi={amount}
-                  inputDecimals={payment.decimals}
-                  outputDecimals={receive.decimals}
-                  outputSymbol={receive.symbol}
-                  owner={owner ?? null}
-                  wallet={wallet}
-                  connection={connection}
-                />
-              )}
               {mode === "limit" && (
                 <div className="advanced-order">
                   <div className="expiry-options">
@@ -1729,13 +1826,13 @@ export function Stockroom({
                     className="primary"
                     data-transaction-tone={busy ? transactionTone : undefined}
                     disabled={busy || !wallet.signTransaction}
-                    onClick={review && !expired ? buy : getQuote}
+                    onClick={built && !expired ? buy : getQuote}
                   >
                     {busy
                       ? status || "Getting quote…"
                       : !wallet.signTransaction
                         ? "Wallet cannot sign"
-                        : review && !expired
+                        : built && !expired
                           ? `Swap ${payment.symbol} for ${receive.symbol}`
                           : expired
                             ? "Refresh quote"
