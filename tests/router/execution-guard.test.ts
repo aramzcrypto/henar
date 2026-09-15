@@ -257,7 +257,16 @@ test("reference price: divergence, staleness, session, and mandatory presence", 
   const strict = { ...DEFAULT_EXECUTION_POLICY, requireReferencePrice: true, requireOpenSession: true };
   assert.ok(failing(guardQuote(ranked("raydium"), strict, ctx("raydium"))).includes("reference.present"));
   assert.ok(failing(guardQuote(ranked("raydium"), strict, ctx("raydium", {}, { reference: ref({ session: { ...ref().session, status: "closed" } }) }))).includes("session.open"));
-  assert.ok(failing(guardQuote(ranked("raydium"), DEFAULT_EXECUTION_POLICY, ctx("raydium", {}, { reference: ref(), representationDecimals: null }))).includes("reference.divergence"));
+  /* Divergence needs decimals. The context no longer has to carry them: every
+     catalogued representation now has decimals from the verified-mint
+     artifact, and the guard falls back to that. */
+  assert.equal(guardQuote(ranked("raydium"), DEFAULT_EXECUTION_POLICY, ctx("raydium", {}, { reference: ref(), representationDecimals: null })).approved, true);
+  /* With neither source supplying them the comparison is impossible, and the
+     guard fails closed rather than approving an uncomparable price. */
+  const unverified = ranked("raydium", { ...buy(), representationId: "unverified:mint" });
+  const uncomparable = guardQuote(unverified, DEFAULT_EXECUTION_POLICY, ctx("raydium", {}, { reference: ref(), representationDecimals: null }));
+  assert.ok(failing(uncomparable).includes("reference.divergence"));
+  assert.match(uncomparable.checks.find((c) => c.name === "reference.divergence")!.detail, /decimals unknown/);
 });
 
 test("DBC: lifecycle, graduation headroom, migration venue and mint support come from the quote's own metadata", () => {
