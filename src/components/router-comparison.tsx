@@ -34,6 +34,7 @@ type RouterQuote = {
   exclusions: { venue: string; reason: string; detail: string | null }[];
   executionProtection: { mode: string; slippageBps: number | null; checks: { name: string; ok: boolean; detail: string }[] } | null;
   unavailableReason: string | null;
+  bestQuote: { venue: string; netOutput: string; executable: boolean; via: string } | null;
   liveValidation: string;
 };
 
@@ -220,6 +221,12 @@ export function RouterComparison({
               </i>
             </div>
           </div>
+          {quote.bestQuote && best && quote.bestQuote.venue !== best.venue && (
+            <p className="router-compare-status">
+              Best seen: {VENUE_LABEL[quote.bestQuote.venue] ?? quote.bestQuote.venue} {formatUnits(quote.bestQuote.netOutput, outputDecimals, 6)} {outputSymbol}
+              {quote.bestQuote.via === "review-swap" ? " · use Review swap" : quote.bestQuote.via === "none" ? " · not executable here yet" : ""}
+            </p>
+          )}
           {mode === "execute" && (
             <button type="button" className="router-compare-trade" onClick={trade} disabled={!canTrade}>
               {busy ? (status ?? "Working…") : `Trade via Henar Router (${best ? (VENUE_LABEL[best.venue] ?? best.venue) : "router"})`}

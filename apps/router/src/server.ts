@@ -14,6 +14,7 @@ import { raydiumAdapter, clmmStateReader } from "@henar/venue-raydium";
 import { meteoraAdapter, dlmmStateReader } from "@henar/venue-meteora";
 import { meteoraDbcAdapter, dbcStateReader } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter, dammV2StateReader } from "@henar/venue-meteora-damm-v2";
+import { openOceanAdapter } from "@henar/venue-openocean";
 import { RouterApi } from "./api";
 import { RouterHealth } from "./health";
 import { FakeStreamSource, SolanaWebSocketStream } from "./stream";
@@ -47,7 +48,7 @@ export async function startRouterServer(port = Number(process.env.PORT ?? 8787))
   });
   const health = new RouterHealth(worker, { executionEnabled: () => flagEnabled("routerExecution") });
   const api = new RouterApi({
-    adapters: [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter],
+    adapters: [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter],
     connection,
     health,
     telemetry: telemetrySinkFromEnv(),

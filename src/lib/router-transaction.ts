@@ -24,7 +24,7 @@ const VENUE_PROGRAMS = new Set([
 export type RouterPlanSummary = {
   owner: string;
   side: "buy" | "sell";
-  legs: { venue: string; poolAddress: string; programId: string; amountIn: string; expectedAmountOut: string; minimumAmountOut: string }[];
+  legs: { venue: string; poolAddress: string; programId: string; amountIn: string; expectedAmountOut: string; minimumAmountOut: string; programIds?: string[] }[];
   totals: { amountIn: string; expectedAmountOut: string; minimumAmountOut: string; minimumNetUserOutput: string };
   henarFee: { mint: string; amount: string; bps: number; on: "input" | "output"; destination: string; tokenProgram: string; decimals: number };
   requiredPrograms: string[];
@@ -44,9 +44,16 @@ export function validateRouterTransaction(
   if (plan.owner !== expected.owner) fail("owner");
   if (BigInt(plan.totals.amountIn) !== expected.amount) fail("amount");
   if (Date.now() >= Date.parse(plan.expiresAt)) fail("expired");
+  const aggregatorPrograms = new Set<string>();
   for (const leg of plan.legs) {
     if (BigInt(leg.minimumAmountOut) <= 0n) fail("leg floor");
-    if (!VENUE_PROGRAMS.has(leg.programId)) fail("leg program");
+    if (leg.programId.startsWith("aggregator:")) {
+      // Aggregator leg: the server lists the programs its instructions invoke;
+      // they are allowed for this transaction only. Signer, payer and fee
+      // checks below still apply to every instruction.
+      if (!leg.programIds?.length) fail("aggregator programs");
+      for (const p of leg.programIds!) aggregatorPrograms.add(p);
+    } else if (!VENUE_PROGRAMS.has(leg.programId)) fail("leg program");
   }
   if (plan.henarFee.bps !== 15) fail("fee bps");
   const feeMint = plan.henarFee.on === "input" ? expected.inputMint : expected.outputMint;
@@ -58,8 +65,8 @@ export function validateRouterTransaction(
   if (tx.signatures.some((s) => s.some((b) => b !== 0))) fail("presigned");
   const keys = msg.getAccountKeys({ addressLookupTableAccounts: tables });
   const owner = new PublicKey(expected.owner);
-  const allowed = new Set([COMPUTE_BUDGET, ATA_PROGRAM, TOKEN_PROGRAM_ID.toBase58(), TOKEN_2022_PROGRAM_ID.toBase58(), ...VENUE_PROGRAMS]);
-  const legPrograms = new Set(plan.legs.map((l) => l.programId));
+  const allowed = new Set([COMPUTE_BUDGET, ATA_PROGRAM, TOKEN_PROGRAM_ID.toBase58(), TOKEN_2022_PROGRAM_ID.toBase58(), ...VENUE_PROGRAMS, ...aggregatorPrograms]);
+  const legPrograms = new Set(plan.legs.filter((l) => !l.programId.startsWith("aggregator:")).map((l) => l.programId));
   const seenPrograms = new Set<string>();
   let feeTransfers = 0;
   for (const ix of msg.compiledInstructions) {

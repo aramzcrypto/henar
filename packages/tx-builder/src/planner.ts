@@ -39,11 +39,18 @@ export const HENAR_PROGRAM_IDS: Record<Venue, string | null> = {
   "meteora-dbc": "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN",
   "meteora-damm-v2": "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG",
   orca: null,
+  /** Aggregator legs carry their real program set from the build (`programIds`). */
+  titan: "aggregator:titan",
+  openocean: null,
+  okx: null,
 };
 
 /** Conservative per-venue compute and account estimates (refined from simulation, Task 16). */
 export const VENUE_COMPUTE_ESTIMATE: Record<Venue, { units: number; accounts: number }> = {
   jupiter: { units: 300_000, accounts: 40 },
+  titan: { units: 400_000, accounts: 48 },
+  openocean: { units: 300_000, accounts: 40 },
+  okx: { units: 300_000, accounts: 40 },
   raydium: { units: 200_000, accounts: 24 },
   meteora: { units: 250_000, accounts: 26 },
   "meteora-dbc": { units: 180_000, accounts: 18 },

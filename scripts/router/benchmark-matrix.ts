@@ -27,6 +27,7 @@ import { raydiumAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
 import { meteoraDbcAdapter } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter } from "@henar/venue-meteora-damm-v2";
+import { openOceanAdapter } from "@henar/venue-openocean";
 
 export type MatrixRecord = {
   schema: "henar.router.matrix.v1";
@@ -59,7 +60,7 @@ async function main() {
   await mkdir("logs", { recursive: true });
   const run = new Date().toISOString();
   const limit = Number(process.argv[2] ?? "25");
-  const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter];
+  const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter];
   const sink = new MemorySink();
   const registry = loadPoolRegistry();
   const reps = [...registry.byRepresentation.entries()].filter(([, p]) => p.some((x) => x.enabled)).map(([id]) => id).slice(0, limit);

@@ -37,6 +37,7 @@ import { raydiumAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
 import { meteoraDbcAdapter } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter } from "@henar/venue-meteora-damm-v2";
+import { openOceanAdapter } from "@henar/venue-openocean";
 
 const USDC_DECIMALS = 6;
 
@@ -51,7 +52,7 @@ async function main() {
   const usdcIn = BigInt(Math.round(notional * 10 ** USDC_DECIMALS));
   const rpc = process.env.SOLANA_RPC_URL;
   const connection = rpc ? new Connection(rpc, "confirmed") : null;
-  const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter];
+  const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter];
   const registry = loadPoolRegistry();
 
   const logPath = process.env.HENAR_ROUTER_BENCHMARK_LOG ?? "logs/router-benchmark.jsonl";

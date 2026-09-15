@@ -319,3 +319,9 @@ test("company-level: sells never cross representations; buys pick the best appro
   assert.equal(selectAcrossRepresentations(candidates, "sell", "xstocks:A")?.representationId, "xstocks:A");
   assert.equal(selectAcrossRepresentations(candidates, "sell", "ondo:A"), null);
 });
+
+test("aggregator venues (openocean) are guarded without registry/slot checks and stay quote-only", () => {
+  const v = guardQuote(ranked("openocean", buy(), SHARES_FOR_100, { poolAddress: null, onchainCheckedAtQuote: false, executionPath: "none", slot: null }), DEFAULT_EXECUTION_POLICY, ctx("jupiter"));
+  assert.deepEqual(failing(v), []);
+  assert.equal(v.mode, "quote-only");
+});

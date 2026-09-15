@@ -56,6 +56,8 @@ export type BuiltTransaction = {
   lookupTables: string[];
   /** Every leg's floor as passed to its adapter, for audit. */
   legFloors: { index: number; venue: string; minimumAmountOut: string }[];
+  /** Programs each leg's instructions invoke (aggregator legs report theirs). */
+  legPrograms: { index: number; programIds: string[] }[];
   builtAt: string;
 };
 
@@ -111,6 +113,7 @@ export async function buildTransaction(plan: ExecutionPlan, options: BuilderOpti
   if (plan.henarFee.on === "input" && fromRaw(plan.henarFee.amount) > 0n) instructions.push(feeIx());
 
   const legFloors: BuiltTransaction["legFloors"] = [];
+  const legPrograms: BuiltTransaction["legPrograms"] = [];
   for (const leg of plan.legs) {
     const result = await options.legBuilder(leg, { owner: plan.owner, minimumAmountOut: leg.minimumAmountOut });
     if (result.reason || !result.instructions.length)
@@ -120,6 +123,7 @@ export async function buildTransaction(plan: ExecutionPlan, options: BuilderOpti
         if (k.isSigner && !k.pubkey.equals(owner)) return { ok: false, reason: "INVALID_REQUEST", detail: `leg ${leg.index} requires signer ${k.pubkey.toBase58()}` };
     instructions.push(...result.instructions);
     legFloors.push({ index: leg.index, venue: leg.venue, minimumAmountOut: leg.minimumAmountOut });
+    legPrograms.push({ index: leg.index, programIds: result.programIds ?? [...new Set(result.instructions.map((ix) => ix.programId.toBase58()))] });
   }
   if (plan.henarFee.on === "output" && fromRaw(plan.henarFee.amount) > 0n) instructions.push(feeIx());
 
@@ -139,6 +143,7 @@ export async function buildTransaction(plan: ExecutionPlan, options: BuilderOpti
       accountKeys: message.staticAccountKeys.length + message.addressTableLookups.reduce((s, l) => s + l.readonlyIndexes.length + l.writableIndexes.length, 0),
       lookupTables: tables.map((t) => t.key.toBase58()),
       legFloors,
+      legPrograms,
       builtAt: new Date(now).toISOString(),
     },
   };

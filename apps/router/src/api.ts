@@ -81,6 +81,8 @@ export type QuoteApiResponse = {
   executionProtection: { mode: "execute" | "quote-only" | "refused"; slippageBps: number | null; checks: { name: string; ok: boolean; detail: string }[]; policy: string } | null;
   verification: { poolVerification: string | null; onchainCheckedAtQuote: boolean | null; calculatorStatus: string } | null;
   unavailableReason: string | null;
+  /** Best approved quote regardless of executability (the meta-aggregator benchmark). */
+  bestQuote: { venue: string; netOutput: string; executable: boolean; via: "henar-router" | "review-swap" | "none" } | null;
   liveValidation: "LIVE_VALIDATION_PENDING";
 };
 
@@ -131,7 +133,10 @@ export class RouterApi {
       userMaxSlippageBps: body.maxSlippageBps ?? null,
       allowLegacyExecution: false,
     });
-    let selected = guarded.selected;
+    // Prefer the best quote Henar can execute natively; otherwise the best
+    // approved quote (Jupiter executes through the existing Trade button).
+    const bestApproved = guarded.selected;
+    let selected = guarded.verdicts.find((v) => v.approved && v.mode === "execute") ?? bestApproved;
     let chosen: RankedQuote | null = selected?.quote ?? result.best;
     // Split route (Task 12): every leg must pass the guard on its own; the
     // route is used only if it still beats the best approved single venue.
@@ -141,7 +146,7 @@ export class RouterApi {
       const verdicts = result.route.legs.map((leg) => guardQuote(leg, this.deps.policy ?? DEFAULT_EXECUTION_POLICY, { now: this.now(), currentSlot, reference, representationDecimals: rep.decimals, userMaxSlippageBps: body.maxSlippageBps ?? null, allowLegacyExecution: false }));
       const allApproved = verdicts.every((v) => v.approved);
       const splitNet = fromRaw(result.route.netOutput);
-      if (allApproved && (!selected || splitNet > fromRaw(selected.quote.netOutput))) {
+      if (allApproved && (!selected || selected.mode !== "execute" || splitNet > fromRaw(selected.quote.netOutput))) {
         legVerdicts = verdicts;
         const total = fromRaw(result.route.fees.venueInput);
         routeLegs = result.route.legs.map((leg) => ({ venue: leg.venue, poolAddress: leg.poolAddress, percentBps: Number((fromRaw(leg.fees.venueInput) * 10_000n) / total) }));
@@ -179,6 +184,9 @@ export class RouterApi {
           : null,
       verification: chosen ? { poolVerification: chosen.poolAddress ? (poolByAddress(chosen.poolAddress)?.verification ?? null) : null, onchainCheckedAtQuote: chosen.onchainCheckedAtQuote, calculatorStatus: chosen.venue === "meteora-dbc" || chosen.venue === "meteora-damm-v2" ? "SDK_BACKED" : "LIVE_VALIDATION_PENDING" } : null,
       unavailableReason: chosen ? (selected ? null : (guarded.verdicts[0]?.reason ?? null)) : (result.exclusions[0]?.reason ?? "NO_VERIFIED_POOL"),
+      bestQuote: bestApproved
+        ? { venue: bestApproved.quote.venue, netOutput: bestApproved.quote.netOutput, executable: bestApproved.mode === "execute" || bestApproved.quote.venue === "jupiter", via: bestApproved.mode === "execute" ? "henar-router" : bestApproved.quote.venue === "jupiter" ? "review-swap" : "none" }
+        : null,
       liveValidation: "LIVE_VALIDATION_PENDING",
     };
     this.cache.set(quoteId, { response, verdict: selected, legVerdicts, result, expiresAt: Date.parse(expiresAt) });

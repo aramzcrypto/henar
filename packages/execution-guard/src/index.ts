@@ -19,6 +19,7 @@
  * What does not: quoting, building, submission (Tasks 13–17).
  */
 import {
+  AGGREGATOR_VENUES,
   bpsOf,
   fromRaw,
   isOnchainVerified,
@@ -198,6 +199,12 @@ function venueChecks(quote: RankedQuote, policy: ExecutionPolicy): GuardCheck[] 
     case "jupiter":
       checks.push(check("jupiter.path", quote.executionPath === "legacy-market-api", "NOT_IMPLEMENTED", `execution path ${quote.executionPath}`));
       break;
+    case "titan":
+    case "openocean":
+    case "okx":
+      // Aggregator quotes are firm only for their TTL; the adapter states the path.
+      checks.push(check(`${quote.venue}.quoted`, quote.expectedAmountOut !== "0", "INSUFFICIENT_LIQUIDITY", "aggregator returned a quote"));
+      break;
     default:
       checks.push(check("venue.known", false, "VENUE_NOT_CONFIGURED", `no guard rules for venue ${quote.venue as Venue}`));
   }
@@ -222,13 +229,13 @@ export function guardQuote(quote: RankedQuote, policy: ExecutionPolicy, ctx: Gua
   // 2. Freshness.
   const ageMs = ctx.now - Date.parse(quote.quotedAt);
   checks.push(check("quote.age", ageMs <= policy.maxQuoteAgeMs && ctx.now <= Date.parse(quote.expiresAt), "QUOTE_EXPIRED", `quote is ${ageMs}ms old`));
-  if (quote.venue !== "jupiter") {
+  if (!AGGREGATOR_VENUES.has(quote.venue)) {
     const slotOk = quote.slot !== null && ctx.currentSlot !== null && ctx.currentSlot - quote.slot <= policy.maxStateAgeSlots && ctx.currentSlot >= quote.slot;
     checks.push(check("state.slotAge", slotOk, "ROUTE_STATE_STALE", quote.slot === null ? "quote carries no slot" : ctx.currentSlot === null ? "current slot unknown" : `state is ${ctx.currentSlot - quote.slot} slots old`));
   }
 
-  // 3. Registry pool: eligibility and verification.
-  if (quote.venue !== "jupiter") {
+  // 3. Registry pool: eligibility and verification (Henar-held venues only).
+  if (!AGGREGATOR_VENUES.has(quote.venue)) {
     const pool = quote.poolAddress ? poolByAddress(quote.poolAddress, ctx.registry) : null;
     checks.push(check("pool.registered", pool !== null && pool.enabled, "NO_VERIFIED_POOL", pool ? (pool.enabled ? "enabled registry pool" : `pool disabled: ${pool.disabledReason}`) : "pool not in registry"));
     if (pool) {

@@ -33,7 +33,17 @@ export type Venue =
   | "meteora"
   | "meteora-dbc"
   | "meteora-damm-v2"
-  | "orca";
+  | "orca"
+  | "titan"
+  | "openocean"
+  | "okx";
+
+/**
+ * Venues that are aggregators / RFQ networks rather than pools Henar holds
+ * state for. They have no registry pool, no on-chain re-check at quote time,
+ * and are benchmarked and routed to only when they beat Henar's own venues.
+ */
+export const AGGREGATOR_VENUES: ReadonlySet<Venue> = new Set<Venue>(["jupiter", "titan", "openocean", "okx"]);
 export type Provider = "xstocks" | "backpack" | "ondo";
 
 export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -620,6 +630,8 @@ export type PlannedLeg = {
   percentBps: number;
   sourceSlot: number | null;
   quoteSource: string;
+  /** Aggregator legs: every program the returned instructions invoke (filled at build). */
+  programIds?: string[];
 };
 
 export type PlannedAta = {
@@ -764,6 +776,8 @@ export type BuildResult = {
   lookupTables: PublicKey[];
   reason: UnavailableReason | null;
   detail: string | null;
+  /** Aggregator venues: distinct programs the instructions invoke, for client validation. */
+  programIds?: string[];
 };
 
 export interface VenueAdapter {
