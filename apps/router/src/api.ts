@@ -74,7 +74,9 @@ export type QuoteApiResponse = {
   priceImpactBps: number | null;
   expiresAt: string;
   route: { venue: string; poolAddress: string | null; percentBps: number }[] | null;
-  alternatives: { venue: string; netOutput: string; priceImpactBps: number | null; approved: boolean; reason: string | null; failedChecks: string[] }[];
+  alternatives: { venue: string; netOutput: string; priceImpactBps: number | null; approved: boolean; reason: string | null; failedChecks: string[]; routePlan?: unknown }[];
+  /** Jupiter's own route plan (AMM labels, pools, split) for venue-coverage analysis. */
+  benchmarkRoutePlan: unknown;
   exclusions: { venue: string; reason: string; detail: string | null }[];
   executionProtection: { mode: "execute" | "quote-only" | "refused"; slippageBps: number | null; checks: { name: string; ok: boolean; detail: string }[]; policy: string } | null;
   verification: { poolVerification: string | null; onchainCheckedAtQuote: boolean | null; calculatorStatus: string } | null;
@@ -168,6 +170,7 @@ export class RouterApi {
       expiresAt,
       route: routeLegs ?? (chosen ? [{ venue: chosen.venue, poolAddress: chosen.poolAddress, percentBps: 10_000 }] : null),
       alternatives: guarded.verdicts.filter((v) => v !== selected).map((v) => ({ venue: v.quote.venue, netOutput: v.quote.netOutput, priceImpactBps: v.quote.priceImpactBps, approved: v.approved, reason: v.reason, failedChecks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })),
+      benchmarkRoutePlan: (guarded.verdicts.find((v) => v.quote.venue === "jupiter")?.quote.rawRouteMetadata as { route?: unknown } | null)?.route ?? null,
       exclusions: result.exclusions.map((x) => ({ venue: x.venue, reason: x.reason, detail: x.detail })),
       executionProtection: selected
         ? { mode: selected.mode, slippageBps: selected.slippageBps, checks: selected.checks.map((c) => ({ name: c.name, ok: c.ok, detail: c.detail })), policy: "DEFAULT_EXECUTION_POLICY" }
