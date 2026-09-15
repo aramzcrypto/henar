@@ -17,6 +17,7 @@ import { openOceanAdapter } from "@henar/venue-openocean";
 import { orcaAdapter } from "@henar/venue-orca";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 let api: RouterApi | null = null;
@@ -36,7 +37,7 @@ function routerApi() {
 export async function POST(request: Request) {
   if (!flagEnabled("routerQuotes") || process.env.HENAR_ROUTER_UI !== "1")
     return NextResponse.json({ error: "router comparison is disabled" }, { status: 404 });
-  let body: { mint?: string; side?: "buy" | "sell"; amount?: string };
+  let body: { mint?: string; side?: "buy" | "sell"; amount?: string; deadlineMs?: number };
   try {
     body = await request.json();
   } catch {
@@ -44,6 +45,12 @@ export async function POST(request: Request) {
   }
   const rep = body.mint ? routerRepresentationForMint(body.mint) : null;
   if (!rep || !body.side || !body.amount) return NextResponse.json({ error: "mint, side and amount are required" }, { status: 400 });
-  const r = await routerApi().quote({ representationId: rep.id, side: body.side, amount: body.amount });
+  /* A caller may ask for a longer venue deadline for diagnosis. Clamped, and
+     never the default: production times out Raydium and Orca at exactly
+     6000ms on calls that take under two seconds locally, and without being
+     able to let one run longer there is no way to learn what they actually
+     cost in that environment. */
+  const deadlineMs = Math.min(Math.max(Number(body.deadlineMs) || 0, 0), 25_000) || undefined;
+  const r = await routerApi().quote({ representationId: rep.id, side: body.side, amount: body.amount, deadlineMs });
   return NextResponse.json(r.body, { status: r.status });
 }

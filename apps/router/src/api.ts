@@ -54,6 +54,8 @@ export type QuoteApiRequest = {
   amount: string;
   wallet?: string | null;
   maxSlippageBps?: number | null;
+  /** Diagnostic override for the per-venue deadline; the engine default otherwise. */
+  deadlineMs?: number;
 };
 
 export type QuoteApiResponse = {
@@ -209,7 +211,7 @@ export class RouterApi {
       maxSlippageBps: body.maxSlippageBps ?? null,
     };
     const started = this.now();
-    const result = await quoteRepresentation(request, { adapters: this.deps.adapters, connection: this.deps.connection, telemetry: this.deps.telemetry ?? null, now: () => this.now() });
+    const result = await quoteRepresentation(request, { adapters: this.deps.adapters, connection: this.deps.connection, telemetry: this.deps.telemetry ?? null, now: () => this.now(), deadlineMs: body.deadlineMs });
     for (const q of [result.best, ...result.alternatives]) if (q) this.deps.health?.recordQuote(q.venue, true, result.latencyMs[q.venue] ?? this.now() - started);
     for (const x of result.exclusions) this.deps.health?.recordQuote(x.venue, false, result.latencyMs[x.venue] ?? 0);
 
