@@ -13,7 +13,8 @@ import { writeFile } from "node:fs/promises";
 import { equityRegistry } from "../../src/lib/equities/registry";
 
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const OUTPUT = "src/data/router/raydium-discovery.json";
+const ALL_PAIRS = process.env.RAYDIUM_ALL_PAIRS === "1";
+const OUTPUT = ALL_PAIRS ? "src/data/router/raydium-discovery-all.json" : "src/data/router/raydium-discovery.json";
 const CONCURRENCY = 3;
 const DELAY_MS = 180;
 
@@ -64,9 +65,14 @@ async function main() {
       done += 1;
       const fetchedAt = new Date().toISOString();
       try {
+        /* With ALL_PAIRS set, mint2 is omitted and Raydium returns every pool
+           holding this mint rather than only its USDC pair. That is how
+           stock/SOL liquidity on Raydium is found at all: asking for the USDC
+           pair can only ever return the USDC pair, so 310 USDC pools were
+           mistaken for the whole of Raydium's coverage. */
         const params = new URLSearchParams({
           mint1: item.mint,
-          mint2: USDC,
+          ...(ALL_PAIRS ? {} : { mint2: USDC }),
           poolType: "all",
           poolSortField: "default",
           sortType: "desc",

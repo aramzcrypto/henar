@@ -1,6 +1,5 @@
 /**
- * Admit verified representation/SOL and representation/USDT pools as routing
- * legs.
+ * Admit verified representation/intermediate pools as routing legs.
  *
  * Discovery found 524 non-USDC Orca pools, 132 of them pairing a
  * representation with SOL or USDT across 49 representations, and they were set
@@ -25,6 +24,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import {
   USDC_MINT,
   intermediateRecord,
+  verifiedMint as verifiedMintFacts,
   isQualifiedIntermediate,
   qualifiedIntermediates,
   listRouterRepresentations,
@@ -36,12 +36,39 @@ import { jupiterMetadata } from "@/lib/equities/jupiter";
 import { quoteJupiter } from "@/lib/execution/adapters/jupiter";
 import { rateLimitedConnection } from "@/lib/rpc-limiter";
 
-const DISCOVERY = "src/data/router/orca-discovery.json";
+const ORCA_DISCOVERY = "src/data/router/orca-discovery.json";
+const RAYDIUM_DISCOVERY = "src/data/router/raydium-discovery-all.json";
+/* Raydium's own TVL is used for its pools, as it is for the USDC routes
+   already in the registry; Orca pools are valued from their vaults because no
+   venue number exists for them. */
+const RAYDIUM_PROGRAMS: Record<string, string> = {
+  CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK: "clmm",
+  CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C: "cpmm",
+  "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8": "amm_v4",
+};
 const REGISTRY = "src/data/router/pools.json";
 const MIN_TVL_USD = Number(process.env.LEG_MIN_TVL_USD ?? "1000");
 const ORCA_WHIRLPOOL_PROGRAM = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";
 /** SPL token account layout: amount is a u64 at offset 64. */
 const AMOUNT_OFFSET = 64;
+
+type RaydiumDiscoveryRow = {
+  mint: string;
+  tokenSymbol: string;
+  representationId: string;
+  provider: string;
+  fetchedAt: string;
+  pools: RaydiumPoolInfo[];
+};
+
+type RaydiumPoolInfo = {
+  id: string;
+  programId: string;
+  tvl?: number;
+  feeRate?: number;
+  mintA?: { address: string };
+  mintB?: { address: string };
+};
 
 type DiscoveredPool = {
   address: string;
@@ -85,7 +112,7 @@ async function main() {
   if (!rpc) throw new Error("SOLANA_RPC_URL is required; routing legs are admitted from chain state, not from a file.");
   const connection: Connection = rateLimitedConnection(rpc);
 
-  const discovery = JSON.parse(await readFile(DISCOVERY, "utf8")) as { pools: DiscoveredPool[] };
+  const discovery = JSON.parse(await readFile(ORCA_DISCOVERY, "utf8")) as { pools: DiscoveredPool[] };
   /* Any pool whose counter asset qualified as an intermediate, not a hand
      picked pair. Qualification is the round-trip measurement, so the breadth
      here is exactly the breadth the measurement supports. */
@@ -196,6 +223,79 @@ async function main() {
   /* The registry's canonical order is representation, then TVL descending.
      Sorting these in by any other key makes two builds disagree on order
      while agreeing on contents, which the determinism test exists to catch. */
+  /* Raydium legs. The venue reports amounts and TVL directly, so these need
+     no vault read; what they do need is the same admission rules: a qualified
+     intermediate on the other side, a verified representation, and depth. */
+  try {
+    /* The Raydium dump is a top-level array; the Orca one is an object with a
+       pools key. Accepting both here beats discovering the difference through
+       an empty result. */
+    const parsed = JSON.parse(await readFile(RAYDIUM_DISCOVERY, "utf8")) as
+      | RaydiumDiscoveryRow[]
+      | { pools: RaydiumDiscoveryRow[] };
+    const rows: RaydiumDiscoveryRow[] = Array.isArray(parsed) ? parsed : (parsed.pools ?? []);
+    process.stdout.write(`  raydium rows: ${rows.length}\n`);
+    for (const row of rows) {
+      const rep = byMint.get(row.mint);
+      if (!rep) continue;
+      for (const pool of row.pools ?? []) {
+        const poolType = RAYDIUM_PROGRAMS[pool.programId];
+        const a = pool.mintA?.address;
+        const b = pool.mintB?.address;
+        if (!poolType || !a || !b) continue;
+        const counter = a === row.mint ? b : a;
+        if (counter === USDC_MINT || !isQualifiedIntermediate(counter) || known.has(pool.id)) continue;
+        if (!verifiedMintFacts(counter) || !verifiedMintFacts(row.mint)) continue;
+        const tvl = typeof pool.tvl === "number" && Number.isFinite(pool.tvl) ? pool.tvl : null;
+        if (tvl === null) {
+          skipped.push({ address: pool.id, symbol: row.tokenSymbol, reason: "venue reported no TVL" });
+          continue;
+        }
+        /* Only pool types an adapter can quote are enabled. A cpmm or amm_v4
+           leg is recorded because it is real liquidity, but nothing in the
+           router can price it, so enabling it would put a pool in the
+           candidate set that can only ever fail. */
+        const quotable = poolType === "clmm";
+        const deep = tvl >= MIN_TVL_USD && quotable;
+        known.add(pool.id);
+        admitted.push({
+          id: `raydium:${pool.id}`,
+          representationId: row.representationId,
+          mint: row.mint,
+          provider: rep.provider,
+          tokenSymbol: row.tokenSymbol,
+          venue: "raydium",
+          address: pool.id,
+          programId: pool.programId,
+          poolType: poolType as never,
+          baseMint: a,
+          quoteMint: b,
+          feeBps: typeof pool.feeRate === "number" ? Math.round(pool.feeRate * 10_000) : null,
+          feeConfig: null,
+          observedTokenPrograms: null,
+          tvlUsd: tvl,
+          discoveredFrom: "RAYDIUM_API",
+          discoverySources: ["RAYDIUM_API"],
+          discoveredAt: row.fetchedAt,
+          verifiedAt: at,
+          verification: "DISCOVERED",
+          onchainVerifiedAt: null,
+          verificationDetail: `routing leg, venue-reported TVL $${Math.round(tvl)}`,
+          eligibility: "ROUTING_LEG",
+          dbc: null,
+          enabled: deep,
+          disabledReason: deep
+            ? null
+            : quotable
+              ? `routing leg below the $${MIN_TVL_USD} floor (TVL $${Math.round(tvl)})`
+              : `no direct adapter for ${poolType}`,
+        });
+      }
+    }
+  } catch (error) {
+    process.stdout.write(`  Raydium legs skipped: ${(error as Error).message}\n`);
+  }
+
   const merged = [...registry, ...admitted].sort((a, b) =>
     a.representationId === b.representationId
       ? (b.tvlUsd ?? 0) - (a.tvlUsd ?? 0)
