@@ -46,6 +46,7 @@
     "router:serve": "node --env-file-if-exists=.env.local --import tsx apps/router/src/server.ts",
     "router:discover:jupiter": "node --env-file-if-exists=.env.local --import tsx apps/router/src/discover-from-jupiter.ts",
     "router:verify:pools": "node --env-file-if-exists=.env.local --import tsx scripts/router/verify-pools-onchain.ts",
+    "router:validate:build-sim": "node --env-file-if-exists=.env.local --import tsx scripts/router/validate-build-sim.ts",
     "router:validate": "node --env-file-if-exists=.env.local --import tsx scripts/router/validate-native.ts",
     "router:pools:build": "node --import tsx scripts/router/build-pool-registry.ts",
     "router:benchmark:matrix": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark-matrix.ts",
