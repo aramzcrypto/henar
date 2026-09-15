@@ -45,6 +45,7 @@
     "router:dbc:refresh": "node --env-file-if-exists=.env.local --import tsx scripts/router/refresh-dbc-lifecycle.ts",
     "router:serve": "node --env-file-if-exists=.env.local --import tsx apps/router/src/server.ts",
     "router:discover:jupiter": "node --env-file-if-exists=.env.local --import tsx apps/router/src/discover-from-jupiter.ts",
+    "router:trace": "node --env-file-if-exists=.env.local --import tsx scripts/router/trace-quote.ts",
     "router:verify:mints": "node --env-file-if-exists=.env.local --import tsx scripts/router/verify-mints-onchain.ts",
     "router:verify:pools": "node --env-file-if-exists=.env.local --import tsx scripts/router/verify-pools-onchain.ts",
     "router:validate:build-sim": "node --env-file-if-exists=.env.local --import tsx scripts/router/validate-build-sim.ts",
