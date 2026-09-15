@@ -156,6 +156,29 @@ export type RouterRepresentation = {
  * stamp `onchainVerifiedAt`. Adapters re-check the chain at quote time and
  * report that on the quote (`onchainCheckedAtQuote`); they never write here.
  */
+export type DiscoverySource =
+  | "RAYDIUM_API"
+  | "RAYDIUM_ONCHAIN"
+  | "ORCA_API"
+  | "ORCA_ONCHAIN"
+  | "METEORA_API"
+  | "METEORA_ONCHAIN"
+  | "JUPITER_FORENSICS";
+
+/** Every source except forensics is authoritative for registry membership. */
+export const VENUE_NATIVE_SOURCES: readonly DiscoverySource[] = [
+  "RAYDIUM_API",
+  "RAYDIUM_ONCHAIN",
+  "ORCA_API",
+  "ORCA_ONCHAIN",
+  "METEORA_API",
+  "METEORA_ONCHAIN",
+];
+
+export function venueNativeDiscovery(sources: DiscoverySource[] | undefined) {
+  return (sources ?? []).some((source) => VENUE_NATIVE_SOURCES.includes(source));
+}
+
 export type PoolVerification =
   | "DISCOVERED"
   | "ONCHAIN_VERIFIED"
@@ -184,6 +207,16 @@ export type VerifiedPool = {
   observedTokenPrograms: { base: string | null; quote: string | null } | null;
   tvlUsd: number | null;
   discoveredFrom: string;
+  /**
+   * How this pool came to be known, deduplicated and retained across passes.
+   *
+   * Registry membership must not depend on what an aggregator happened to
+   * route at build time: that makes coverage vary between deployments and
+   * blinds Henar to every pool an RFQ path bypasses. A pool whose only
+   * provenance is JUPITER_FORENSICS is therefore recorded and measured but
+   * never enabled — `venueNativeDiscovery` is the gate.
+   */
+  discoverySources?: DiscoverySource[];
   discoveredAt: string;
   /** Matched exactly against Henar's catalogued mint universe. */
   verifiedAt: string;

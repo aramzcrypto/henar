@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "prebuild": "node --import tsx apps/router/src/discover-from-jupiter.ts --if-configured && node --import tsx apps/router/src/verify-pools-cli.ts --if-configured",
+    "prebuild": "node --import tsx apps/router/src/verify-pools-cli.ts --if-configured",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
@@ -50,7 +50,8 @@
     "router:pools:build": "node --import tsx scripts/router/build-pool-registry.ts",
     "router:benchmark:matrix": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark-matrix.ts",
     "router:benchmark": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark.ts",
-    "router:forensics": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-forensics.ts"
+    "router:forensics": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-forensics.ts",
+    "router:discover:orca": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-orca-pools.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",

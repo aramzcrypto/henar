@@ -8,7 +8,9 @@
  * Henar has an adapter for, reads each pool account from chain (owner must
  * be the venue program; the two mints must be exactly {mint, USDC}), sizes
  * liquidity from the pool's USDC vault, and appends new records to
- * `pools.json` as DISCOVERED (`discoveredFrom: "jupiter-route-plan"`). The
+ * `pools.json` as DISCOVERED (`discoverySources: ["JUPITER_FORENSICS"]`),
+ * never enabled: forensics tells us where to look, venue-native discovery
+ * decides what the router may quote. The
  * on-chain verification pass that follows decides ONCHAIN_VERIFIED.
  *
  * Nothing is trusted from Jupiter except the pool address: program, mints
@@ -160,6 +162,7 @@ export async function discoverFromJupiter(argv = process.argv) {
       observedTokenPrograms: null,
       tvlUsd: null,
       discoveredFrom: "jupiter-route-plan",
+      discoverySources: ["JUPITER_FORENSICS"],
       discoveredAt: now,
       verifiedAt: now,
       verification: "DISCOVERED",
@@ -182,9 +185,16 @@ export async function discoverFromJupiter(argv = process.argv) {
     const usd = Number(fromRaw(bal.toString())) / 1_000_000;
     pool.tvlUsd = usd * 2;
     pool.discoveredFrom = "jupiter-route-plan (tvl = 2 × USDC vault)";
-    const ok = pool.tvlUsd >= 1_000;
-    pool.enabled = ok;
-    pool.disabledReason = ok ? null : `TVL $${Math.round(pool.tvlUsd)} below $1000 floor`;
+    // Measured, recorded — and deliberately not enabled. A pool known only
+    // because an aggregator routed through it during one build is not an
+    // authoritative statement that the pool exists, and enabling on that
+    // basis made production coverage vary from deployment to deployment.
+    // Venue-native discovery is the only gate; forensics informs, never admits.
+    pool.enabled = false;
+    pool.disabledReason =
+      pool.tvlUsd >= 1_000
+        ? "JUPITER_FORENSICS only: awaiting venue-native discovery"
+        : `TVL $${Math.round(pool.tvlUsd)} below $1000 floor`;
   });
   const merged = [...pools, ...added];
   await writeFile(FILE, `${JSON.stringify(merged, null, 2)}\n`, "utf8");
