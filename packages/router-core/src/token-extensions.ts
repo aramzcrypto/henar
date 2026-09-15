@@ -13,8 +13,13 @@
  *  - TransferFeeConfig with a non-zero fee: unsupported until the guard
  *    (Task 9) accounts for fee-on-transfer in min-out;
  *  - TransferHook: unsupported (hook programs are arbitrary code);
- *  - NonTransferable, PermanentDelegate, DefaultAccountState(frozen):
- *    unsupported.
+ *  - PermanentDelegate: supported and recorded. Tokenized equities carry it
+ *    as an issuer compliance control (xStocks, Backpack both do); it does
+ *    not change swap settlement. The delegate address is exposed so the UI
+ *    can disclose it.
+ *  - PausableConfig: supported while unpaused; a paused mint is unsupported
+ *    because every transfer would fail.
+ *  - NonTransferable, DefaultAccountState(frozen): unsupported.
  *  - ScaledUiAmount: supported for quoting; the multiplier is exposed so UI
  *    can display it, and raw amounts remain the settlement unit throughout.
  *
@@ -45,7 +50,8 @@ export const SUPPORTED_EXTENSIONS = new Set<string>([
   "ScaledUiAmountConfig",
   "InterestBearingConfig",
   "ImmutableOwner",
-  "Pausable",
+  "PausableConfig",
+  "PermanentDelegate",
   "ConfidentialTransferMint",
   // TransferFeeConfig is supported only at a zero fee; see below.
   "TransferFeeConfig",
@@ -151,7 +157,7 @@ export function inspectionFromAccount(
           const delegate = new PublicKey(data.subarray(0, 32));
           permanentDelegate = delegate.equals(PublicKey.default) ? null : delegate.toBase58();
         }
-        if (permanentDelegate) problems.push("permanent delegate");
+        // Issuer control, not a settlement obstacle: recorded, not refused.
         break;
       }
       case ExtensionType.NonTransferable:
@@ -161,6 +167,11 @@ export function inspectionFromAccount(
       case ExtensionType.DefaultAccountState: {
         // 1 = Initialized, 2 = Frozen
         if (data && data.length >= 1 && data[0] === 2) problems.push("default account state frozen");
+        break;
+      }
+      case ExtensionType.PausableConfig: {
+        // authority(32) paused(1)
+        if (data && data.length >= 33 && data[32] === 1) problems.push("mint is paused");
         break;
       }
       case ExtensionType.ScaledUiAmountConfig: {

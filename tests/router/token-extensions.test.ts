@@ -103,12 +103,31 @@ test("scaled UI amount is supported and exposed; raw decimals are unchanged", ()
   assert.equal(r.decimals, 8);
 });
 
-test("non-transferable and permanent delegate are refused; unknown program is refused", () => {
+test("non-transferable and unknown program are refused; permanent delegate is recorded but allowed (issuer compliance control)", () => {
   const nt = inspectionFromAccount(MINT, account(TOKEN_2022_PROGRAM_ID, token2022Mint(8, [{ type: ExtensionType.NonTransferable, payload: Buffer.alloc(0) }])));
   assert.equal(nt.supported, false);
   assert.equal(nt.nonTransferable, true);
   const pd = inspectionFromAccount(MINT, account(TOKEN_2022_PROGRAM_ID, token2022Mint(8, [{ type: ExtensionType.PermanentDelegate, payload: new PublicKey(DELEGATE).toBuffer() }])));
-  assert.equal(pd.supported, false);
+  assert.equal(pd.supported, true);
+  assert.equal(pd.permanentDelegate, DELEGATE);
   const other = inspectionFromAccount(MINT, account(PublicKey.default, baseMintData(6)));
   assert.equal(other.supported, false);
+});
+
+test("pausable mints: allowed while unpaused (the real xStocks shape: delegate + pausable), refused when paused", () => {
+  const pausable = (paused: boolean) => {
+    const p = Buffer.alloc(33);
+    new PublicKey(DELEGATE).toBuffer().copy(p, 0);
+    p[32] = paused ? 1 : 0;
+    return p;
+  };
+  const live = inspectionFromAccount(MINT, account(TOKEN_2022_PROGRAM_ID, token2022Mint(8, [
+    { type: ExtensionType.PermanentDelegate, payload: new PublicKey(DELEGATE).toBuffer() },
+    { type: ExtensionType.PausableConfig, payload: pausable(false) },
+  ])));
+  assert.equal(live.supported, true, live.unsupportedReason ?? "");
+  assert.deepEqual(live.extensions, ["PermanentDelegate", "PausableConfig"]);
+  const paused = inspectionFromAccount(MINT, account(TOKEN_2022_PROGRAM_ID, token2022Mint(8, [{ type: ExtensionType.PausableConfig, payload: pausable(true) }])));
+  assert.equal(paused.supported, false);
+  assert.match(paused.unsupportedReason ?? "", /paused/);
 });
