@@ -199,7 +199,17 @@ export function RouterComparison({
           <div className="router-compare-main">
             <div>
               <b>{best ? (VENUE_LABEL[best.venue] ?? best.venue) : "No route"}</b>
-              <i>{quote.unavailableReason ? quote.unavailableReason : mode === "execute" ? "executable" : mode === "quote-only" ? "quote only" : "refused by guard"}</i>
+              <i>
+                {quote.unavailableReason
+                  ? quote.unavailableReason
+                  : best?.venue === "jupiter"
+                    ? "best for this size · use Review swap"
+                    : mode === "execute"
+                      ? "executable"
+                      : mode === "quote-only"
+                        ? "quote only"
+                        : "refused by guard"}
+              </i>
             </div>
             <div>
               <b>{net ? `${net} ${outputSymbol}` : "—"}</b>
