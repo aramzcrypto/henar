@@ -12,6 +12,7 @@ import { z } from "zod";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { flagEnabled, poolsForRepresentation, routerRepresentationForMint, telemetrySinkFromEnv, type PlannedLeg, type BuildOptions } from "@henar/router-core";
 import { RouterApi } from "@henar/router-app";
+import { rateLimitedConnection } from "@/lib/rpc-limiter";
 import { jupiterAdapter } from "@henar/venue-jupiter";
 import { raydiumAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
@@ -82,6 +83,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Quote limit reached. Please wait a minute." }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "60" } });
   const rep = routerRepresentationForMint(input.mint);
   if (!rep) return NextResponse.json({ error: "unknown representation" }, { status: 404 });
-  const r = await routerApi(new Connection(rpc, "confirmed")).quoteAndBuild({ representationId: rep.id, side: input.side, amount: input.amount, owner: input.owner, wallet: input.owner });
+  const r = await routerApi(rateLimitedConnection(rpc)).quoteAndBuild({ representationId: rep.id, side: input.side, amount: input.amount, owner: input.owner, wallet: input.owner });
   return NextResponse.json(r.body, { status: r.status, headers: { "Cache-Control": "no-store" } });
 }

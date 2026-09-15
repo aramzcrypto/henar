@@ -5,9 +5,9 @@
  * Trade path is unchanged and remains the only execution route.
  */
 import { NextResponse } from "next/server";
-import { Connection } from "@solana/web3.js";
 import { flagEnabled, routerRepresentationForMint, telemetrySinkFromEnv } from "@henar/router-core";
 import { RouterApi } from "@henar/router-app";
+import { rateLimitedConnection } from "@/lib/rpc-limiter";
 import { jupiterAdapter } from "@henar/venue-jupiter";
 import { raydiumAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
@@ -26,7 +26,7 @@ function routerApi() {
     const rpc = process.env.SOLANA_RPC_URL;
     api = new RouterApi({
       adapters: [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter],
-      connection: rpc ? new Connection(rpc, "confirmed") : null,
+      connection: rpc ? rateLimitedConnection(rpc) : null,
       health: null,
       telemetry: telemetrySinkFromEnv(),
     });
