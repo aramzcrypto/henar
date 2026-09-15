@@ -18,3 +18,4 @@ solver-state/
 .playwright-mcp/
 output/
 .claude/
+logs/

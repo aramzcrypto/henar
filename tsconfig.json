@@ -25,7 +25,18 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ]
+      ],
+      "@henar/router-core": ["./packages/router-core/src/index.ts"],
+      "@henar/router-core/*": ["./packages/router-core/src/*"],
+      "@henar/venue-jupiter": ["./packages/venue-jupiter/src/index.ts"],
+      "@henar/venue-raydium": ["./packages/venue-raydium/src/index.ts"],
+      "@henar/venue-meteora": ["./packages/venue-meteora/src/index.ts"],
+      "@henar/venue-meteora-dbc": ["./packages/venue-meteora-dbc/src/index.ts"],
+      "@henar/venue-meteora-damm-v2": ["./packages/venue-meteora-damm-v2/src/index.ts"],
+      "@henar/execution-guard": ["./packages/execution-guard/src/index.ts"],
+      "@henar/tx-builder": ["./packages/tx-builder/src/index.ts"],
+      "@henar/shared-types": ["./packages/shared-types/src/index.ts"],
+      "@henar/router-app": ["./apps/router/src/index.ts"]
     }
   },
   "include": [

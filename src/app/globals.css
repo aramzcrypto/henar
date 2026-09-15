@@ -12758,3 +12758,19 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Henar Router comparison panel (feature-flagged) */
+.router-compare { margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2, rgba(255,255,255,0.04)); font-size: 13px; }
+.router-compare header { display: flex; justify-content: space-between; align-items: center; height: auto; margin-bottom: 8px; }
+.router-compare header span { font-weight: 600; }
+.router-compare header em { font-style: normal; font-size: 11px; opacity: 0.6; }
+.router-compare-main { display: flex; justify-content: space-between; gap: 12px; }
+.router-compare-main div { display: flex; flex-direction: column; gap: 2px; }
+.router-compare-main div:last-child { text-align: right; }
+.router-compare-main b { font-weight: 600; }
+.router-compare-main i { font-style: normal; font-size: 11px; opacity: 0.65; }
+.router-compare-toggle { margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 0; font-size: 12px; opacity: 0.75; cursor: pointer; color: inherit; }
+.router-compare-details { margin-top: 8px; display: grid; gap: 4px; font-size: 12px; }
+.router-compare-details > div { display: grid; grid-template-columns: 1.3fr 1fr 1.4fr; gap: 8px; }
+.router-compare-details > div.muted { opacity: 0.55; }
+.router-compare-empty { margin: 0; opacity: 0.6; }

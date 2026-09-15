@@ -67,6 +67,7 @@ import {
 } from "@/lib/payment-tokens";
 import type { MarketReview } from "@/lib/market";
 import { quoteAuthorization } from "@/lib/wallet-access-client";
+import { RouterComparison } from "./router-comparison";
 import { validateMarketTransaction } from "@/lib/market-transaction";
 import { inspectRouteWallet } from "@/lib/wallet-route-state";
 import { PublicKey } from "@solana/web3.js";
@@ -1323,6 +1324,22 @@ export function Stockroom({
                   </span>
                 </div>
               </div>
+              {mode === "market" && (
+                <RouterComparison
+                  mint={stock.mint}
+                  side={
+                    payment.mint === PAYMENT_USDC.mint && receive.mint === stock.mint
+                      ? "buy"
+                      : payment.mint === stock.mint && receive.mint === PAYMENT_USDC.mint
+                        ? "sell"
+                        : null
+                  }
+                  amountUi={amount}
+                  inputDecimals={payment.decimals}
+                  outputDecimals={receive.decimals}
+                  outputSymbol={receive.symbol}
+                />
+              )}
               {mode === "limit" && (
                 <div className="advanced-order">
                   <div className="expiry-options">

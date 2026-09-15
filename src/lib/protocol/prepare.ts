@@ -167,8 +167,10 @@ export async function prepareAction(input: Action) {
     instructions.push(
       await client.methods
         .createPosition(integer(id), amount, integer(minShares), {
-          kind: { [input.kind]: {} },
-          destination: { [input.destination]: {} },
+          // Anchor's enum arg types require a literal variant key; the
+          // computed key is correct at runtime, so narrow the type only.
+          kind: { [input.kind]: {} } as never,
+          destination: { [input.destination]: {} } as never,
           autoPacks: input.autoPacks,
           stockIndex: targetIndex(manifest.stocks),
           targetPrice: integer(input.targetPrice),
@@ -246,7 +248,7 @@ export async function prepareAction(input: Action) {
       instructions.push(
         await client.methods
           .setPreferences(
-            { [input.destination]: {} },
+            { [input.destination]: {} } as never,
             input.autoPacks,
             stockIndex,
           )
@@ -306,7 +308,7 @@ export async function prepareAction(input: Action) {
         instructions.push(
           await client.methods
             .setPreferences(
-              { [input.destination]: {} },
+              { [input.destination]: {} } as never,
               input.autoPacks,
               stockIndex,
             )
