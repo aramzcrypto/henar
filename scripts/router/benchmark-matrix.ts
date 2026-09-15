@@ -37,6 +37,7 @@ import { capabilityOf, selectRoute } from "@henar/router-app";
 import { jupiterMetadata } from "@/lib/equities/jupiter";
 import { RateLimitError, retryAfterMs } from "@/lib/execution/shared";
 import { createLimiter } from "./rate-limit";
+import { createNativeGate, type GateResult } from "./native-gate";
 import { jupiterAdapter } from "@henar/venue-jupiter";
 import { raydiumAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
@@ -60,7 +61,7 @@ export type VenueObservation = {
 };
 
 export type MatrixRecord = {
-  schema: "henar.router.matrix.v2";
+  schema: "henar.router.matrix.v3";
   run: string;
   recordedAt: string;
   company: string;
@@ -92,6 +93,10 @@ export type MatrixRecord = {
   bestObserved: { venue: string; netOutput: string; capability: string } | null;
   /** Highest approved route this configuration can actually execute. */
   bestSelectable: { venue: string; netOutput: string; capability: string } | null;
+  /** Build+simulate outcome for each native candidate, in the order tried. */
+  nativeGate: { venue: string; stage: string; detail: string; computeUnits: number | null }[];
+  /** Native candidates demoted for failing the gate, best-first. */
+  nativeDemoted: string[];
   /** How much the best price exceeds what can be executed. */
   observedVsSelectableBps: number | null;
   henarFeeBps: number | null;
@@ -199,6 +204,14 @@ async function main() {
   };
   const adapters = [pacedJupiter, ...directAdapters];
 
+  /* A native win must be executable, not merely selected. The gate plans,
+     builds and simulates the candidate against mainnet; a candidate that
+     cannot do all three is demoted with its reason rather than counted, and
+     the next best route is considered in its place. */
+  const treasuryOwner = process.env.STOCKROOM_TREASURY_OWNER;
+  if (!treasuryOwner) throw new Error("STOCKROOM_TREASURY_OWNER is required to plan the fee transfer for the native gate.");
+  const gate = createNativeGate({ connection, adapters: directAdapters, treasuryOwner });
+
   /* Resume: an observation is identified by representation, side and notional,
      so a killed run continues instead of restarting. Rows from a different
      schema are ignored, because mixing methodologies would corrupt the
@@ -211,7 +224,7 @@ async function main() {
     for (const line of existing.split("\n")) {
       if (!line.trim()) continue;
       const row = JSON.parse(line) as MatrixRecord;
-      if (row.schema !== "henar.router.matrix.v2") continue;
+      if (row.schema !== "henar.router.matrix.v3") continue;
       done.add(keyOf(row.representationId, row.side, row.sizeUsd));
       records.push(row);
     }
@@ -310,7 +323,24 @@ async function main() {
         const observed = approved.length
           ? approved.reduce((a, b) => (BigInt(b.quote.netOutput) > BigInt(a.quote.netOutput) ? b : a))
           : null;
-        const selectable = selectRoute(guarded.verdicts) ?? null;
+        /* selectRoute ranks on price and capability only. Every native
+           candidate it returns is put through the gate; a failure is recorded
+           and the candidate withdrawn, then selection runs again on what is
+           left. An external or quote-only winner needs no gate: it is not a
+           Henar execution claim. */
+        const nativeGate: MatrixRecord["nativeGate"] = [];
+        const nativeDemoted: string[] = [];
+        let candidates = guarded.verdicts;
+        let selectable = selectRoute(candidates) ?? null;
+        while (selectable && capabilityOf(selectable) === "HENAR_NATIVE") {
+          const outcome: GateResult = await gate.check(selectable, request, rep);
+          nativeGate.push({ venue: selectable.quote.venue, stage: outcome.stage, detail: outcome.detail, computeUnits: outcome.computeUnits ?? null });
+          if (outcome.stage === "PASS") break;
+          nativeDemoted.push(selectable.quote.venue);
+          const withdrawn = selectable;
+          candidates = candidates.filter((v) => v !== withdrawn);
+          selectable = selectRoute(candidates) ?? null;
+        }
         const gapBps =
           observed && selectable && BigInt(observed.quote.netOutput) > 0n
             ? Number(
@@ -320,7 +350,7 @@ async function main() {
             : null;
         const routePlan = (selectable?.quote.rawRouteMetadata as { route?: { venue?: string }[] } | null)?.route ?? null;
         const rec: MatrixRecord = {
-          schema: "henar.router.matrix.v2",
+          schema: "henar.router.matrix.v3",
           snapshotSlot,
           guardSlot: slot,
           rateLimited: result.exclusions
@@ -334,6 +364,8 @@ async function main() {
           bestSelectable: selectable
             ? { venue: selectable.quote.venue, netOutput: selectable.quote.netOutput, capability: capabilityOf(selectable) }
             : null,
+          nativeGate,
+          nativeDemoted,
           observedVsSelectableBps: gapBps,
           henarFeeBps: selectable?.quote.henarFeeBps ?? null,
           henarFeeAmount: selectable?.quote.henarFeeAmount ?? null,
@@ -360,7 +392,7 @@ async function main() {
         records.push(rec);
         await appendFile(log, `${JSON.stringify(rec)}\n`, "utf8");
         process.stdout.write(
-          `${rep.tokenSymbol.padEnd(8)} ${request.side.padEnd(4)} $${String(sizeUsd).padStart(6)} observed=${rec.bestObserved?.venue ?? "-"}/${rec.bestObserved?.capability ?? "-"} selectable=${rec.bestSelectable?.venue ?? "-"} gap=${rec.observedVsSelectableBps ?? "-"}bps\n`,
+          `${rep.tokenSymbol.padEnd(8)} ${request.side.padEnd(4)} $${String(sizeUsd).padStart(6)} observed=${rec.bestObserved?.venue ?? "-"}/${rec.bestObserved?.capability ?? "-"} selectable=${rec.bestSelectable?.venue ?? "-"}/${rec.bestSelectable?.capability ?? "-"} gap=${rec.observedVsSelectableBps ?? "-"}bps${rec.nativeGate.length ? ` gate=${rec.nativeGate.map((g) => `${g.venue}:${g.stage}`).join(",")}` : ""}\n`,
         );
       }
     }
