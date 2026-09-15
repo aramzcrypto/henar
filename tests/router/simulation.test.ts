@@ -70,3 +70,59 @@ test("sell: the user's USDC delta is compared with the net floor (after the Hena
   assert.equal(normalizeSimulation(raw(plan, netFloor - 1n), plan, NOW).ok, false);
   assert.equal(rep.mint, plan.legs[0].inputMint);
 });
+
+/**
+ * Regression: an unreported post state is unknown, not zero.
+ *
+ * `simulateTransaction` does not always return every requested account. The
+ * simulator decoded a missing post state as "0", making the delta minus the
+ * entire prior balance: a whale's sell simulated as -387 USDC and was
+ * reported as a route losing the user their money. Unknown must read as
+ * unverified, never as a shortfall.
+ */
+test("a missing post state is reported as unverified, not as a catastrophic shortfall", () => {
+  const plan = singleBuyPlan();
+  const destination = plan.requiredAtas.find((a) => a.purpose === "user-output")!;
+  const unreported = normalizeSimulation(
+    {
+      err: null,
+      logs: [],
+      unitsConsumed: 1000,
+      slot: 1,
+      tokenBalances: [
+        { account: destination.address, mint: destination.mint, owner: destination.owner, before: "387619060", after: null },
+      ],
+      live: true,
+    },
+    plan,
+    NOW,
+  );
+  assert.equal(unreported.ok, false);
+  assert.match(unreported.error!, /did not return the post state/);
+  assert.doesNotMatch(unreported.error!, /below plan floor/);
+  assert.equal(unreported.simulatedOutput, null);
+  assert.equal(unreported.outputAccount?.delta, null);
+  assert.equal(unreported.outputAccount?.before, "387619060");
+
+  // The output is read from the plan's designated account, by address.
+  const expected = BigInt(plan.totals.expectedAmountOut);
+  const reported = normalizeSimulation(
+    {
+      err: null,
+      logs: [],
+      unitsConsumed: 1000,
+      slot: 1,
+      tokenBalances: [
+        // A decoy of the same mint and owner, listed first.
+        { account: "DecoyAccount1111111111111111111111111111111", mint: destination.mint, owner: destination.owner, before: "0", after: "1" },
+        { account: destination.address, mint: destination.mint, owner: destination.owner, before: "0", after: expected.toString() },
+      ],
+      live: true,
+    },
+    plan,
+    NOW,
+  );
+  assert.equal(reported.ok, true);
+  assert.equal(reported.outputAccount?.address, destination.address);
+  assert.equal(reported.simulatedOutput, expected.toString());
+});

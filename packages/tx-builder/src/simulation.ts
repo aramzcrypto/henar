@@ -18,7 +18,7 @@ export type RawSimulation = {
   unitsConsumed: number | null;
   slot: number | null;
   /** Token balances observed before and after, keyed by token account. */
-  tokenBalances: { account: string; mint: string; owner: string; before: string; after: string }[];
+  tokenBalances: { account: string; mint: string; owner: string; before: string; after: string | null }[];
   accountsChanged?: string[];
   live: boolean;
 };
@@ -44,29 +44,53 @@ export function normalizeSimulation(raw: RawSimulation, plan: ExecutionPlan, now
     account: b.account,
     before: b.before,
     after: b.after,
-    delta: (BigInt(b.after) - BigInt(b.before)).toString(),
+    delta: b.after === null ? null : (BigInt(b.after) - BigInt(b.before)).toString(),
   }));
+  /* Read the output from the account the plan designates, by address.
+     `purpose: "user-output"` names exactly one account; matching on mint and
+     owner instead cannot tell it apart from any other account of that mint in
+     the plan, and then a shortfall cannot be attributed to the route rather
+     than to the accounting. */
   const outputMint = plan.legs[0]?.outputMint ?? null;
-  const userOut = tokenDeltas.find((d) => d.mint === outputMint && d.owner === plan.owner) ?? null;
-  const simulatedOutput = userOut ? BigInt(userOut.delta) : null;
+  const destination = plan.requiredAtas.find((a) => a.purpose === "user-output") ?? null;
+  const userOut = destination
+    ? (tokenDeltas.find((d) => d.account === destination.address) ?? null)
+    : (tokenDeltas.find((d) => d.mint === outputMint && d.owner === plan.owner) ?? null);
+  const simulatedOutput = userOut && userOut.delta !== null ? BigInt(userOut.delta) : null;
+  const outputAccount = userOut
+    ? { address: userOut.account, mint: userOut.mint, owner: userOut.owner, before: userOut.before, after: userOut.after, delta: userOut.delta }
+    : null;
   const expected = fromRaw(plan.totals.expectedAmountOut);
   // On sells the fee is taken from the output account after the swap, so
   // the user's net delta is the floor net of fee; compare accordingly.
   const floor = plan.side === "sell" ? fromRaw(plan.totals.minimumNetUserOutput) : fromRaw(plan.totals.minimumAmountOut);
   const outputWithinPlan = simulatedOutput === null ? null : simulatedOutput >= floor;
-  const error = describeError(raw.err) ?? (outputWithinPlan === false ? `simulated output ${simulatedOutput} below plan floor ${floor}` : null);
+  const provenance = destination
+    ? `destination ${destination.address}`
+    : "no user-output account in the plan; fell back to a mint and owner match";
+  /* An unreported post state is not a shortfall. Saying so keeps a missing
+     account from being reported as a route that lost the user their balance. */
+  const postMissing = userOut !== null && userOut.after === null;
+  const error =
+    describeError(raw.err) ??
+    (postMissing
+      ? `simulation did not return the post state of ${provenance}; output unverified`
+      : outputWithinPlan === false
+        ? `simulated output ${simulatedOutput} below plan floor ${floor} (${provenance})`
+        : null);
   return {
     ok: error === null && outputWithinPlan !== false,
     error,
     computeUnitsConsumed: raw.unitsConsumed,
     logs: raw.logs ?? [],
     tokenDeltas,
+    outputAccount,
     expectedOutput: toRaw(expected),
     simulatedOutput: simulatedOutput === null ? null : simulatedOutput.toString(),
     minimumOutput: toRaw(floor),
     outputWithinPlan,
     slot: raw.slot,
-    accountsChanged: raw.accountsChanged ?? tokenDeltas.filter((d) => d.delta !== "0").map((d) => d.account),
+    accountsChanged: raw.accountsChanged ?? tokenDeltas.filter((d) => d.delta !== null && d.delta !== "0").map((d) => d.account),
     simulatedAt: new Date(now).toISOString(),
     live: raw.live,
   };
@@ -108,7 +132,8 @@ export class RpcSimulator implements Simulator {
         mint: meta.mint,
         owner: meta.owner,
         before: decode(pre?.data ?? null),
-        after: decode(post ? Buffer.from(post.data[0], "base64") : null),
+        // A missing post state is unknown, never zero.
+        after: post ? decode(Buffer.from(post.data[0], "base64")) : null,
       });
     }
     return {

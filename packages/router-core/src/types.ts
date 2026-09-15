@@ -722,7 +722,15 @@ export type ExecutionPlan = {
   createdAt: string;
 };
 
-export type TokenDelta = { mint: string; owner: string; account: string; before: RawAmount; after: RawAmount; delta: string };
+/**
+ * One token account before and after a simulation.
+ *
+ * `after` and `delta` are null when the simulation did not return the
+ * account's post state. That is unknown, not zero: treating it as zero
+ * fabricates a delta of minus the entire prior balance, which reads as a
+ * catastrophic shortfall on an account that simply was not reported.
+ */
+export type TokenDelta = { mint: string; owner: string; account: string; before: RawAmount; after: RawAmount | null; delta: string | null };
 
 export type SimulationResult = {
   ok: boolean;
@@ -730,6 +738,17 @@ export type SimulationResult = {
   computeUnitsConsumed: number | null;
   logs: string[];
   tokenDeltas: TokenDelta[];
+  /**
+   * The one account the plan designates as the user's destination
+   * (`purpose: "user-output"`), with its own before and after.
+   *
+   * The simulated output is read from this account and nothing else. Matching
+   * loosely on mint and owner cannot distinguish the destination from any
+   * other account of the same mint the plan touches, and an output figure
+   * whose provenance is ambiguous cannot tell a bad route from a
+   * badly-chosen payer.
+   */
+  outputAccount: { address: string; mint: string; owner: string; before: RawAmount; after: RawAmount | null; delta: string | null } | null;
   /** Owner's output-mint delta vs the plan's expected/minimum output. */
   expectedOutput: RawAmount | null;
   simulatedOutput: RawAmount | null;
