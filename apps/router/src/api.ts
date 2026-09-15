@@ -19,6 +19,7 @@ import {
   flagEnabled,
   fromRaw,
   inspectMint,
+  poolByAddress,
   quoteRepresentation,
   routerRepresentation,
   type EngineResult,
@@ -70,7 +71,7 @@ export type QuoteApiResponse = {
   priceImpactBps: number | null;
   expiresAt: string;
   route: { venue: string; poolAddress: string | null; percentBps: number }[] | null;
-  alternatives: { venue: string; netOutput: string; priceImpactBps: number | null; approved: boolean; reason: string | null }[];
+  alternatives: { venue: string; netOutput: string; priceImpactBps: number | null; approved: boolean; reason: string | null; failedChecks: string[] }[];
   exclusions: { venue: string; reason: string; detail: string | null }[];
   executionProtection: { mode: "execute" | "quote-only" | "refused"; slippageBps: number | null; checks: { name: string; ok: boolean; detail: string }[]; policy: string } | null;
   verification: { poolVerification: string | null; onchainCheckedAtQuote: boolean | null; calculatorStatus: string } | null;
@@ -144,14 +145,14 @@ export class RouterApi {
       priceImpactBps: chosen?.priceImpactBps ?? null,
       expiresAt,
       route: chosen ? [{ venue: chosen.venue, poolAddress: chosen.poolAddress, percentBps: 10_000 }] : null,
-      alternatives: guarded.verdicts.filter((v) => v !== selected).map((v) => ({ venue: v.quote.venue, netOutput: v.quote.netOutput, priceImpactBps: v.quote.priceImpactBps, approved: v.approved, reason: v.reason })),
+      alternatives: guarded.verdicts.filter((v) => v !== selected).map((v) => ({ venue: v.quote.venue, netOutput: v.quote.netOutput, priceImpactBps: v.quote.priceImpactBps, approved: v.approved, reason: v.reason, failedChecks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })),
       exclusions: result.exclusions.map((x) => ({ venue: x.venue, reason: x.reason, detail: x.detail })),
       executionProtection: selected
         ? { mode: selected.mode, slippageBps: selected.slippageBps, checks: selected.checks.map((c) => ({ name: c.name, ok: c.ok, detail: c.detail })), policy: "DEFAULT_EXECUTION_POLICY" }
         : guarded.verdicts[0]
           ? { mode: "refused", slippageBps: null, checks: guarded.verdicts[0].checks.map((c) => ({ name: c.name, ok: c.ok, detail: c.detail })), policy: "DEFAULT_EXECUTION_POLICY" }
           : null,
-      verification: chosen ? { poolVerification: null, onchainCheckedAtQuote: chosen.onchainCheckedAtQuote, calculatorStatus: chosen.venue === "meteora-dbc" || chosen.venue === "meteora-damm-v2" ? "SDK_BACKED" : "LIVE_VALIDATION_PENDING" } : null,
+      verification: chosen ? { poolVerification: chosen.poolAddress ? (poolByAddress(chosen.poolAddress)?.verification ?? null) : null, onchainCheckedAtQuote: chosen.onchainCheckedAtQuote, calculatorStatus: chosen.venue === "meteora-dbc" || chosen.venue === "meteora-damm-v2" ? "SDK_BACKED" : "LIVE_VALIDATION_PENDING" } : null,
       unavailableReason: chosen ? (selected ? null : (guarded.verdicts[0]?.reason ?? null)) : (result.exclusions[0]?.reason ?? "NO_VERIFIED_POOL"),
       liveValidation: "LIVE_VALIDATION_PENDING",
     };
