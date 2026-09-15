@@ -168,7 +168,22 @@ export function createNativeGate(options: {
 
       try {
         const simulation = normalizeSimulation(await simulator.simulate(built.built.transaction, plan), plan);
-        if (!simulation.ok) return { stage: "SIMULATE", detail: simulation.error ?? "simulation failed", computeUnits: simulation.computeUnitsConsumed };
+        if (!simulation.ok) {
+          /* The deltas are part of the reason, not colour. A shortfall can mean
+             the route is bad, or that the owner we simulated as is also a
+             counterparty in the pool, which shows up as a distorted or even
+             negative delta on their own account. Without the deltas the two
+             are indistinguishable after the fact. */
+          const deltas = simulation.tokenDeltas
+            .filter((d) => d.delta !== "0")
+            .map((d) => `${d.mint.slice(0, 6)}:${d.delta}`)
+            .join(" ");
+          return {
+            stage: "SIMULATE",
+            detail: `${simulation.error ?? "simulation failed"}${deltas ? ` | deltas ${deltas}` : ""} | owner ${holder.owner.slice(0, 8)}`,
+            computeUnits: simulation.computeUnitsConsumed,
+          };
+        }
         return {
           stage: "PASS",
           detail: `out ${simulation.simulatedOutput} >= floor ${simulation.minimumOutput}`,
