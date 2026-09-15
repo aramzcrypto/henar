@@ -72,10 +72,36 @@ test("split routing off → one quote per venue (deepest pool) and no route", as
   assert.equal(result.alternatives.length, 0);
 });
 
-test("a small order is not split even with routing on", async () => {
+/**
+ * The engine suppresses splits that are not worth an extra leg, and only
+ * those. This test previously asserted that a 5 bps gain was rejected, which
+ * encoded the old threshold rather than any property of the order: 5 bps is
+ * worth taking, and rejecting it is how an AAPLx split that beat Jupiter came
+ * to be discarded.
+ */
+test("a split worth nothing is suppressed; a small but real gain is emitted", async () => {
   const curves = { [key(1)]: poolCurve(key(1), 1_000_000_000n, 200_000_000n), [key(2)]: poolCurve(key(2), 1_000_000_000n, 200_000_000n) };
   const pools = [pool(key(1)), pool(key(2))];
-  const result = await quoteRepresentation(buy("1000000"), { adapters: [adapter(curves)], enabled: true, splitRouting: true, poolsOverride: pools });
-  assert.equal(result.route, null);
-  assert.equal(result.alternatives.length, 1); // both pools quoted, ranked
+  const opts = { adapters: [adapter(curves)], enabled: true, splitRouting: true, poolsOverride: pools };
+
+  // Too small for a second leg to change anything.
+  const negligible = await quoteRepresentation(buy("100000"), opts);
+  assert.equal(negligible.route, null);
+  assert.equal(negligible.alternatives.length, 1); // both pools quoted, ranked
+
+  // Large enough that the split genuinely produces more.
+  const worthwhile = await quoteRepresentation(buy("1000000"), opts);
+  assert.ok(worthwhile.route, "a real improvement must reach the caller");
+  assert.equal(worthwhile.route!.legs.length, 2);
+  assert.ok(worthwhile.route!.improvementBps! >= 1);
+  assert.equal(worthwhile.route!.costBps, 0);
+  // The legs account for the whole order and for the whole output.
+  assert.equal(
+    worthwhile.route!.legs.reduce((sum, leg) => sum + BigInt(leg.fees.venueInput), 0n),
+    BigInt(worthwhile.route!.legs[0].fees.venueInput) + BigInt(worthwhile.route!.legs[1].fees.venueInput),
+  );
+  assert.equal(
+    worthwhile.route!.legs.reduce((sum, leg) => sum + BigInt(leg.netOutput), 0n).toString(),
+    worthwhile.route!.netOutput,
+  );
 });

@@ -32,7 +32,19 @@ export type RequestScopedConnection = {
 };
 
 /** Methods whose result is identical for identical arguments within a request. */
-const CACHEABLE = new Set(["getSlot", "getAccountInfo", "getMultipleAccountsInfo", "getParsedAccountInfo", "getTokenAccountBalance", "getLatestBlockhash", "getMinimumBalanceForRentExemption"]);
+const CACHEABLE = new Set([
+  "getSlot",
+  "getAccountInfo",
+  "getMultipleAccountsInfo",
+  "getParsedAccountInfo",
+  "getMultipleParsedAccounts",
+  "getTokenAccountBalance",
+  "getTokenSupply",
+  // Raydium asks for the epoch once per pool, and it is the same epoch.
+  "getEpochInfo",
+  "getLatestBlockhash",
+  "getMinimumBalanceForRentExemption",
+]);
 
 const wrappers = new WeakMap<Connection, RequestScopedConnection>();
 

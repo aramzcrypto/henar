@@ -5,7 +5,7 @@ import { DEFAULT_SPLIT_OPTIONS, constantProductCurve, optimizeSplit, type VenueC
 // FIXTURE curves: constant-product pools with explicit reserves. Not live.
 const deep = (venue: VenueCurve["venue"], fee = 10) => constantProductCurve(venue, "deep", 10_000_000_000n, 2_000_000_000n, fee); // 10k USDC / 2k shares
 const shallow = (venue: VenueCurve["venue"], fee = 10) => constantProductCurve(venue, "shallow", 100_000_000n, 20_000_000n, fee); // 100 USDC / 20 shares
-const opts = { ...DEFAULT_SPLIT_OPTIONS, granularity: 20, minImprovementBps: 5, legPenaltyBps: 2, maxLegs: 2 };
+const opts = { ...DEFAULT_SPLIT_OPTIONS, granularity: 20, maxLegs: 2 };
 
 test("one venue clearly best → single, no split", () => {
   const r = optimizeSplit([deep("raydium"), shallow("meteora")], 1_000_000n, opts);
@@ -24,7 +24,9 @@ test("two equal-depth venues split ~50/50 on a large order and beat the best sin
   assert.equal(r.legs[0].percentBps + r.legs[1].percentBps, 10_000);
   assert.ok(Math.abs(r.legs[0].percentBps - 5_000) <= 500, `${r.legs[0].percentBps}`);
   assert.ok(BigInt(r.totalOut) > BigInt(r.bestSingleOut!));
-  assert.ok(r.improvementBps! >= opts.minImprovementBps + r.penaltyBps);
+  assert.ok(r.improvementBps! > 0, `${r.improvementBps}`);
+  assert.equal(r.costBps, 0);
+  assert.equal(r.netImprovementBps, r.improvementBps);
   // Exact accounting: leg inputs sum to the order, leg outputs sum to total.
   assert.equal(r.legs.reduce((s, l) => s + BigInt(l.amountIn), 0n), 500_000_000n);
   assert.equal(r.legs.reduce((s, l) => s + BigInt(l.amountOut), 0n), BigInt(r.totalOut));
@@ -55,26 +57,53 @@ test("shallow liquidity: a venue that cannot fill is skipped per chunk, and an u
   assert.equal(r2.legs[0].venue, "meteora");
 });
 
-test("identical routes: deterministic tie-break by venue order, and a split that adds nothing is rejected", () => {
+test("identical routes: deterministic tie-break by venue order", () => {
   const a = constantProductCurve("raydium", "a", 1_000_000_000n, 200_000_000n, 10);
   const b = constantProductCurve("meteora", "b", 1_000_000_000n, 200_000_000n, 10);
-  const small = optimizeSplit([a, b], 1_000_000n, opts); // tiny order: no meaningful impact difference
+  // Too small for a second leg to add anything: one venue takes it all, and
+  // which one is decided by order, not by chance.
+  const small = optimizeSplit([a, b], 100_000n, opts);
   assert.equal(small.kind, "single");
   assert.equal(small.legs[0].venue, "raydium");
-  const reversed = optimizeSplit([b, a], 1_000_000n, opts);
+  const reversed = optimizeSplit([b, a], 100_000n, opts);
   assert.equal(reversed.legs[0].venue, "meteora");
 });
 
-test("tiny improvement is rejected by the threshold and by the leg penalty", () => {
+/**
+ * The optimizer reports; it does not decide.
+ *
+ * It used to collapse a split back to the single best venue whenever the gain
+ * fell under a threshold, which discarded the number the caller needs. An
+ * AAPLx split that beat Jupiter by 5.95 bps was thrown away for improving the
+ * best single native pool by only 2 bps, a comparison against the wrong
+ * baseline: the optimizer cannot see the venues it is unable to split across.
+ */
+test("a small but real improvement is returned, with what it is worth", () => {
   const a = constantProductCurve("raydium", "a", 1_000_000_000n, 200_000_000n, 10);
   const b = constantProductCurve("meteora", "b", 1_000_000_000n, 200_000_000n, 10);
-  const loose = optimizeSplit([a, b], 20_000_000n, { ...opts, minImprovementBps: 0, legPenaltyBps: 0 });
-  const strict = optimizeSplit([a, b], 20_000_000n, { ...opts, minImprovementBps: 500 });
-  assert.equal(strict.kind, "single");
-  assert.match(strict.reason, /below 500 bps/);
-  if (loose.kind === "split") assert.ok(loose.improvementBps! < 500);
-  const penalised = optimizeSplit([a, b], 500_000_000n, { ...opts, minImprovementBps: 0, legPenaltyBps: 10_000 });
-  assert.equal(penalised.kind, "single");
+  const small = optimizeSplit([a, b], 20_000_000n, opts);
+  assert.equal(small.kind, "split");
+  assert.ok(small.improvementBps! > 0, `${small.improvementBps}`);
+  assert.ok(BigInt(small.totalOut) > BigInt(small.bestSingleOut!));
+  // Nothing is deducted unless the caller supplies a real cost.
+  assert.equal(small.costBps, 0);
+
+  // A caller that can estimate the incremental network cost gets it applied
+  // to netImprovementBps, while the construction itself is still reported.
+  const costed = optimizeSplit([a, b], 20_000_000n, { ...opts, extraLegCostBps: 10_000 });
+  assert.equal(costed.kind, "split");
+  assert.equal(costed.costBps, 10_000);
+  assert.ok(costed.netImprovementBps! < 0);
+  assert.ok(Math.abs(costed.improvementBps! - (costed.netImprovementBps! + 10_000)) < 1e-6);
+});
+
+test("a split that does not beat the single venue is not called an improvement", () => {
+  // One pool strictly deeper than the other at every size.
+  const deepPool = constantProductCurve("raydium", "a", 10n ** 15n, 10n ** 15n, 0);
+  const thin = constantProductCurve("meteora", "b", 10n ** 6n, 10n ** 6n, 9_000);
+  const r = optimizeSplit([deepPool, thin], 1_000_000n, opts);
+  assert.equal(r.kind, "single");
+  assert.equal(r.legs[0].venue, "raydium");
 });
 
 test("unavailable venues are ignored and reported", () => {
@@ -107,7 +136,7 @@ test("deterministic rounding: chunk remainder lands on the last chunk so inputs 
   const a = constantProductCurve("raydium", "a", 1_000_000_000n, 200_000_000n, 10);
   const b = constantProductCurve("meteora", "b", 1_000_000_000n, 200_000_000n, 10);
   for (const amount of [999_999_999n, 7n, 123_456_789n]) {
-    const r = optimizeSplit([a, b], amount, { ...opts, granularity: 7, minImprovementBps: 0, legPenaltyBps: 0 });
+    const r = optimizeSplit([a, b], amount, { ...opts, granularity: 7 });
     if (r.kind !== "none") assert.equal(r.legs.reduce((s, l) => s + BigInt(l.amountIn), 0n), amount);
   }
   const once = optimizeSplit([a, b], 500_000_000n, opts);

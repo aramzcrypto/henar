@@ -93,7 +93,7 @@ async function main() {
     process.stdout.write("  no split route returned (optimizer found nothing better than the best single venue)\n");
   } else {
     const r = result.route;
-    process.stdout.write(`  kind ${r.kind}  legs ${r.legs.length}  net ${ui(r.netOutput, decimals)}  improvement ${r.improvementBps ?? "-"} bps  penalty ${r.penaltyBps} bps  reason ${r.reason}\n`);
+    process.stdout.write(`  kind ${r.kind}  legs ${r.legs.length}  net ${ui(r.netOutput, decimals)}  improvement ${r.improvementBps ?? "-"} bps  cost ${r.costBps} bps  reason ${r.reason}\n`);
     for (const leg of r.legs)
       process.stdout.write(`    leg ${leg.venue.padEnd(9)} pool ${(leg.poolAddress ?? "-").slice(0, 8)} in ${leg.swapInput} out ${ui(leg.netOutput, decimals)}\n`);
   }
@@ -124,7 +124,7 @@ async function main() {
   if (curves.length >= 2) {
     for (const maxLegs of [2, 3]) {
       for (const granularity of [20, 50]) {
-        const split = optimizeSplit(curves, venueAmount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs, granularity, minImprovementBps: 0, legPenaltyBps: 0 });
+        const split = optimizeSplit(curves, venueAmount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs, granularity });
         const netOut = split.kind === "split" ? BigInt(split.totalOut) : split.bestSingleOut ? BigInt(split.bestSingleOut) : 0n;
         const label = split.kind === "split"
           ? split.legs.map((l) => `${Math.round((Number(l.amountIn) / Number(venueAmount)) * 100)}% ${l.venue}/${(l.poolAddress ?? "-").slice(0, 6)}`).join(" + ")
@@ -137,7 +137,7 @@ async function main() {
     }
     const jupQuote = ranked.find((q) => q.venue === "jupiter");
     if (jupQuote) {
-      const best = optimizeSplit(curves, venueAmount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3, granularity: 50, minImprovementBps: 0, legPenaltyBps: 0 });
+      const best = optimizeSplit(curves, venueAmount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3, granularity: 50 });
       const splitNet = best.kind === "split" ? BigInt(best.totalOut) : best.bestSingleOut ? BigInt(best.bestSingleOut) : 0n;
       const jupNet = BigInt(jupQuote.netOutput);
       const diff = jupNet > 0n ? Number(((splitNet - jupNet) * 1_000_000n) / jupNet) / 100 : null;

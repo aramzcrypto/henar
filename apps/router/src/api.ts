@@ -74,6 +74,21 @@ export type QuoteApiResponse = {
   priceImpactBps: number | null;
   expiresAt: string;
   route: { venue: string; poolAddress: string | null; percentBps: number }[] | null;
+  /**
+   * The route Henar's own optimizer built, when it built one that is safe and
+   * worth an extra leg — whether or not it won. Null when the optimizer
+   * resolved to a single venue, which already appears among the quotes and
+   * must not be listed twice under two names.
+   */
+  henarRoute: {
+    legs: { venue: string; poolAddress: string | null; percentBps: number }[];
+    netOutput: string;
+    minNetUserOutput: string;
+    improvementBps: number | null;
+    costBps: number;
+    priceImpactBps: number | null;
+    executable: boolean;
+  } | null;
   alternatives: { venue: string; netOutput: string; priceImpactBps: number | null; approved: boolean; reason: string | null; failedChecks: string[]; routePlan?: unknown }[];
   /** Jupiter's own route plan (AMM labels, pools, split) for venue-coverage analysis. */
   benchmarkRoutePlan: unknown;
@@ -211,14 +226,42 @@ export class RouterApi {
     // route is used only if it still beats the best approved single venue.
     let legVerdicts: GuardVerdict[] | null = null;
     let routeLegs: { venue: string; poolAddress: string | null; percentBps: number }[] | null = null;
+    /* The Henar construction is reported whenever it is safe and worth
+       something, not only when it wins. A caller ranking every source needs
+       to see it in third place as readily as in first; hiding a losing
+       construction is how the product ended up looking like a wrapper around
+       whichever venue won. */
+    let henarRoute: QuoteApiResponse["henarRoute"] = null;
     if (result.route?.kind === "split") {
       const verdicts = result.route.legs.map((leg) => guardQuote(leg, this.deps.policy ?? DEFAULT_EXECUTION_POLICY, { now: this.now(), currentSlot, reference, representationDecimals: rep.decimals, userMaxSlippageBps: body.maxSlippageBps ?? null, allowLegacyExecution: false }));
       const allApproved = verdicts.every((v) => v.approved);
       const splitNet = fromRaw(result.route.netOutput);
+      const total = fromRaw(result.route.fees.venueInput);
+      /* Shares truncate per leg and would display as 86.53% + 13.46% = 99.99%.
+         The last leg carries the remainder, as the amounts do. */
+      let assignedBps = 0;
+      const legs = result.route.legs.map((leg, index) => {
+        const share = index === result.route!.legs.length - 1 ? 10_000 - assignedBps : Number((fromRaw(leg.fees.venueInput) * 10_000n) / total);
+        assignedBps += share;
+        return { venue: leg.venue, poolAddress: leg.poolAddress, percentBps: share };
+      });
+      if (allApproved) {
+        const legFloor = verdicts.reduce((sum, v) => sum + fromRaw(v.minimumAmountOut ?? "0"), 0n);
+        henarRoute = {
+          legs,
+          netOutput: result.route.netOutput,
+          minNetUserOutput: (body.side === "sell" ? legFloor - (legFloor * BigInt(result.route.fees.henarFeeBps)) / 10_000n : legFloor).toString(),
+          improvementBps: result.route.improvementBps,
+          costBps: result.route.costBps,
+          priceImpactBps: result.route.legs.reduce<number | null>((worst, leg) => (leg.priceImpactBps === null ? worst : worst === null ? leg.priceImpactBps : Math.max(worst, leg.priceImpactBps)), null),
+          executable: true,
+        };
+      }
+      // It is selected only when it actually beats the best approved
+      // executable quote: reporting it and choosing it are different things.
       if (allApproved && (!selected || selected.mode !== "execute" || splitNet > fromRaw(selected.quote.netOutput))) {
         legVerdicts = verdicts;
-        const total = fromRaw(result.route.fees.venueInput);
-        routeLegs = result.route.legs.map((leg) => ({ venue: leg.venue, poolAddress: leg.poolAddress, percentBps: Number((fromRaw(leg.fees.venueInput) * 10_000n) / total) }));
+        routeLegs = legs;
         // Represent the route by its first leg for single-quote fields; totals come from the route.
         selected = verdicts[0];
         chosen = result.route.legs[0];
@@ -243,6 +286,7 @@ export class RouterApi {
       priceImpactBps: chosen?.priceImpactBps ?? null,
       expiresAt,
       route: routeLegs ?? (chosen ? [{ venue: chosen.venue, poolAddress: chosen.poolAddress, percentBps: 10_000 }] : null),
+      henarRoute,
       alternatives: guarded.verdicts.filter((v) => v !== selected).map((v) => ({ venue: v.quote.venue, netOutput: v.quote.netOutput, priceImpactBps: v.quote.priceImpactBps, approved: v.approved, reason: v.reason, failedChecks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })),
       benchmarkRoutePlan: (guarded.verdicts.find((v) => v.quote.venue === "jupiter")?.quote.rawRouteMetadata as { route?: unknown } | null)?.route ?? null,
       exclusions: result.exclusions.map((x) => ({ venue: x.venue, reason: x.reason, detail: x.detail })),

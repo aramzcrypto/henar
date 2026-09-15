@@ -505,7 +505,8 @@ export type RankedRoute = {
   fees: FeeBreakdown;
   netOutput: RawAmount;
   improvementBps: number | null;
-  penaltyBps: number;
+  /** Estimated incremental network cost of the extra legs, in bps. */
+  costBps: number;
   reason: string;
 };
 

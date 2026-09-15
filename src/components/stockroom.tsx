@@ -547,20 +547,22 @@ export function Stockroom({
             });
             if (!response.ok) throw new Error("router unavailable");
             const quote = await response.json();
-            const legs: { venue: string; poolAddress: string | null; percentBps: number }[] = quote.route ?? [];
-            // One leg is whatever single venue already appears in the list;
-            // branding it as ours would duplicate that venue under two names.
             if (controller.signal.aborted) return;
-            if (legs.length < 2 || !quote.netUserOutput) {
+            /* Only a construction the optimizer actually built. When it
+               resolves to one venue the server sends nothing here, because
+               that venue is already in the list and showing the same
+               execution twice under two names flatters us and misleads. */
+            const built = quote.henarRoute;
+            if (!built || built.legs.length < 2 || !built.executable) {
               setHenarRoute(null);
               return;
             }
             setHenarRoute({
-              output: formatUnits(BigInt(quote.netUserOutput), receive.decimals),
-              minimumOutput: quote.minNetUserOutput ? formatUnits(BigInt(quote.minNetUserOutput), receive.decimals) : null,
-              priceImpactBps: quote.priceImpactBps ?? null,
+              output: formatUnits(BigInt(built.netOutput), receive.decimals),
+              minimumOutput: built.minNetUserOutput ? formatUnits(BigInt(built.minNetUserOutput), receive.decimals) : null,
+              priceImpactBps: built.priceImpactBps ?? null,
               feeBps: quote.fees?.henarBps ?? tradeFeeBps,
-              legs: legs.map((leg) => ({ venue: leg.venue, pool: leg.poolAddress, percent: leg.percentBps / 100 })),
+              legs: built.legs.map((leg: { venue: string; poolAddress: string | null; percentBps: number }) => ({ venue: leg.venue, pool: leg.poolAddress, percent: leg.percentBps / 100 })),
             });
           } catch {
             if (!controller.signal.aborted) setHenarRoute(null);

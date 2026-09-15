@@ -45,6 +45,16 @@ import type { Connection } from "@solana/web3.js";
 
 export const DEFAULT_VENUE_DEADLINE_MS = 6_000;
 
+/**
+ * The smallest split gain worth carrying an extra leg, in bps.
+ *
+ * Not a competitiveness threshold: a construction above this is passed up and
+ * ranked against every quote, including venues this optimizer cannot split
+ * across. The old 5 bps threshold was applied against the best single native
+ * pool and discarded an AAPLx split that beat Jupiter by 5.95 bps.
+ */
+export const MIN_SPLIT_EMIT_BPS = 1;
+
 export type EngineOptions = {
   adapters: VenueAdapter[];
   connection?: Connection | null;
@@ -62,6 +72,8 @@ export type EngineOptions = {
    * across pools/venues that expose a curve.
    */
   splitRouting?: boolean;
+  /** Override the smallest split gain that may be emitted, in bps. */
+  minSplitEmitBps?: number;
   splitOptions?: SplitOptions;
   /** Test hook: replaces the registry lookup for this call. */
   poolsOverride?: VerifiedPool[];
@@ -395,6 +407,12 @@ async function splitAcrossPools(
   const venueAmount = fromRaw(venueRequest.amount);
   const split = optimizeSplit(curves, venueAmount, options.splitOptions ?? DEFAULT_SPLIT_OPTIONS);
   if (split.kind !== "split") return null;
+  /* Economically meaningless splits are suppressed here, and only here. The
+     optimizer reports every construction it finds; this is the smallest gain
+     worth an extra leg at all. Anything above it is handed up so the caller
+     can rank it against quotes the optimizer cannot split across — that
+     comparison, not this one, decides whether the split is used. */
+  if ((split.netImprovementBps ?? 0) < (options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS)) return null;
   const legs: RankedQuote[] = [];
   const userInput = fromRaw(input.amount);
   const totalFeeIn = input.side === "buy" ? bpsOf(userInput, henarFeeBps) : 0n;
@@ -454,7 +472,7 @@ async function splitAcrossPools(
     },
     netOutput: toRaw(net),
     improvementBps: split.improvementBps,
-    penaltyBps: split.penaltyBps,
+    costBps: split.costBps,
     reason: split.reason,
   };
 }
