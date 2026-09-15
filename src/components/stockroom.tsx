@@ -64,6 +64,7 @@ import {
   SOL_MINT,
   paymentForMode,
   paymentLabel,
+  pinnedPayments,
   type PaymentToken,
 } from "@/lib/payment-tokens";
 import type { MarketReview } from "@/lib/market";
@@ -923,7 +924,17 @@ export function Stockroom({
     .sort((a, b) => {
       const aHeld = BigInt(balances?.[a.mint]?.amount ?? "0") > 0n ? 1 : 0;
       const bHeld = BigInt(balances?.[b.mint]?.amount ?? "0") > 0n ? 1 : 0;
-      return bHeld - aHeld || a.name.localeCompare(b.name);
+      /* What you hold first, then the assets most trades start or end in, so
+         SOL and the stables are not buried under an alphabet of tickers. */
+      const aPinned = pinnedPayments.indexOf(a.mint);
+      const bPinned = pinnedPayments.indexOf(b.mint);
+      if (bHeld !== aHeld) return bHeld - aHeld;
+      if (aPinned !== -1 || bPinned !== -1) {
+        if (aPinned === -1) return 1;
+        if (bPinned === -1) return -1;
+        return aPinned - bPinned;
+      }
+      return a.name.localeCompare(b.name);
     });
   const heldPaymentOptions = paymentOptions.filter(
     (token) => BigInt(balances?.[token.mint]?.amount ?? "0") > 0n,

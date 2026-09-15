@@ -1,4 +1,5 @@
 import { USDC } from "./registry";
+import cryptoCatalog from "@/data/router/crypto-assets.json";
 export const SOL_MINT = "So11111111111111111111111111111111111111112";
 export type PaymentToken = {
   mint: string;
@@ -22,7 +23,38 @@ export const PAYMENT_SOL: PaymentToken = {
   logo: "/logos/tokens/sol.png",
   decimals: 9,
 };
-export const commonPayments = [PAYMENT_USDC, PAYMENT_SOL];
+/**
+ * Crypto assets the selector offers beyond what a wallet happens to hold.
+ *
+ * The market path already quotes an arbitrary Solana pair through Jupiter, so
+ * the reach existed; a user simply could not pick a token they did not
+ * already own. Membership is decided by `scripts/router/build-crypto-catalog.ts`:
+ * each mint is verified on chain for decimals, token program and token
+ * semantics we can settle, then probed with a round trip through USDC, and
+ * names come from token metadata rather than from a hand written list.
+ * Stablecoins and SOL are pinned because most trades begin or end in them.
+ */
+const catalog = cryptoCatalog as {
+  assets: { mint: string; symbol: string; name: string; decimals: number; logo: string | null; pinned: boolean }[];
+};
+
+export const catalogPayments: PaymentToken[] = catalog.assets.map((asset) => ({
+  mint: asset.mint,
+  symbol: asset.symbol,
+  name: asset.name,
+  decimals: asset.decimals,
+  logo: asset.logo ?? undefined,
+}));
+
+export const pinnedPayments = catalog.assets.filter((a) => a.pinned).map((a) => a.mint);
+
+/* USDC and SOL keep their own entries so their local logos survive, and the
+   catalogue fills in everything else without duplicating them. */
+export const commonPayments = [
+  PAYMENT_USDC,
+  PAYMENT_SOL,
+  ...catalogPayments.filter((token) => token.mint !== USDC && token.mint !== SOL_MINT),
+];
 export function paymentForMode(
   mode: string,
   selected: PaymentToken,

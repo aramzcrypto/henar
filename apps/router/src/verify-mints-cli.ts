@@ -48,6 +48,12 @@ export async function verifyMintsCli(argv = process.argv) {
      and token program of both of its sides, so the candidate set for
      intermediates has to be verified before it can be judged. */
   const discovered = new Set<string>();
+  try {
+    const crypto = JSON.parse(await readFile("src/data/router/crypto-candidates.json", "utf8")) as { candidates?: string[] };
+    for (const mint of crypto.candidates ?? []) discovered.add(mint);
+  } catch {
+    // No candidate list; the selector simply offers less.
+  }
   for (const file of ["src/data/router/orca-discovery.json", "src/data/router/raydium-discovery.json"]) {
     try {
       const raw = JSON.parse(await readFile(file, "utf8")) as { pools?: { counterMint?: string; quoteMint?: string; baseMint?: string }[] };

@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-09-15T22:22:43.179Z",
+  "probeNotionalUsd": 2000,
+  "assets": [
+    {
+      "mint": "So11111111111111111111111111111111111111112",
+      "symbol": "SOL",
+      "name": "Wrapped SOL",
+      "decimals": 9,
+      "logo": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+      "pinned": true,
+      "roundTripLossBps": 4,
+      "listedReason": "round trip of 2000 USD costs 4 bps"
+    },
+    {
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "symbol": "USDC",
+      "name": "USD Coin",
+      "decimals": 6,
+      "logo": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png",
+      "pinned": true,
+      "roundTripLossBps": null,
+      "listedReason": "the quote asset itself"
+    },
+    {
+      "mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      "symbol": "USDT",
+      "name": "USDT",
+      "decimals": 6,
+      "logo": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg",
+      "pinned": true,
+      "roundTripLossBps": 0,
+      "listedReason": "round trip of 2000 USD costs 0 bps"
+    },
+    {
+      "mint": "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4",
+      "symbol": "JLP",
+      "name": "Jupiter Perps",
+      "decimals": 6,
+      "logo": "https://static.jup.ag/jlp/icon.png",
+      "pinned": false,
+      "roundTripLossBps": 14,
+      "listedReason": "round trip of 2000 USD costs 14 bps"
+    },
+    {
+      "mint": "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+      "symbol": "JUP",
+      "name": "Jupiter",
+      "decimals": 6,
+      "logo": "https://static.jup.ag/jup/icon.png",
+      "pinned": false,
+      "roundTripLossBps": 19,
+      "listedReason": "round trip of 2000 USD costs 19 bps"
+    },
+    {
+      "mint": "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
+      "symbol": "cbBTC",
+      "name": "Coinbase Wrapped BTC",
+      "decimals": 8,
+      "logo": "https://ipfs.io/ipfs/QmZ7L8yd5j36oXXydUiYFiFsRHbi3EdgC4RuFwvM7dcqge",
+      "pinned": false,
+      "roundTripLossBps": 20,
+      "listedReason": "round trip of 2000 USD costs 20 bps"
+    },
+    {
+      "mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+      "symbol": "$WIF",
+      "name": "dogwifhat",
+      "decimals": 6,
+      "logo": null,
+      "pinned": false,
+      "roundTripLossBps": 24,
+      "listedReason": "round trip of 2000 USD costs 24 bps"
+    },
+    {
+      "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+      "symbol": "Bonk",
+      "name": "Bonk",
+      "decimals": 5,
+      "logo": "https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I",
+      "pinned": false,
+      "roundTripLossBps": 25,
+      "listedReason": "round trip of 2000 USD costs 25 bps"
+    },
+    {
+      "mint": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+      "symbol": "RAY",
+      "name": "Raydium",
+      "decimals": 6,
+      "logo": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/logo.png",
+      "pinned": false,
+      "roundTripLossBps": 30,
+      "listedReason": "round trip of 2000 USD costs 30 bps"
+    },
+    {
+      "mint": "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+      "symbol": "JTO",
+      "name": "JITO",
+      "decimals": 9,
+      "logo": null,
+      "pinned": false,
+      "roundTripLossBps": 33,
+      "listedReason": "round trip of 2000 USD costs 33 bps"
+    },
+    {
+      "mint": "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
+      "symbol": "PYTH",
+      "name": "Pyth Network",
+      "decimals": 6,
+      "logo": null,
+      "pinned": false,
+      "roundTripLossBps": 36,
+      "listedReason": "round trip of 2000 USD costs 36 bps"
+    },
+    {
+      "mint": "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
+      "symbol": "W",
+      "name": "Wormhole Token",
+      "decimals": 6,
+      "logo": null,
+      "pinned": false,
+      "roundTripLossBps": 60,
+      "listedReason": "round trip of 2000 USD costs 60 bps"
+    }
+  ]
+}
