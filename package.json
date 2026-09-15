@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "prebuild": "node --import tsx scripts/router/verify-pools-onchain.ts --if-configured",
+    "prebuild": "node --import tsx apps/router/src/verify-pools-cli.ts --if-configured",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
