@@ -382,6 +382,18 @@ export function Stockroom({
     expiresAt?: string | null;
     feeBps?: number;
   } | null>(null);
+  /* The route that was actually selected, not a fixed provider name. This row
+     read "Jupiter" regardless of which source won, which is both wrong and the
+     reason the product looked like a Jupiter front end. */
+  const routingSummary = useMemo(() => {
+    if (!estimate) return "Best of every connected source";
+    const legs = estimate.route ?? [];
+    const source = estimate.executionSource ?? estimate.quoteProvider ?? null;
+    if (!legs.length) return source ? getExecutionSourceBrand(source).label : "Best of every connected source";
+    const venues = [...new Set(legs.map((leg) => leg.venue).filter(Boolean))];
+    const via = venues.length > 1 ? `${venues.length} pools · ${venues.join(" + ")}` : venues[0];
+    return source ? `${getExecutionSourceBrand(source).label} · ${via}` : via;
+  }, [estimate]);
   const [quoteRefresh, setQuoteRefresh] = useState(0);
   const [estimateError, setEstimateError] = useState("");
   const [estimating, setEstimating] = useState(false);
@@ -2311,7 +2323,7 @@ export function Stockroom({
             <Row label="Market protocol fee">
               {(MARKET_FEE_BPS / 100).toFixed(2)}%
             </Row>
-            <Row label="Routing">Jupiter</Row>
+            <Row label="Routing">{routingSummary}</Row>
             <p>
               Network fees and account funding are shown with your executable
               quote.
