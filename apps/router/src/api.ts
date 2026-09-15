@@ -97,6 +97,7 @@ export type QuoteApiResponse = {
         mode: string | null;
         reason: string | null;
         selected: boolean;
+        capability: ExecutionCapability;
         quotedAt: string;
         stateSlot: number | null;
       }[]
@@ -105,6 +106,58 @@ export type QuoteApiResponse = {
 };
 
 type CachedQuote = { response: QuoteApiResponse; verdict: GuardVerdict | null; legVerdicts: GuardVerdict[] | null; result: EngineResult; expiresAt: number };
+
+/**
+ * What a route can actually be executed through.
+ *
+ *  HENAR_NATIVE          the router builds and submits the instructions.
+ *  EXTERNAL_EXECUTABLE   the router cannot build it, but the user can execute
+ *                        the same swap through the reviewed /api/market path,
+ *                        which validates the transaction byte for byte, keeps
+ *                        the fee instruction atomic with the swap, and cannot
+ *                        change the representation under the user.
+ *  QUOTE_ONLY            comparison only; no path to a signature.
+ */
+export type ExecutionCapability = "HENAR_NATIVE" | "EXTERNAL_EXECUTABLE" | "QUOTE_ONLY";
+
+export function capabilityOf(verdict: GuardVerdict): ExecutionCapability {
+  if (!verdict.approved) return "QUOTE_ONLY";
+  if (verdict.mode === "execute") return "HENAR_NATIVE";
+  return verdict.quote.executionPath === "legacy-market-api"
+    ? "EXTERNAL_EXECUTABLE"
+    : "QUOTE_ONLY";
+}
+
+/**
+ * Henar keeps its own route only when it is not materially worse.
+ *
+ * Owning the instruction builder is worth something in reliability terms, but
+ * not basis points: a $10k NVDAx quote once chose Raydium over an approved
+ * Jupiter route worth 9.26 bps more, purely because the router could build it.
+ * Native is now a tie-breaker inside a threshold, not a trump card.
+ */
+const NATIVE_PREFERENCE_BPS = Number(process.env.HENAR_NATIVE_PREFERENCE_BPS ?? "1");
+
+export function selectRoute(
+  verdicts: GuardVerdict[],
+  nativePreferenceBps = NATIVE_PREFERENCE_BPS,
+): GuardVerdict | undefined {
+  const executable = verdicts.filter((v) => capabilityOf(v) !== "QUOTE_ONLY");
+  if (!executable.length) return undefined;
+  const better = (a: GuardVerdict, b: GuardVerdict) =>
+    fromRaw(b.quote.netOutput) > fromRaw(a.quote.netOutput) ? b : a;
+  const best = executable.reduce(better);
+  const bestNet = fromRaw(best.quote.netOutput);
+  if (bestNet <= 0n) return best;
+  const natives = executable.filter((v) => capabilityOf(v) === "HENAR_NATIVE");
+  if (!natives.length) return best;
+  const bestNative = natives.reduce(better);
+  if (bestNative === best) return best;
+  const gapBps = ((bestNet - fromRaw(bestNative.quote.netOutput)) * 10_000n) / bestNet;
+  return gapBps <= BigInt(Math.max(0, Math.trunc(nativePreferenceBps)))
+    ? bestNative
+    : best;
+}
 
 export class RouterApi {
   private readonly cache = new Map<string, CachedQuote>();
@@ -151,10 +204,8 @@ export class RouterApi {
       userMaxSlippageBps: body.maxSlippageBps ?? null,
       allowLegacyExecution: false,
     });
-    // Prefer the best quote Henar can execute natively; otherwise the best
-    // approved quote (Jupiter executes through the existing Trade button).
     const bestApproved = guarded.selected;
-    let selected = guarded.verdicts.find((v) => v.approved && v.mode === "execute") ?? bestApproved;
+    let selected = selectRoute(guarded.verdicts) ?? bestApproved;
     let chosen: RankedQuote | null = selected?.quote ?? result.best;
     // Split route (Task 12): every leg must pass the guard on its own; the
     // route is used only if it still beats the best approved single venue.
@@ -212,6 +263,7 @@ export class RouterApi {
             mode: v.mode ?? null,
             reason: v.reason,
             selected: v === selected,
+            capability: capabilityOf(v),
             quotedAt: v.quote.quotedAt,
             stateSlot: v.quote.slot ?? null,
           }))

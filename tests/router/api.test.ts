@@ -2,7 +2,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { USDC_MINT, unavailableQuote, type QuoteRequest, type VenueAdapter, type VenueQuote } from "@henar/router-core";
-import { RouterApi, RouterHealth, type QuoteApiResponse } from "@henar/router-app";
+import { RouterApi, RouterHealth, capabilityOf, selectRoute, type QuoteApiResponse } from "@henar/router-app";
+import type { GuardVerdict } from "@henar/execution-guard";
 import { NOW, OWNER, SHARES, key, rep } from "./fixtures/plan";
 
 function adapter(venue: VenueAdapter["venue"], impl: (r: QuoteRequest) => VenueQuote): VenueAdapter {
@@ -141,4 +142,56 @@ test("comparison lists every quote, flags the winner, and the winner is the best
     ),
     false,
   );
+});
+
+/**
+ * Regression: owning the instruction builder is not worth basis points.
+ *
+ * A $10k NVDAx quote once selected Raydium over an approved Jupiter route
+ * worth 9.26 bps more, because only Raydium had a native builder. Native is a
+ * tie-breaker inside a threshold now, not a trump card.
+ */
+test("a materially better approved external route beats Henar Native", () => {
+  const native = (net: bigint): GuardVerdict =>
+    ({
+      approved: true,
+      mode: "execute",
+      quote: { venue: "raydium", netOutput: net.toString(), executionPath: "henar-native" },
+    }) as unknown as GuardVerdict;
+  const external = (net: bigint): GuardVerdict =>
+    ({
+      approved: true,
+      mode: "quote-only",
+      quote: { venue: "jupiter", netOutput: net.toString(), executionPath: "legacy-market-api" },
+    }) as unknown as GuardVerdict;
+  const quoteOnly = (net: bigint): GuardVerdict =>
+    ({
+      approved: true,
+      mode: "quote-only",
+      quote: { venue: "openocean", netOutput: net.toString(), executionPath: "none" },
+    }) as unknown as GuardVerdict;
+
+  // The observed case: external is 9.26 bps better, so it must win.
+  const observed = selectRoute([native(4_683_977_489n), external(4_688_318_531n)]);
+  assert.equal(observed?.quote.venue, "jupiter");
+
+  // Within the threshold, native keeps it: reliability breaks a near-tie.
+  const nearTie = selectRoute([native(9_999_999n), external(10_000_000n)], 5);
+  assert.equal(nearTie?.quote.venue, "raydium");
+
+  // Native wins outright when it is actually better.
+  const nativeBetter = selectRoute([native(11_000_000n), external(10_000_000n)]);
+  assert.equal(nativeBetter?.quote.venue, "raydium");
+
+  // A quote-only venue can never be selected, however good its number.
+  const unreachable = selectRoute([native(10_000_000n), quoteOnly(99_000_000n)]);
+  assert.equal(unreachable?.quote.venue, "raydium");
+
+  // Nothing executable at all selects nothing.
+  assert.equal(selectRoute([quoteOnly(10n)]), undefined);
+
+  // Capability classification is explicit.
+  assert.equal(capabilityOf(native(1n)), "HENAR_NATIVE");
+  assert.equal(capabilityOf(external(1n)), "EXTERNAL_EXECUTABLE");
+  assert.equal(capabilityOf(quoteOnly(1n)), "QUOTE_ONLY");
 });
