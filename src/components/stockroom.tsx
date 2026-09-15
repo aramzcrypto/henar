@@ -74,6 +74,9 @@ import { inspectRouteWallet } from "@/lib/wallet-route-state";
 import { PublicKey } from "@solana/web3.js";
 import { unpackMint } from "@solana/spl-token";
 import { MARKET_FEE_BPS } from "@/lib/trade-fee";
+/** Idle long enough that refreshing quotes is spending quota on nobody. */
+const IDLE_PAUSE_MS = 3 * 60_000;
+
 const WalletButton = dynamic(
   () =>
     import("@solana/wallet-adapter-react-ui").then((m) => m.WalletMultiButton),
@@ -425,6 +428,8 @@ export function Stockroom({
     payment.mint === PAYMENT_USDC.mint ? "buy" : receive.mint === PAYMENT_USDC.mint ? "sell" : null;
   const routerMint = payment.mint === PAYMENT_USDC.mint ? receive.mint : payment.mint;
   const [quoteRefresh, setQuoteRefresh] = useState(0);
+  const lastActivity = useRef(Date.now());
+  const [paused, setPaused] = useState(false);
   /* Which builder executes, decided by net user output.
      Only two routes can actually be built: one Henar holds (a single native
      pool or a split), and a Jupiter route through /api/market. Whichever
@@ -980,9 +985,19 @@ export function Stockroom({
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [review]);
+  /* Quotes refresh every 12 seconds, and each refresh costs a venue
+     comparison and a router quote across several pools. A tab left open on
+     this page polls all night for nobody, which spends the rate limits the
+     router depends on and hands the reader a price nobody asked for. A
+     session that has seen no interaction pauses, and resuming is deliberate:
+     the quote a user acts on should be one they asked for. */
   useEffect(() => {
-    if (mode !== "market" || review) return;
+    if (mode !== "market" || review || paused) return;
     const refreshQuote = () => {
+      if (Date.now() - lastActivity.current >= IDLE_PAUSE_MS) {
+        setPaused(true);
+        return;
+      }
       if (!document.hidden && !operation.current) setQuoteRefresh((n) => n + 1);
     };
     const timer = window.setInterval(refreshQuote, 12_000);
@@ -991,7 +1006,21 @@ export function Stockroom({
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refreshQuote);
     };
-  }, [mode, review, payment.mint, receive.mint]);
+  }, [mode, review, paused, payment.mint, receive.mint]);
+
+  /* A hidden tab counts as away. Anything else the user does counts as
+     presence, but presence alone never resumes: once paused, only the button
+     does, so a passing cursor cannot quietly restart the polling. */
+  useEffect(() => {
+    const seen = () => {
+      if (!document.hidden) lastActivity.current = Date.now();
+    };
+    const events = ["pointerdown", "keydown", "wheel", "touchstart", "visibilitychange"] as const;
+    for (const event of events) document.addEventListener(event, seen, { passive: true });
+    return () => {
+      for (const event of events) document.removeEventListener(event, seen);
+    };
+  }, []);
   useEffect(() => {
     if (!picker && !settings && !paymentPicker) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -1840,7 +1869,27 @@ export function Stockroom({
                   </button>
                 )}
               </div>
-              {mode === "market" && (
+              {mode === "market" && paused && (
+                <section className="session-paused" role="status" aria-live="polite">
+                  <h2>Session paused</h2>
+                  <p>
+                    We paused refreshing quotes while you were away, so you are
+                    never shown a stale price. Resume to get a fresh one.
+                  </p>
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={() => {
+                      lastActivity.current = Date.now();
+                      setPaused(false);
+                      setQuoteRefresh((n) => n + 1);
+                    }}
+                  >
+                    Resume
+                  </button>
+                </section>
+              )}
+              {mode === "market" && !paused && (
                 <section className="live-quotes" aria-label="Live execution quotes">
                   <div className="live-quotes-head">
                     <div>

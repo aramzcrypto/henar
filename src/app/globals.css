@@ -12777,3 +12777,26 @@ body {
 .router-compare-trade { margin-top: 10px; width: 100%; padding: 10px 12px; border-radius: 10px; border: 0; background: var(--accent, #46b3a8); color: #0b0b0c; font-weight: 600; font-size: 13px; cursor: pointer; }
 .router-compare-trade:disabled { opacity: 0.5; cursor: default; }
 .router-compare-status { margin: 6px 0 0; font-size: 12px; opacity: 0.8; display: block; }
+
+/* An idle session stops refreshing rather than spending quota on nobody. */
+.session-paused {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  margin-top: 12px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.02));
+}
+.session-paused h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.session-paused p {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  opacity: 0.7;
+}
+.session-paused .primary {
+  width: 100%;
+}
