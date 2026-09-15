@@ -17,11 +17,15 @@
  * any transfer fee already deducted. The router records those net figures,
  * since they are what the wallet will see.
  */
-import type { Connection } from "@solana/web3.js";
+import { PublicKey, type Connection, type TransactionInstruction } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import {
+  flagEnabled,
+  fromRaw,
   toRaw,
   unavailableQuote,
+  type BuildOptions,
   type BuildResult,
   type QuoteContext,
   type QuoteRequest,
@@ -74,15 +78,26 @@ function pickPool(pools: VerifiedPool[]) {
   return usable[0] ?? null;
 }
 
+export type RaydiumAdapterOptions = {
+  /** Override HENAR_ROUTER_EXECUTION (tests). */
+  executionEnabled?: boolean;
+};
+
 export class RaydiumAdapter implements VenueAdapter {
   readonly venue = "raydium" as const;
+
+  constructor(private readonly options: RaydiumAdapterOptions = {}) {}
+
+  private executionEnabled() {
+    return this.options.executionEnabled ?? flagEnabled("routerExecution");
+  }
 
   capabilities(): VenueCapabilities {
     return {
       venue: "raydium",
       quote: true,
       legacyExecution: false,
-      nativeBuild: false,
+      nativeBuild: this.executionEnabled(),
       poolTypes: ["clmm"],
       supportsMinOut: true,
       supportsToken2022: true,
@@ -189,7 +204,9 @@ export class RaydiumAdapter implements VenueAdapter {
         quotedAt: new Date(ctx.now).toISOString(),
         expiresAt: new Date(ctx.now + QUOTE_TTL_MS).toISOString(),
         source: "raydium-sdk-v2 PoolUtils.computeAmountOutFormat",
-        executionPath: "none",
+        // A native path exists only while HENAR_ROUTER_EXECUTION is on; the
+        // guard still decides whether it may be used.
+        executionPath: this.executionEnabled() ? "henar-native" : "none",
         // Mints and program were re-read from chain above and matched the
         // registry pool. Point-in-time only; the registry state is untouched.
         onchainCheckedAtQuote: true,
@@ -215,13 +232,80 @@ export class RaydiumAdapter implements VenueAdapter {
     }
   }
 
-  async buildSwapInstructions(): Promise<BuildResult> {
-    return {
-      instructions: [],
-      lookupTables: [],
-      reason: "NOT_IMPLEMENTED",
-      detail: "Raydium direct execution is Task 14.",
-    };
+  /**
+   * Native CLMM swap instructions via the SDK's `ClmmInstrument.
+   * makeSwapBaseInInstructions` (Task 14). State is re-read from RPC at
+   * build time; the pool must still match the quote and the registry, and
+   * the caller's guard-approved floor is passed as `amountOutMin`.
+   */
+  async buildSwapInstructions(quote: VenueQuote, ctx: QuoteContext, options?: BuildOptions): Promise<BuildResult> {
+    const refuse = (reason: BuildResult["reason"], detail: string): BuildResult => ({ instructions: [], lookupTables: [], reason, detail });
+    if (!this.executionEnabled()) return refuse("VENUE_DISABLED", "HENAR_ROUTER_EXECUTION is off");
+    if (quote.venue !== this.venue || quote.unavailableReason || !quote.poolAddress) return refuse("INVALID_REQUEST", "quote is not an available Raydium quote");
+    if (!options) return refuse("INVALID_REQUEST", "owner and guard-approved minimumAmountOut are required");
+    if (Date.parse(quote.expiresAt) < ctx.now) return refuse("QUOTE_EXPIRED", "quote expired");
+    if (!ctx.connection) return refuse("VENUE_NOT_CONFIGURED", "no RPC connection");
+    const minimumOut = fromRaw(options.minimumAmountOut);
+    if (minimumOut <= 0n || minimumOut > fromRaw(quote.expectedAmountOut)) return refuse("INVALID_REQUEST", "minimumAmountOut must be positive and not above the quoted output");
+    const pool = ctx.pools.find((p) => p.address === quote.poolAddress && p.venue === "raydium" && p.enabled);
+    if (!pool) return refuse("NO_VERIFIED_POOL", "quoted pool is not an enabled registry pool");
+    try {
+      const m = await sdk();
+      const raydium = await client(ctx.connection);
+      const [state, epochInfo] = await Promise.all([raydium.clmm.getPoolInfoFromRpc(pool.address), ctx.connection.getEpochInfo()]);
+      const { computePoolInfo, poolKeys, poolInfo, tickData } = state;
+      const a = computePoolInfo.mintA.address;
+      const b = computePoolInfo.mintB.address;
+      if (!(new Set([a, b]).has(quote.inputMint) && new Set([a, b]).has(quote.outputMint)))
+        return refuse("QUOTE_TERMS_MISMATCH", "on-chain mints differ from the quote");
+      const tokenOut = a === quote.outputMint ? computePoolInfo.mintA : computePoolInfo.mintB;
+      // Re-run the SDK compute for the exact input to obtain the tick arrays
+      // (remaining accounts) the swap will cross; the floor stays the guard's.
+      const result = m.PoolUtils.computeAmountOutFormat({
+        poolInfo: computePoolInfo,
+        tickarrayBitmapExtension: computePoolInfo.exBitmapInfo,
+        tickArrayCache: tickData[pool.address] ?? {},
+        amountIn: new BN(quote.amountIn),
+        tokenOut,
+        slippage: 0,
+        epochInfo,
+        blockTimestamp: Math.floor(ctx.now / 1000),
+        catchLiquidityInsufficient: true,
+      });
+      if (!result.allTrade) return refuse("INSUFFICIENT_LIQUIDITY", "pool can no longer fill the full amount");
+      if (BigInt(result.amountOut.amount.raw.toString()) < minimumOut)
+        return refuse("SLIPPAGE_LIMIT_EXCEEDED", "state moved: current output is below the approved floor");
+      const owner = new PublicKey(options.owner);
+      const ata = (mint: string, program: string) => getAssociatedTokenAddressSync(new PublicKey(mint), owner, true, new PublicKey(program));
+      const built = m.ClmmInstrument.makeSwapBaseInInstructions({
+        poolInfo,
+        poolKeys,
+        observationId: computePoolInfo.observationId,
+        ownerInfo: {
+          wallet: owner,
+          tokenAccountA: ata(a, computePoolInfo.mintA.programId),
+          tokenAccountB: ata(b, computePoolInfo.mintB.programId),
+        },
+        inputMint: new PublicKey(quote.inputMint),
+        amountIn: new BN(quote.amountIn),
+        amountOutMin: new BN(minimumOut.toString()),
+        sqrtPriceLimitX64: new BN(0),
+        remainingAccounts: result.remainingAccounts,
+      });
+      if (built.signers.length) return refuse("INVALID_REQUEST", "venue instructions require extra signers");
+      const instructions: TransactionInstruction[] = built.instructions;
+      for (const ix of instructions)
+        for (const k of ix.keys)
+          if (k.isSigner && !k.pubkey.equals(owner)) return refuse("INVALID_REQUEST", `venue instruction requires signer ${k.pubkey.toBase58()}`);
+      return {
+        instructions,
+        lookupTables: built.lookupTableAddress.map((t) => new PublicKey(t)),
+        reason: null,
+        detail: `ClmmInstrument.makeSwapBaseInInstructions; ${result.remainingAccounts.length} tick arrays; amountOutMin ${minimumOut}`,
+      };
+    } catch (error) {
+      return refuse("SDK_ERROR", (error as Error).message);
+    }
   }
 }
 

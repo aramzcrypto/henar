@@ -1338,6 +1338,9 @@ export function Stockroom({
                   inputDecimals={payment.decimals}
                   outputDecimals={receive.decimals}
                   outputSymbol={receive.symbol}
+                  owner={owner ?? null}
+                  wallet={wallet}
+                  connection={connection}
                 />
               )}
               {mode === "limit" && (

@@ -43,6 +43,7 @@
     "router:discover:dbc": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-meteora-dbc.ts",
     "router:dbc:refresh": "node --env-file-if-exists=.env.local --import tsx scripts/router/refresh-dbc-lifecycle.ts",
     "router:serve": "node --env-file-if-exists=.env.local --import tsx apps/router/src/server.ts",
+    "router:verify:pools": "node --env-file-if-exists=.env.local --import tsx scripts/router/verify-pools-onchain.ts",
     "router:validate": "node --env-file-if-exists=.env.local --import tsx scripts/router/validate-native.ts",
     "router:pools:build": "node --import tsx scripts/router/build-pool-registry.ts",
     "router:benchmark:matrix": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark-matrix.ts",

@@ -12774,3 +12774,6 @@ body {
 .router-compare-details > div { display: grid; grid-template-columns: 1.3fr 1fr 1.4fr; gap: 8px; }
 .router-compare-details > div.muted { opacity: 0.55; }
 .router-compare-empty { margin: 0; opacity: 0.6; }
+.router-compare-trade { margin-top: 10px; width: 100%; padding: 10px 12px; border-radius: 10px; border: 0; background: var(--accent, #46b3a8); color: #0b0b0c; font-weight: 600; font-size: 13px; cursor: pointer; }
+.router-compare-trade:disabled { opacity: 0.5; cursor: default; }
+.router-compare-status { margin: 6px 0 0; font-size: 12px; opacity: 0.8; display: block; }

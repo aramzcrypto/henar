@@ -18,6 +18,7 @@ import {
   USDC_MINT,
   flagEnabled,
   fromRaw,
+  inspectMint,
   quoteRepresentation,
   routerRepresentation,
   type EngineResult,
@@ -182,6 +183,73 @@ export class RouterApi {
       const built = await buildTransaction(plan, { blockhash: this.deps.blockhash, legBuilder: this.deps.legBuilder, now: this.now() });
       if (!built.ok) return { status: 409, body: { error: built.detail, reason: built.reason } };
       return { status: 200, body: { planId: plan.planId, transaction: Buffer.from(built.built.transaction.serialize()).toString("base64"), blockhash: built.built.blockhash, lastValidBlockHeight: built.built.lastValidBlockHeight, legFloors: built.built.legFloors, minimumAmountOut: plan.totals.minimumAmountOut, expiresAt: plan.expiresAt } };
+    } catch (error) {
+      return { status: 409, body: { error: (error as Error).message } };
+    }
+  }
+
+  /**
+   * Stateless quote → guard → plan → build for one request. Used by the
+   * Next.js route because serverless instances share no quote cache: the
+   * quote is taken fresh, guarded, and built in the same call, and the
+   * response carries the plan the client validates against before signing.
+   */
+  async quoteAndBuild(body: QuoteApiRequest & { owner: string }): Promise<{ status: number; body: unknown }> {
+    if (!flagEnabled("routerExecution")) return { status: 403, body: { error: "HENAR_ROUTER_EXECUTION is off", liveValidation: "LIVE_VALIDATION_PENDING" } };
+    if (!this.deps.treasuryOwner || !this.deps.blockhash || !this.deps.legBuilder) return { status: 503, body: { error: "builder dependencies not configured" } };
+    const quoted = await this.quote(body);
+    if (quoted.status !== 200) return quoted;
+    const q = quoted.body as QuoteApiResponse;
+    const cached = this.cache.get(q.quoteId);
+    if (!cached?.verdict?.approved) return { status: 409, body: { error: "quote was not approved for execution", reason: cached?.verdict?.reason ?? q.unavailableReason, quote: q } };
+    if (cached.verdict.mode !== "execute") return { status: 409, body: { error: "quote is quote-only; no validated execution path", mode: cached.verdict.mode, quote: q } };
+    const rep = routerRepresentation(q.representation.id);
+    if (!rep) return { status: 404, body: { error: "unknown representation" } };
+    let decimals = rep.decimals;
+    let tokenProgram = rep.tokenProgram;
+    if ((decimals === null || !tokenProgram) && this.deps.connection) {
+      const inspected = await inspectMint(this.deps.connection, rep.mint);
+      if (!inspected || !inspected.supported) return { status: 409, body: { error: `representation mint not supported: ${inspected?.unsupportedReason ?? "missing"}` } };
+      decimals = inspected.decimals;
+      tokenProgram = inspected.program;
+    }
+    if (decimals === null || !tokenProgram) return { status: 409, body: { error: "representation decimals/token program not verified on chain" } };
+    try {
+      const plan = planExecution({
+        representation: { id: rep.id, provider: rep.provider, mint: rep.mint, decimals, tokenProgram },
+        side: body.side,
+        owner: body.owner,
+        treasuryOwner: this.deps.treasuryOwner,
+        userInput: fromRaw(body.amount),
+        legs: [{ verdict: cached.verdict }],
+        policy: this.deps.policy ?? DEFAULT_EXECUTION_POLICY,
+        now: this.now(),
+      });
+      const built = await buildTransaction(plan, { blockhash: this.deps.blockhash, legBuilder: this.deps.legBuilder, now: this.now() });
+      if (!built.ok) return { status: 409, body: { error: built.detail, reason: built.reason, quote: q } };
+      this.deps.health?.recordExecution(true);
+      return {
+        status: 200,
+        body: {
+          quote: q,
+          plan: {
+            planId: plan.planId,
+            side: plan.side,
+            owner: plan.owner,
+            legs: plan.legs.map((l) => ({ venue: l.venue, poolAddress: l.poolAddress, programId: l.programId, amountIn: l.amountIn, expectedAmountOut: l.expectedAmountOut, minimumAmountOut: l.minimumAmountOut })),
+            totals: plan.totals,
+            henarFee: plan.henarFee,
+            requiredAtas: plan.requiredAtas,
+            requiredPrograms: plan.requiredPrograms,
+            slippageBps: plan.slippageBps,
+            expiresAt: plan.expiresAt,
+          },
+          transaction: Buffer.from(built.built.transaction.serialize()).toString("base64"),
+          blockhash: built.built.blockhash,
+          lastValidBlockHeight: built.built.lastValidBlockHeight,
+          legFloors: built.built.legFloors,
+        },
+      };
     } catch (error) {
       return { status: 409, body: { error: (error as Error).message } };
     }
