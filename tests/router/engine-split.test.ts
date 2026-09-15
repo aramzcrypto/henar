@@ -7,6 +7,8 @@ import { tradeFee } from "@/lib/trade-fee";
 
 const rep = listRouterRepresentations().find((r) => r.status === "ACTIVE")!;
 const key = (n: number) => new PublicKey(Buffer.alloc(32, n)).toBase58();
+const NOW = Date.now();
+const SLOT = 300_000_000;
 const buy = (amount: string): QuoteRequest => ({ representationId: rep.id, side: "buy", amount, amountType: "input", inputMint: USDC_MINT, outputMint: rep.mint });
 
 /** Two Raydium pools of equal depth, as a curve-capable fixture adapter. */
@@ -104,4 +106,48 @@ test("a split worth nothing is suppressed; a small but real gain is emitted", as
     worthwhile.route!.legs.reduce((sum, leg) => sum + BigInt(leg.netOutput), 0n).toString(),
     worthwhile.route!.netOutput,
   );
+});
+
+/**
+ * Regression: a construction that loses to an aggregator is still reported.
+ *
+ * Three separate layers discarded a split for losing to the wrong baseline:
+ * the optimizer's 5 bps threshold against the best native pool, the engine's
+ * 1 bp floor, and this comparison against the best quote overall. A split
+ * that improves Henar's own best pool belongs in the ranking at second or
+ * third place; only selection depends on beating everything else.
+ */
+test("a split that improves the native pools is emitted even when an aggregator quotes higher", async () => {
+  const curves = { [key(1)]: poolCurve(key(1), 1_000_000_000n, 200_000_000n), [key(2)]: poolCurve(key(2), 1_000_000_000n, 200_000_000n) };
+  const pools = [pool(key(1)), pool(key(2))];
+  // An aggregator that beats every native pool and cannot be split across.
+  const unbeatable: VenueAdapter = {
+    venue: "jupiter",
+    capabilities: () => ({ venue: "jupiter", quote: true, legacyExecution: true, nativeBuild: false, poolTypes: [], supportsMinOut: true, supportsToken2022: true }),
+    health: async () => ({ venue: "jupiter", healthy: true, checkedAt: "", detail: null }),
+    getQuote: async (request) => ({
+      ...unavailableQuote("jupiter", request, "SDK_ERROR", null, null, NOW),
+      amountIn: request.amount,
+      expectedAmountOut: (BigInt(request.amount) * 10n).toString(),
+      unavailableReason: null,
+      unavailableDetail: null,
+      priceImpactBps: 1,
+      slot: SLOT,
+      onchainCheckedAtQuote: true,
+      expiresAt: new Date(NOW + 10_000).toISOString(),
+      source: "fixture",
+    }),
+    buildSwapInstructions: async () => ({ instructions: [], lookupTables: [], reason: "NOT_IMPLEMENTED", detail: null }),
+  };
+  const result = await quoteRepresentation(buy("1000000"), {
+    adapters: [adapter(curves), unbeatable],
+    enabled: true,
+    splitRouting: true,
+    poolsOverride: pools,
+  });
+  assert.equal(result.best?.venue, "jupiter", "the aggregator should still win the ranking");
+  assert.ok(result.route, "the Henar construction must survive losing to the aggregator");
+  assert.equal(result.route!.legs.length, 2);
+  assert.ok(BigInt(result.route!.netOutput) < BigInt(result.best!.netOutput));
+  assert.match(result.splitReason ?? "", /improves/);
 });

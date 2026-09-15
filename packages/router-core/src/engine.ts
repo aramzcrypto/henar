@@ -462,8 +462,22 @@ async function splitAcrossPools(
   const grossTotal = legs.reduce((s, l) => s + fromRaw(l.fees.grossVenueOutput), 0n);
   const feeOut = input.side === "sell" ? bpsOf(grossTotal, henarFeeBps) : 0n;
   const net = grossTotal - feeOut;
-  if (net <= fromRaw(ranked[0].netOutput))
-    return { route: null, reason: "the split does not beat the best ranked quote once fees are applied" };
+  /* The construction is kept even when another source beats it.
+     This compared the split against ranked[0] — the best quote overall,
+     aggregators included — and discarded anything that lost to it. That is
+     the same mistake as the old 5 bps threshold, one layer down and against a
+     third baseline: a split that improves Henar's own best pool is worth
+     reporting at second or third place, and hiding it is what made the
+     product look like a wrapper around whichever venue won. Whether it is
+     *selected* is a separate decision, made by the caller against the best
+     approved executable quote.
+
+     The only bar here is that the construction beat the best single native
+     pool, which the optimizer has already established, net of Henar's fee.
+     The fee is proportional on both sides, so it cannot reorder them. */
+  const bestNativeSingle = split.bestSingleOut ? fromRaw(split.bestSingleOut) : null;
+  if (bestNativeSingle !== null && grossTotal <= bestNativeSingle)
+    return { route: null, reason: `the split does not beat the best single native pool (${split.reason})` };
   return { route: {
     kind: "split",
     legs,
