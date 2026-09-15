@@ -25,6 +25,7 @@ type RouterQuote = {
   issuer: string;
   expectedOutput: string | null;
   netUserOutput: string | null;
+  minNetUserOutput: string | null;
   minOutput: string | null;
   effectivePrice: string | null;
   priceImpactBps: number | null;
@@ -178,6 +179,7 @@ export function RouterComparison({
   if (!enabled || !side) return null;
   const best = quote?.route?.[0] ?? null;
   const net = quote?.netUserOutput ? formatUnits(quote.netUserOutput, outputDecimals, 6) : null;
+  const floor = quote?.minNetUserOutput ? formatUnits(quote.minNetUserOutput, outputDecimals, 6) : null;
   const mode = quote?.executionProtection?.mode ?? null;
   const canTrade = mode === "execute" && Boolean(owner) && Boolean(wallet.signTransaction) && !busy;
   void PublicKey;
@@ -203,7 +205,8 @@ export function RouterComparison({
               <b>{net ? `${net} ${outputSymbol}` : "—"}</b>
               <i>
                 {quote.priceImpactBps !== null ? `${(quote.priceImpactBps / 100).toFixed(2)}% impact` : ""}
-                {quote.executionProtection?.slippageBps !== null && quote.executionProtection?.slippageBps !== undefined ? ` · ${quote.executionProtection.slippageBps} bps slippage` : ""}
+                {floor ? ` · min ${floor}` : ""}
+                {quote.executionProtection?.slippageBps !== null && quote.executionProtection?.slippageBps !== undefined ? ` (${quote.executionProtection.slippageBps} bps)` : ""}
               </i>
             </div>
           </div>

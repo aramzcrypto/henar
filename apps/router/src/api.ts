@@ -65,7 +65,10 @@ export type QuoteApiResponse = {
   amountIn: string;
   expectedOutput: string | null;
   minOutput: string | null;
+  /** Expected net to the user (after Henar fee), not the floor. */
   netUserOutput: string | null;
+  /** Guard floor net to the user; null when not approved. */
+  minNetUserOutput: string | null;
   effectivePrice: string | null;
   fees: { henarBps: number; henarAmount: string; henarMint: string; venueFeeAmount: string | null } | null;
   priceImpactBps: number | null;
@@ -139,7 +142,8 @@ export class RouterApi {
       amountIn: body.amount,
       expectedOutput: chosen?.fees.grossVenueOutput ?? null,
       minOutput: selected?.minimumAmountOut ?? null,
-      netUserOutput: selected?.minimumNetUserOutput ?? chosen?.netOutput ?? null,
+      netUserOutput: chosen?.netOutput ?? null,
+      minNetUserOutput: selected?.minimumNetUserOutput ?? null,
       effectivePrice: effectivePrice(chosen, body.side, rep.decimals),
       fees: chosen ? { henarBps: chosen.henarFeeBps, henarAmount: chosen.henarFeeAmount, henarMint: chosen.henarFeeMint, venueFeeAmount: chosen.venueFeeAmount } : null,
       priceImpactBps: chosen?.priceImpactBps ?? null,
