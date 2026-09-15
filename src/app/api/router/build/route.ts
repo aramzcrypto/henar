@@ -18,13 +18,14 @@ import { meteoraAdapter } from "@henar/venue-meteora";
 import { meteoraDbcAdapter } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter } from "@henar/venue-meteora-damm-v2";
 import { openOceanAdapter } from "@henar/venue-openocean";
+import { orcaAdapter } from "@henar/venue-orca";
 import { consumeQuoteBudget, verifyQuoteAccess } from "@/lib/wallet-access-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter];
+const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter];
 let api: RouterApi | null = null;
 
 function routerApi(connection: Connection) {

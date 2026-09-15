@@ -31,6 +31,7 @@
       "@henar/venue-jupiter": ["./packages/venue-jupiter/src/index.ts"],
       "@henar/venue-raydium": ["./packages/venue-raydium/src/index.ts"],
       "@henar/venue-meteora": ["./packages/venue-meteora/src/index.ts"],
+      "@henar/venue-orca": ["./packages/venue-orca/src/index.ts"],
       "@henar/venue-titan": ["./packages/venue-titan/src/index.ts"],
       "@henar/venue-openocean": ["./packages/venue-openocean/src/index.ts"],
       "@henar/venue-meteora-dbc": ["./packages/venue-meteora-dbc/src/index.ts"],

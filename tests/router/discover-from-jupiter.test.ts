@@ -6,6 +6,8 @@ test("route-plan labels map to Henar venue families; unknown AMMs and RFQ are ig
   assert.equal(venueFamilyForLabel("Raydium CLMM"), "raydium");
   assert.equal(venueFamilyForLabel("Meteora DLMM"), "dlmm");
   assert.equal(venueFamilyForLabel("Meteora DAMM v2"), "damm_v2");
+  assert.equal(venueFamilyForLabel("Whirlpool"), "whirlpool");
+  assert.equal(venueFamilyForLabel("Orca Whirlpool"), "whirlpool");
   assert.equal(venueFamilyForLabel("JupiterZ"), null);
   assert.equal(venueFamilyForLabel("OKX DEX Router"), null);
   assert.equal(venueFamilyForLabel("BisonFi"), null);

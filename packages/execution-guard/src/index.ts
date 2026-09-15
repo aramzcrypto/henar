@@ -194,6 +194,7 @@ function venueChecks(quote: RankedQuote, policy: ExecutionPolicy): GuardCheck[] 
     }
     case "raydium":
     case "meteora":
+    case "orca":
       checks.push(check(`${quote.venue}.onchainChecked`, quote.onchainCheckedAtQuote, "ROUTE_STATE_STALE", quote.onchainCheckedAtQuote ? "mints re-read at quote time" : "quote did not re-check chain state"));
       break;
     case "jupiter":

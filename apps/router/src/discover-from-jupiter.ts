@@ -29,6 +29,7 @@ const PROGRAMS: Record<string, { venue: Venue; poolType: PoolType; program: stri
   raydium: { venue: "raydium", poolType: "clmm", program: "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK" },
   dlmm: { venue: "meteora", poolType: "dlmm", program: "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo" },
   damm_v2: { venue: "meteora-damm-v2", poolType: "damm_v2", program: "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG" },
+  whirlpool: { venue: "orca", poolType: "whirlpool", program: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc" },
 };
 
 /** Map a Jupiter route-plan label to a Henar venue family, or null. Pure. */
@@ -37,6 +38,7 @@ export function venueFamilyForLabel(label: string | null | undefined): keyof typ
   if (/raydium\s*clmm|raydium concentrated/.test(l)) return "raydium";
   if (/meteora\s*dlmm/.test(l)) return "dlmm";
   if (/damm\s*v2|meteora\s*dynamic\s*amm\s*v2/.test(l)) return "damm_v2";
+  if (/whirlpool|orca/.test(l)) return "whirlpool";
   return null;
 }
 
@@ -60,6 +62,13 @@ function decodeFacts(family: keyof typeof PROGRAMS, data: Buffer): PoolFacts {
   if (family === "dlmm") {
     const d = decodeLbPair(data) as { tokenXMint: PublicKey; tokenYMint: PublicKey; reserveX: PublicKey; reserveY: PublicKey };
     return { mintA: d.tokenXMint.toBase58(), mintB: d.tokenYMint.toBase58(), vaultA: d.reserveX.toBase58(), vaultB: d.reserveY.toBase58() };
+  }
+  if (family === "whirlpool") {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const orca = require("@orca-so/whirlpools-sdk") as typeof import("@orca-so/whirlpools-sdk");
+    const d = orca.ParsableWhirlpool.parse(PublicKey.default, { data, owner: new PublicKey(PROGRAMS.whirlpool.program), executable: false, lamports: 0 });
+    if (!d) throw new Error("whirlpool undecodable");
+    return { mintA: d.tokenMintA.toBase58(), mintB: d.tokenMintB.toBase58(), vaultA: d.tokenVaultA.toBase58(), vaultB: d.tokenVaultB.toBase58() };
   }
   const d = decodeDammV2Pool(data);
   return { mintA: d.tokenAMint.toBase58(), mintB: d.tokenBMint.toBase58(), vaultA: d.tokenAVault.toBase58(), vaultB: d.tokenBVault.toBase58() };

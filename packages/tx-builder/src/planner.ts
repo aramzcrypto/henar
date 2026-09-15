@@ -38,7 +38,7 @@ export const HENAR_PROGRAM_IDS: Record<Venue, string | null> = {
   meteora: "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
   "meteora-dbc": "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN",
   "meteora-damm-v2": "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG",
-  orca: null,
+  orca: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
   /** Aggregator legs carry their real program set from the build (`programIds`). */
   titan: "aggregator:titan",
   openocean: null,

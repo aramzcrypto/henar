@@ -58,6 +58,8 @@
     "@meteora-ag/dlmm": "1.9.14",
     "@meteora-ag/dynamic-bonding-curve-sdk": "1.5.12",
     "@orao-network/solana-vrf": "0.8.0",
+    "@orca-so/common-sdk": "0.7.1",
+    "@orca-so/whirlpools-sdk": "0.22.0",
     "@pythnetwork/pyth-solana-receiver": "0.16.0",
     "@pythnetwork/solana-utils": "0.6.0",
     "@raydium-io/raydium-sdk-v2": "0.2.69-alpha",
