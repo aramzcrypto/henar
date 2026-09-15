@@ -23,8 +23,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
-  ROUTING_ASSETS,
   USDC_MINT,
+  intermediateRecord,
+  isQualifiedIntermediate,
+  qualifiedIntermediates,
   listRouterRepresentations,
   valueTwoSidedPool,
   verifiedMint,
@@ -84,10 +86,13 @@ async function main() {
   const connection: Connection = rateLimitedConnection(rpc);
 
   const discovery = JSON.parse(await readFile(DISCOVERY, "utf8")) as { pools: DiscoveredPool[] };
+  /* Any pool whose counter asset qualified as an intermediate, not a hand
+     picked pair. Qualification is the round-trip measurement, so the breadth
+     here is exactly the breadth the measurement supports. */
   const candidates = discovery.pools.filter(
-    (pool) => pool.counterMint in ROUTING_ASSETS && pool.programId === ORCA_WHIRLPOOL_PROGRAM,
+    (pool) => isQualifiedIntermediate(pool.counterMint) && pool.counterMint !== USDC_MINT && pool.programId === ORCA_WHIRLPOOL_PROGRAM,
   );
-  process.stdout.write(`${candidates.length} representation/routing-asset pools discovered\n`);
+  process.stdout.write(`${candidates.length} pools pair a representation with one of ${qualifiedIntermediates().length} qualified intermediates\n`);
 
   // Prices: the stock side from the reference snapshot, the routing asset from
   // a live quote. Both are named in the valuation detail.
@@ -96,11 +101,13 @@ async function main() {
   const wanted = reps.filter((rep) => candidates.some((pool) => pool.stockMint === rep.mint));
   const reference = await jupiterMetadata(wanted as never);
   const assetPrice = new Map<string, number | null>();
-  for (const mint of Object.keys(ROUTING_ASSETS)) {
+  const needed = [...new Set(candidates.map((pool) => pool.counterMint))];
+  for (const mint of needed) {
     const facts = verifiedMint(mint);
     const price = facts ? await routingAssetPrice(mint, facts.decimals) : null;
     assetPrice.set(mint, price);
-    process.stdout.write(`  ${ROUTING_ASSETS[mint]} = ${price === null ? "no price" : `$${price.toFixed(2)}`}\n`);
+    const label = intermediateRecord(mint)?.symbol ?? mint.slice(0, 10);
+    process.stdout.write(`  ${label} = ${price === null ? "no price" : `$${price.toFixed(4)}`}\n`);
   }
 
   // Vault balances, batched.
@@ -131,7 +138,7 @@ async function main() {
     const aIsStock = pool.baseMint === pool.stockMint;
     const rawA = balances.get(pool.vaultA);
     const rawB = balances.get(pool.vaultB);
-    const label = ROUTING_ASSETS[pool.counterMint];
+    const label = intermediateRecord(pool.counterMint)?.symbol ?? pool.counterMint.slice(0, 10);
     if (!rep || !stockFacts || !assetFacts || rawA === undefined || rawB === undefined) {
       skipped.push({ address: pool.address, symbol: pool.tokenSymbol, reason: "mint facts or vault balance unavailable" });
       continue;
@@ -203,7 +210,7 @@ async function main() {
     .sort((a, b) => (b.tvlUsd ?? 0) - (a.tvlUsd ?? 0))
     .slice(0, 12);
   for (const pool of bySymbol)
-    process.stdout.write(`  ${pool.tokenSymbol.padEnd(9)} ${ROUTING_ASSETS[pool.baseMint === pool.mint ? pool.quoteMint : pool.baseMint].padEnd(5)} $${Math.round(pool.tvlUsd ?? 0).toLocaleString().padStart(12)}  ${pool.address}\n`);
+    process.stdout.write(`  ${pool.tokenSymbol.padEnd(9)} ${(intermediateRecord(pool.baseMint === pool.mint ? pool.quoteMint : pool.baseMint)?.symbol ?? "?").padEnd(8)} $${Math.round(pool.tvlUsd ?? 0).toLocaleString().padStart(12)}  ${pool.address}\n`);
   if (skipped.length) {
     process.stdout.write(`  skipped ${skipped.length}:\n`);
     for (const row of skipped.slice(0, 8)) process.stdout.write(`    ${row.symbol}: ${row.reason}\n`);

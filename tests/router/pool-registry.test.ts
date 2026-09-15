@@ -130,8 +130,8 @@ test("a routing leg pairs a representation with an approved intermediate and not
   // USDC-paired is a direct route, and must not hide as a leg.
   assert.ok(validatePool(leg({ quoteMint: USDC_MINT })).some((m) => /direct route, not a routing leg/.test(m)));
 
-  // An asset outside the intermediate universe is infrastructure, not a leg.
-  assert.ok(validatePool(leg({ quoteMint: BONK })).some((m) => /approved routing asset/.test(m)));
+  // An asset that did not qualify is infrastructure, not a leg.
+  assert.ok(validatePool(leg({ quoteMint: BONK })).some((m) => /qualified intermediate/.test(m)));
 
   // And a direct route still has to be USDC-paired.
   assert.ok(

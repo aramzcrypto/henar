@@ -248,23 +248,7 @@ export type VerifiedPool = {
 
 export type PoolEligibility = "ROUTER_ELIGIBLE" | "ROUTING_LEG" | "STOCK_PAIRED_INFRASTRUCTURE";
 
-/**
- * Assets an automatic route may pass through.
- *
- * Deliberately tiny. A user may choose any supported asset as an endpoint,
- * but an intermediate is chosen *for* them, so it carries a different burden:
- * it must be deep enough that the hop is an improvement rather than a way to
- * lose money in two pools instead of one. SOL and USDT are here because every
- * venue quotes them; nothing else qualifies by being popular.
- */
-export const ROUTING_ASSETS: Readonly<Record<string, string>> = Object.freeze({
-  So11111111111111111111111111111111111111112: "SOL",
-  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: "USDT",
-});
 
-export function isRoutingAsset(mint: string) {
-  return mint === USDC_MINT || mint in ROUTING_ASSETS;
-}
 
 export function isOnchainVerified(pool: VerifiedPool) {
   return pool.verification === "ONCHAIN_VERIFIED" && pool.onchainVerifiedAt !== null;

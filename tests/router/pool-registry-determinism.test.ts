@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { USDC_MINT, venueNativeDiscovery, ROUTING_ASSETS } from "@henar/router-core";
+import { USDC_MINT, venueNativeDiscovery, isQualifiedIntermediate } from "@henar/router-core";
 
 type Entry = {
   id: string;
@@ -96,7 +96,7 @@ test("every enabled pool is a USDC route or a routing leg, above the floor", () 
     assert.equal(pool.eligibility, "ROUTING_LEG", `${pool.id} eligibility`);
     assert.ok(!mints.includes(USDC_MINT), `${pool.id} is a USDC route, not a leg`);
     const counter = mints.find((m) => m !== pool.mint)!;
-    assert.ok(counter in ROUTING_ASSETS, `${pool.id} routes through ${counter}, which is not an approved intermediate`);
+    assert.ok(isQualifiedIntermediate(counter), `${pool.id} routes through ${counter}, which is not an approved intermediate`);
   }
 });
 
@@ -109,7 +109,7 @@ test("a pair outside the approved set never reaches the executable registry", ()
   for (const pool of REGISTRY) {
     const counter = [pool.baseMint, pool.quoteMint].find((m) => m !== pool.mint);
     assert.ok(
-      counter === USDC_MINT || counter! in ROUTING_ASSETS,
+      counter === USDC_MINT || isQualifiedIntermediate(counter!),
       `${pool.id} reached the executable registry paired with ${counter}`,
     );
   }

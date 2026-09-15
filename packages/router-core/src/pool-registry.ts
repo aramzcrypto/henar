@@ -10,7 +10,8 @@
  *  - a pool is only usable when `enabled` is true.
  */
 import pools from "@/data/router/pools.json";
-import { ROUTING_ASSETS, USDC_MINT, type VerifiedPool, type Venue } from "./types";
+import { isQualifiedIntermediate } from "./intermediates";
+import { USDC_MINT, type VerifiedPool, type Venue } from "./types";
 
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
@@ -32,7 +33,7 @@ export function validatePool(pool: VerifiedPool) {
   // Eligibility is derived from the pair, never declared freely: a record
   // may only call itself ROUTER_ELIGIBLE if it is exactly {mint, USDC}.
   const usdcPair = pair.has(USDC_MINT);
-  const routingAsset = [...pair].find((m) => m !== pool.mint && m in ROUTING_ASSETS) ?? null;
+  const routingAsset = [...pair].find((m) => m !== pool.mint && isQualifiedIntermediate(m)) ?? null;
   if (pool.eligibility === "ROUTER_ELIGIBLE" && !usdcPair)
     problems.push("ROUTER_ELIGIBLE pool does not pair with USDC");
   /* A routing leg pairs the representation with an approved intermediate and
@@ -43,7 +44,7 @@ export function validatePool(pool: VerifiedPool) {
   if (pool.eligibility === "ROUTING_LEG" && usdcPair)
     problems.push("USDC-paired pool is a direct route, not a routing leg");
   if (pool.eligibility === "ROUTING_LEG" && !routingAsset)
-    problems.push("ROUTING_LEG pool does not pair with an approved routing asset");
+    problems.push("ROUTING_LEG pool does not pair with a qualified intermediate");
   if (pool.eligibility === "STOCK_PAIRED_INFRASTRUCTURE" && usdcPair)
     problems.push("USDC-paired pool must be ROUTER_ELIGIBLE, not infrastructure");
   if (pool.eligibility === "STOCK_PAIRED_INFRASTRUCTURE" && pool.enabled)

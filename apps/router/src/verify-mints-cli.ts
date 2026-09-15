@@ -16,10 +16,9 @@
  * representation unverified and the planner refusing it. The file is sorted by
  * mint so a rerun that finds no change produces no diff.
  */
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
-  ROUTING_ASSETS,
   USDC_MINT,
   inspectionFromAccount,
   listRouterRepresentations,
@@ -44,8 +43,23 @@ export async function verifyMintsCli(argv = process.argv) {
      leg is valued and settled in SOL or USDT, so those mints carry exactly the
      same execution-critical facts as a representation: without their decimals
      a leg cannot be valued and the planner cannot size it. */
+  /* Representation mints, USDC, and every counter asset discovery has seen.
+     A pool can only be considered as a routing leg if we know the decimals
+     and token program of both of its sides, so the candidate set for
+     intermediates has to be verified before it can be judged. */
+  const discovered = new Set<string>();
+  for (const file of ["src/data/router/orca-discovery.json", "src/data/router/raydium-discovery.json"]) {
+    try {
+      const raw = JSON.parse(await readFile(file, "utf8")) as { pools?: { counterMint?: string; quoteMint?: string; baseMint?: string }[] };
+      for (const pool of raw.pools ?? [])
+        for (const mint of [pool.counterMint, pool.quoteMint, pool.baseMint])
+          if (mint) discovered.add(mint);
+    } catch {
+      // A discovery dump that is not present simply contributes nothing.
+    }
+  }
   const mints = [
-    ...new Set([...listRouterRepresentations().map((r) => r.mint), USDC_MINT, ...Object.keys(ROUTING_ASSETS)]),
+    ...new Set([...listRouterRepresentations().map((r) => r.mint), USDC_MINT, ...discovered]),
   ].sort();
   const verifiedAt = new Date().toISOString();
   const rows: VerifiedMint[] = [];

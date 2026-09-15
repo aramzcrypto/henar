@@ -1,0 +1,1577 @@
+{
+  "generatedAt": "2026-09-15T22:06:35.617Z",
+  "probeNotionalUsd": 10000,
+  "maxRoundTripLossBps": 100,
+  "assets": [
+    {
+      "mint": "12kQ8Y2yV7ZgKp9EkgXe8PafnVWGxbvaGFJ2HqhUWVh3",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "12sPGDS2z86CsNE5gNdKfjDPXpPj8eRAsEXkDCLS9eDp",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "22Ufp8Xt1y3w6bVdazVfwZ1pXp3aLfyiiyrRhWCeqGZT",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "24zpwrKwoMvi3apnF6pt5wT5bG776eMPpGuy5VcJgMTc",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8839,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8839 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 18,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 18 bps"
+    },
+    {
+      "mint": "2cy5kebtWXYQ5ENW2oWtnqC9DmEQrBmYaWWS2iKm95R6",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "2FprjEk4MTSY9CxpKuENbGDdy69R15GHhtHpG5Durdbq",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 6569,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 6569 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "2FZjoWKuAZB2gyTwUSSGiDN1GVtydZ2T2smkCReJpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 8683,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8683 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "2uaoVwaQVSgqTKio5ExeXeD9oofdnYbhcFv5MChopump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 9001,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9001 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "2WEGVKUJHyj7XoRQ8JcwPptXx9iZvDsYQtfQ6JC3kMMo",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "32SWfksrVpxCJ6iSiv8EaJ6hogSgsR3wHLj1u8HWQLQy",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "3EMheh5MPVWpAGDdXnGBgs6uaukKL29zv65uuXxspump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 7285,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 7285 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "3F4aTvvQBdtWj672kNYRenMtMG4jwQE63redg2cN4tCm",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9076,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9076 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 21,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 21 bps"
+    },
+    {
+      "mint": "3rhFQiFoTAKFxGJCQoXwPGidi3SGbcjU6ecZu7YH5YLF",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9811,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9811 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "3RkhhWPYYyKUj19Uqm81bS83UEQvS6FWj1qdAdHTpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 8778,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8778 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 192,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 192 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "4X9agK3Czb4nvr3SEQVVFDTVMpyDddrRfSTy7CNmQUSD",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "4XRbnGgay2XpqJ1F5jGPQ9pRh1JSX12RPCPJASMJU5JW",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9999,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9999 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "4ZXKqrySSRhUxVVmndymPKS9FujpbeWEMYmYovvjjups",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 387,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 387 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "5555CWncDKY3Y4g7HACehpkySCPqqNw1UodHDAmT5o7R",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "57651PAVutNCTppbhuS35BQJzBBM4LqG1PxB9XDDNzS7",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 9993,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9993 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "5ALyTuwpUiZ252vbADnf64QewY67BhkMFUta7enRpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 9599,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9599 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "5AYico85btxsizXgoYVKeWSubCEKKhKRiP4Ugmxcu1jm",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "5GgRAEmv8ZxF2PR5hY72Qs5x1bnQ6UK2RbTPoqJ3wSwW",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: unsupported extension Unknown(16)"
+    },
+    {
+      "mint": "5NJfQ6UQ1LJTxtKLrsZQcbiSUWequSD6aZLNJaN7Zviv",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9999,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9999 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "5nkXabR2WaMrnyAdgmiPEkaujQvT4UnWfVwMsWqJoH2",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 41,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 41 bps"
+    },
+    {
+      "mint": "5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 21,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 21 bps"
+    },
+    {
+      "mint": "6EV6hPtMvejzw8FoRxpPFawTAPsb2beRXmc7JK2ihAP",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "6GmAFSYs4gk3FDao5FzzySQpPZaWsa4rUJHacpMpUNgx",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 104,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 104 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "6gx6Ph2ek73kF6EWDrG4GQ54pcLJB6CYpATuRyxKXumo",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 7488,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 7488 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "6PQZE4nGL48Du3JCpJmeDTFDZjgQwV4HDBYFPLupump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 8784,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8784 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "6u3SQaYmwNKvi8bKKBVgrquZaCnLRTJBDFKMHUJ2jxho",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "6UZcXy2swvN8GM3auVh1kNTd94SoCptGuCjvK5KjMyFA",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "71664H6wxg8cF4qjtaACt21DX5RoFNcf4HwSGKfgpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8322,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8322 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "7DhKjMVQut5XHhscFhCH1kCRUHjNwKCvioYBb3bXLjr",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "7JA5eZdCzztSfQbJvS8aVVxMFfd81Rs9VvwnocV1mKHu",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 310,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 310 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "7s9MoSt7VV1J3jVNnw2AyocsQDBdCkPYz5apQDPKy9i5",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 4163,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 4163 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 17,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 17 bps"
+    },
+    {
+      "mint": "7wcnnmEwS6sjdaN7o7cxAXYbRCmqerSUJv1sPUtg2xdd",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9998,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9998 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "8KZaixNnR1s71xsYc5BPsu6qJD9XYaMkCTXkVMjwdACM",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "8VDGdX2s1h1dMMckWNPZ8cmLKiVUZihBQYnvFxMcvvnc",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "8WhNMYjwD7JcnDCKWETRBkHEdGeEc2vVvasjxTn7rgW",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "8yS6tuJt8EH1xtcMebe1RAwh5q3QijJP1Bb2oXdRqiyJ",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "97RkJ1ZV6LqDamz5eB8XK1CwvbXZ19GPzXboC1SeFtgb",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9789,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9789 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 24,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 24 bps"
+    },
+    {
+      "mint": "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 31,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 31 bps"
+    },
+    {
+      "mint": "9Gn6RkMsVH48sErQ7HBzNBXBXH1DKnhBgW2MEN1jHR7",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "9jxs9w5YRnPfchbW8f8hwhBSTvedSSvntfxvpqbL1jVH",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8859,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8859 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "9TPL8droGJ7jThsq4momaoz6uhTcvX2SeMqipoPmNa8R",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 227,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 227 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "A1KLoBrKBde8Ty9qtNQUtq3C2ortoC3u7twggz7sEto6",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 51,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 51 bps"
+    },
+    {
+      "mint": "A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 0,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 0 bps"
+    },
+    {
+      "mint": "Aih5Mn9S7hophn9FbNSX98EiejeM3e7rggTRaCxfrge",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "AiM8uL5p7YVeKxGaEayYy7zXyyfJMpTRecqNpMeApump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8358,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8358 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "Ak5i55iRmS99ankueZk64KWK4HoyrY8rY3mwyGQf2vVh",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "AL9GxUu8a4ZXVhnRqaqHLTB8nC2ugE5LN51kxpc8huSK",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "AopLNfVpuNfqN85nSBfsPZ89oCj5re4i4mCdTwZNyLW",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "APzoZX5TDZ42iAq331dSrumQ1qNsvXaAHU5Z53vRkZE",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "ARCn5DH3rZ43s4AZ2aoaYyJ4xxh8fP7d1PzaJYbcE3dN",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 10 bps"
+    },
+    {
+      "mint": "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 0,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 0 bps"
+    },
+    {
+      "mint": "AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 35,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 35 bps"
+    },
+    {
+      "mint": "B3nL2uW76t1eUM4UsdqHLV6LMdLL53tK3u8caYLTLz8o",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "B3zWHP7P688LS3cuCq5pWgx6Z3kXaL8XmGPwStyWfX34",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 3,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "B86RCJ7ai5pedHkfcpPBFaK93ed7uCfT3K7qG7qL1TxA",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9764,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9764 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "BhmPSRoEYPT7epsM87xWKcSoLkgaf7b5SqTzZpufApMQ",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "BjcRmwm8e25RgjkyaFE56fc7bxRgGPw96JUkXRJFEroT",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 458,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 458 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "BJfhD23KLLnfwipafHPTozFRbZZukvzSz2EAYMryewq",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8635,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8635 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "BPxxfRCXkUVhig4HS1Lh7kZqV6SPJhzfEk4x6fVBjPCy",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 158,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 158 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "BqVHWpwUDgMik5gbTciFfozadpE2oZth5bxCDrgbDt52",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8145,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8145 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "BrfqHUsUhw6CJnnGuMVwrf6dJAZR3vLWL5XpWwBhuuw",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 12,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 12 bps"
+    },
+    {
+      "mint": "Bv28RM1vAmb4rPPaGh8akz6S3vS87Y4Y4tkFBKf3X7Xx",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "C6oFsE8nXRDThzrMEQ5SxaNFGKoyyfWDDVPw37JKvPTe",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "CaNC8DjrRuY17zrqNyHKYD91pVofPsXchFr1kh2nsfUw",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 21,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 21 bps"
+    },
+    {
+      "mint": "CHSBRJMtGGFDzXACSRffhQZdx4eNdqGG77xg5Ntumoon",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9017,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9017 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "Cp4EqaVr2ozQEKwLnuTACAx8oUHzNi9LTDytnZKLKRqE",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "CPmJDz6NQQeoZdzcr1ajJNCPLVn24Esch7viGJu3bRdW",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "CWF6mVFoPFe2LSjUKZqVxehZvPmEaAkaqR4gCq86EjE4",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "Dcn2TWWP4ixmDgsPfK2drFiGnbS6soCMJgmfxtJKRH4t",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "DEnv1UqNdm9TMMaudsNEyw8LncLnZvRsJiZuewHmsbfG",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "Di8SpQy61K6ACorkG2NcCVstExK7acKE2o6GH66wVxEB",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 8963,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8963 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "DMqhAfSMqdhkGoXJvyA4qJFU1Coabw1RrpQKySN1zNWc",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "DRAMjSWR7HRfJKjRkvQWYL2bcaejaVhuxEcjf4pAY4Cw",
+      "symbol": "DRAM",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 23,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 23 bps"
+    },
+    {
+      "mint": "Dsv7QXbpzYt7sk77wzLwhX7vCvK68PU2qF43isu3b9iJ",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "DxGwnNi3d3FZrizgPeupmi6PtxN26PSKGHYHxdXVpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8756,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8756 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "DZwGVPyaqmvZHoZ75HqqdaMRBFKYZFTXgRFrZ3TFRuKD",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 7978,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 7978 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "EjjdSKQwaZHQnTiPVvaNX5VzwfiGnhWbkSzBzkHSpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8755,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8755 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 0,
+      "qualified": true,
+      "reason": "the quote asset itself"
+    },
+    {
+      "mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 0,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 0 bps"
+    },
+    {
+      "mint": "EXdQX6Y9bZFQ4kiE5rVur82F6P5CAumEPzFztGTvDi3d",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "EZTpjKnWpnGt9q7ruNtJab9BYYnfyGGm2KVxRnFa72MZ",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 1000 bps"
+    },
+    {
+      "mint": "F5DxM11fK1PAkQRRooCRsox9fKFjgdUdgkzvZHz1f5ho",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 6493,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 6493 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "F6ty6tjR3FZwC3wwVUJmKvwUinokQ9Frifpdsbdhpxo",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "FaBfRoSsaim4KWAnGvgGvWfzRgnFfJFwMnk3v8wbEnR",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "FaM6sg5M5pB64XVR9sxjnem1fKfC8cZaEAFqccoTB9s",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "FKU35pM9FujrBMkMDXM7QpZ1Xxcfodw64S1rcvY92mCq",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 6376,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 6376 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "G3XsKoNbpXMxAbvwxGU2zPDqvFSK5pqDD2dxEaNvpump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8769,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8769 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "G5JjQKdr2oyJXXfLED2iK2kra84jXqfuvZQ4QJabUMm",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "GAQQCNHZZ3JzgF1GTiW6E4LUDMKN2cGE85cF62VHSGsH",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "GeHaZrjKgd5MeFvXxb2GsGFtdwqfbG9K6EjGDoA6pump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8590,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8590 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "GN3Njbg9dP13pBX2MvdXurr4cuxzVmsVtKwnhPPymWZh",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 4,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "GoLDEDmbque3qd1xfmnzMtg7HMju8p4UoaRX1vBsehjA",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 92,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 92 bps"
+    },
+    {
+      "mint": "GQNvFLUSoEJmQLN613j9DHUBNzrAFaTj9QbmRXkuJ7f",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "GXyQa6z8rZp2H3ermVNXRsEBNCbwunscYoHaMCb3uJLR",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8769,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8769 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "H9D6zuYzL35aZZV4MxRc3H5nAJb8M4kxK38HCUGypump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 7532,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 7532 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "HnnGv3HrSqjRpgdFmx7vQGjntNEoex1SU4e9Lxcxuihz",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 31,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 31 bps"
+    },
+    {
+      "mint": "hWfiw4mcxT8rnNFkk6fsCQSxoxgZ9yVhB6tyeVcondo",
+      "symbol": "GLDon",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 34,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 34 bps"
+    },
+    {
+      "mint": "ibozy4AxS6TdsBDerGJN1ZKFFohEubFdHWGcyLxPLFL",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "J25ufev3dhhvCa39P5nUCMui9K1hVw18vbwtXMc5pump",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8755,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8755 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "JDjprgWYuidVGfExWzMp7Z81K3T6Qsg5aJCnG6srRLGW",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 6859,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 6859 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 45,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 45 bps"
+    },
+    {
+      "mint": "JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 0,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 0 bps"
+    },
+    {
+      "mint": "jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 9,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 9 bps"
+    },
+    {
+      "mint": "KgKqh9XTxMQHLvdgRmMj58uRAKdnqM2WMrAyKt6zg29",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "L2DpgptKCoyqBCX57J25xBLaWHgbJJdzSxPq3eq6GAD",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "LS9fj8XmdiWZAGbkGoGfHsnanois82dRaq3H3wdRzba",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "MQA59E4tG4QFeiZ1MPT9MJDjVXGi7HTibQE78EvCyqs",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "myrcAs6bpP2g5oGHZ3qpgrfZQAFkbo9KUHdqYDXMjGv",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 163,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 163 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "NuKGkK53NEDV5RJBz9z4ncXSDrPuXc8HoTVsREAcWBH",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "NX8DuAWprqWAYDvpkkuhKnPfGRXQQhgiw85pCkgvFYk",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 9355,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9355 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 11,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 251,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 251 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "P4SgiiX3JPAYnCtBvRWqKHDcsCzrTa7jhARD8t6ZD3w",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "PcXXS4RGSnsDgqerxnqCWaMGyzvzcMnUzNvkHcCZUCC",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 8734,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 8734 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "PHMpq88v9w587695KMmAhJJnpeEKZ4uctu3sV6SAS17",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 10 bps"
+    },
+    {
+      "mint": "QdxeV82MWs4ddvymLhGFyWTJSBXBjje6YFnQbrXHTmJ",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "QuicEPtN6QtDoMvmsWe5Xqb5da3FqBQWff7jh2cBXn7",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "r8xikhHV3VyYUJxqijvvvWu9DE2dHwFAyPVbY6ukQPc",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "Rexx3h5NMHUwCvjSsHPvc4aZV1wboXgaTLqXePGAJQF",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3",
+      "symbol": "SKHY",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 28,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 28 bps"
+    },
+    {
+      "mint": "SNDKbwMUQvZhnLnxLduradgLHG5KrPuKwpnrkkGRhfH",
+      "symbol": "SNDK",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 30,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 30 bps"
+    },
+    {
+      "mint": "So11111111111111111111111111111111111111112",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 3,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 3 bps"
+    },
+    {
+      "mint": "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
+      "symbol": "SPCX",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 27,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 27 bps"
+    },
+    {
+      "mint": "SV151D5pjygAKA8aJJcKzm4wFnRX5G92Fye94jQJk7g",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 795,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 795 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "SWnzMH96WcYs8T75dRnvziWFyXzdX3cTAgZr8tGR9dB",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "TAXt1D7c4msZbunDYvt9BP1dTRMU6TRiVBV71te3F43",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 9929,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9929 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "UrGycZeZb3krDHy212MK2VpzrDRc7Y4DMxoYptSQLtA",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "UymR4MBSVbS2D8tRYNbbNgfbdQNemAbuSSJNSxDoc2o",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 6,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "token semantics unsupported: transfer fee 200 bps"
+    },
+    {
+      "mint": "x95HN3DWvbfCBtTjGm587z8suK3ec6cwQwgZNLbWKyp",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 4,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": 2619,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 2619 bps, above the 100 bps ceiling"
+    },
+    {
+      "mint": "XHGABYLUZDJyH259798sXxyP7ntcfKnQtF9uwMzYWrw",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "roundTripLossBps": null,
+      "qualified": false,
+      "reason": "not quotable at 10000 USD: No route from Jupiter (status 400)."
+    },
+    {
+      "mint": "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8",
+      "symbol": "SPCXx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 24,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 24 bps"
+    },
+    {
+      "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+      "symbol": "AAPLx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 27,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 27 bps"
+    },
+    {
+      "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+      "symbol": "NVDAx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 26,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 26 bps"
+    },
+    {
+      "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+      "symbol": "GOOGLx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 28,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 28 bps"
+    },
+    {
+      "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+      "symbol": "TSLAx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 25,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 25 bps"
+    },
+    {
+      "mint": "XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 45,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 45 bps"
+    },
+    {
+      "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "symbol": "SPYx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 22,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 22 bps"
+    },
+    {
+      "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+      "symbol": "MSTRx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 30,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 30 bps"
+    },
+    {
+      "mint": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+      "symbol": "MSFTx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 27,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 27 bps"
+    },
+    {
+      "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "symbol": "CRCLx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 24,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 24 bps"
+    },
+    {
+      "mint": "Xsv99frTRUeornyvCfvhnDesQDWuvns1M852Pez91vF",
+      "symbol": "PEPx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 99,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 99 bps"
+    },
+    {
+      "mint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+      "symbol": "GLDx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 40,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 40 bps"
+    },
+    {
+      "mint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+      "symbol": "HOODx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 29,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 29 bps"
+    },
+    {
+      "mint": "XsXcJ6GZ9kVnjqGsjBnktRcuwMBmvKWh8S93RefZ1rF",
+      "symbol": "AMDx",
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 8,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 27,
+      "qualified": true,
+      "reason": "round trip of 10000 USD costs 27 bps"
+    },
+    {
+      "mint": "yMStYKWjiJuYhVJFxjQBR5gC2bse7sFE5wTKsYStTpr",
+      "symbol": null,
+      "probedAt": "2026-09-15T22:06:35.617Z",
+      "decimals": 9,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "roundTripLossBps": 9962,
+      "qualified": false,
+      "reason": "round trip of 10000 USD costs 9962 bps, above the 100 bps ceiling"
+    }
+  ]
+}

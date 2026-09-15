@@ -46,6 +46,7 @@
     "router:serve": "node --env-file-if-exists=.env.local --import tsx apps/router/src/server.ts",
     "router:discover:jupiter": "node --env-file-if-exists=.env.local --import tsx apps/router/src/discover-from-jupiter.ts",
     "router:trace": "node --env-file-if-exists=.env.local --import tsx scripts/router/trace-quote.ts",
+    "router:qualify:intermediates": "node --env-file-if-exists=.env.local --import tsx scripts/router/qualify-intermediates.ts",
     "router:admit:legs": "node --env-file-if-exists=.env.local --import tsx scripts/router/admit-routing-legs.ts",
     "router:verify:mints": "node --env-file-if-exists=.env.local --import tsx scripts/router/verify-mints-onchain.ts",
     "router:verify:pools": "node --env-file-if-exists=.env.local --import tsx scripts/router/verify-pools-onchain.ts",
