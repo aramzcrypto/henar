@@ -41,7 +41,7 @@ function key() {
 
 export async function quoteJupiter(
   request: ExecutionQuoteRequest,
-  options?: { source?: ExecutionSource; dexes?: string[] },
+  options?: { source?: ExecutionSource; dexes?: string[]; allowSlippageAdjustment?: boolean },
 ): Promise<NormalizedExecutionQuote> {
   validateExecutionRequest(request);
   const source = options?.source ?? "jupiter";
@@ -76,7 +76,11 @@ export async function quoteJupiter(
     value.inAmount !== request.amount.toString() ||
     output <= 0n ||
     (value.slippageBps !== undefined &&
-      value.slippageBps !== request.slippageBps)
+      value.slippageBps !== request.slippageBps &&
+      // Jupiter's v2 order endpoint may widen slippage dynamically on larger
+      // sizes. Callers that set their own floor (the Henar Router) opt out of
+      // this equality check; the production path keeps it.
+      !options?.allowSlippageAdjustment)
   )
     throw new Error("Jupiter quote terms did not match the request.");
   const minimum = value.otherAmountThreshold

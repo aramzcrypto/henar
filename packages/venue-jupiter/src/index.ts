@@ -75,12 +75,17 @@ export class JupiterAdapter implements VenueAdapter {
 
     let result;
     try {
-      result = await this.quote({
-        inputMint: request.inputMint,
-        outputMint: request.outputMint,
-        amount: fromRaw(request.amount),
-        slippageBps: this.slippageBps,
-      });
+      result = await this.quote(
+        {
+          inputMint: request.inputMint,
+          outputMint: request.outputMint,
+          amount: fromRaw(request.amount),
+          slippageBps: this.slippageBps,
+        },
+        // The router applies its own floor; Jupiter's dynamic slippage on the
+        // benchmark quote is informational, not a terms mismatch.
+        { allowSlippageAdjustment: true },
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const reason = /terms did not match/i.test(message)
