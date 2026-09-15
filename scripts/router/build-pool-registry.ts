@@ -26,6 +26,7 @@ import type { DiscoveryRow } from "./discover-raydium-pools";
 
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const OUTPUT = "src/data/router/pools.json";
+const NON_ROUTABLE_OUTPUT = "src/data/router/non-routable-pairs.json";
 const MIN_TVL_USD = 1_000;
 
 const RAYDIUM_PROGRAMS: Record<string, { poolType: string; direct: boolean }> = {
@@ -34,9 +35,30 @@ const RAYDIUM_PROGRAMS: Record<string, { poolType: string; direct: boolean }> = 
   "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8": { poolType: "amm_v4", direct: false },
 };
 
+const ORCA_WHIRLPOOL_PROGRAM = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";
 const METEORA_DLMM_PROGRAM = "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo";
 const METEORA_DBC_PROGRAM = "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN";
 const METEORA_DAMM_V2_PROGRAM = "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG";
+
+type OrcaDiscoveryFile = {
+  fetchedAt: string;
+  pools: {
+    address: string;
+    programId: string;
+    stockMint: string;
+    counterMint: string;
+    representationId: string;
+    provider: string;
+    tokenSymbol: string;
+    baseMint: string;
+    quoteMint: string;
+    tickSpacing: number | null;
+    feeBps: number | null;
+    tvlUsd: number | null;
+    discoverySource: string;
+    fetchedAt: string;
+  }[];
+};
 
 type MeteoraDiscoveryRow = {
   mint: string;
@@ -71,6 +93,16 @@ type Pool = {
   observedTokenPrograms: { base: string | null; quote: string | null } | null;
   tvlUsd: number | null;
   discoveredFrom: string;
+  /** Closed set; only a venue-native source may enable a pool. */
+  discoverySources?: (
+    | "RAYDIUM_API"
+    | "RAYDIUM_ONCHAIN"
+    | "ORCA_API"
+    | "ORCA_ONCHAIN"
+    | "METEORA_API"
+    | "METEORA_ONCHAIN"
+    | "JUPITER_FORENSICS"
+  )[];
   discoveredAt: string;
   verifiedAt: string;
   verification: "DISCOVERED" | "ONCHAIN_VERIFIED" | "VERIFICATION_FAILED";
@@ -148,6 +180,23 @@ function main() {
   return (async () => {
     const now = new Date().toISOString();
     const pools: Pool[] = [];
+    /* Public pools holding a verified stock mint against something other than
+       USDC. Route search is direct-pair only, so these are not routable today;
+       they are the evidence for whether that should change. */
+    const nonRoutable: {
+      address: string;
+      venue: string;
+      programId: string;
+      stockMint: string;
+      counterMint: string;
+      representationId: string;
+      provider: string;
+      tokenSymbol: string;
+      tvlUsd: number | null;
+      status: "DISCOVERED_NON_ROUTABLE_PAIR";
+      discoverySources: string[];
+      discoveredAt: string;
+    }[] = [];
     const rejected: Record<string, number> = {};
     const reject = (why: string) => {
       rejected[why] = (rejected[why] ?? 0) + 1;
@@ -208,6 +257,7 @@ function main() {
           },
           tvlUsd: tvl,
           discoveredFrom: "api-v3.raydium.io/pools/info/mint",
+          discoverySources: ["RAYDIUM_API"],
           discoveredAt: row.fetchedAt,
           verifiedAt: now,
           // Venue metadata only. Chain verification is a separate, RPC-gated
@@ -221,6 +271,82 @@ function main() {
           disabledReason,
         });
       }
+    }
+
+    /* Orca, from ORCA_ONCHAIN discovery. Only {representation, USDC} enters
+       the executable registry; every other counter asset is recorded so the
+       liquidity is known without being routed, since route search is still
+       direct-pair only. Chain state carries no USD value, so TVL is unknown
+       here and the RPC-gated verification pass is the only thing that can
+       price a pool — a freshly discovered Orca pool therefore arrives
+       disabled by design rather than by accident. */
+    const orca = await readJson<OrcaDiscoveryFile>(
+      "src/data/router/orca-discovery.json",
+    );
+    for (const pool of orca?.pools ?? []) {
+      const rep = verifiedMints.get(pool.stockMint);
+      if (!rep) {
+        reject("orca: mint not verified in registry");
+        continue;
+      }
+      if (pool.programId !== ORCA_WHIRLPOOL_PROGRAM) {
+        reject(`orca: unknown program ${pool.programId}`);
+        continue;
+      }
+      const tvl = Number.isFinite(pool.tvlUsd) ? pool.tvlUsd : null;
+      if (pool.counterMint !== USDC) {
+        /* Recorded, not routed. pools.json is the executable registry and
+           `validatePool` requires a USDC pair, which is a safety contract
+           rather than a formatting rule; loosening it to carry intelligence
+           would weaken the thing that keeps an unroutable pool out of a
+           quote. These go to their own artifact instead. */
+        nonRoutable.push({
+          address: pool.address,
+          venue: "orca",
+          programId: pool.programId,
+          stockMint: pool.stockMint,
+          counterMint: pool.counterMint,
+          representationId: rep.representationId,
+          provider: rep.provider,
+          tokenSymbol: rep.tokenSymbol,
+          tvlUsd: tvl,
+          status: "DISCOVERED_NON_ROUTABLE_PAIR",
+          discoverySources: ["ORCA_ONCHAIN"],
+          discoveredAt: pool.fetchedAt,
+        });
+        continue;
+      }
+      let disabledReason: string | null = null;
+      if (tvl === null || tvl < MIN_TVL_USD)
+        disabledReason = `TVL ${tvl === null ? "unknown" : `$${Math.round(tvl)}`} below $${MIN_TVL_USD} floor`;
+      pools.push({
+        id: `orca:${pool.address}`,
+        representationId: rep.representationId,
+        mint: pool.stockMint,
+        provider: rep.provider,
+        tokenSymbol: rep.tokenSymbol,
+        venue: "orca",
+        address: pool.address,
+        programId: pool.programId,
+        poolType: "whirlpool",
+        baseMint: pool.baseMint,
+        quoteMint: pool.quoteMint,
+        feeBps: pool.feeBps,
+        feeConfig: pool.tickSpacing === null ? null : { tickSpacing: pool.tickSpacing },
+        observedTokenPrograms: null,
+        tvlUsd: tvl,
+        discoveredFrom: "orca:getProgramAccounts(whirlpool)",
+        discoverySources: ["ORCA_ONCHAIN"],
+        discoveredAt: pool.fetchedAt,
+        verifiedAt: now,
+        verification: "DISCOVERED",
+        onchainVerifiedAt: null,
+        verificationDetail: null,
+        eligibility: "ROUTER_ELIGIBLE",
+        dbc: null,
+        enabled: disabledReason === null,
+        disabledReason,
+      });
     }
 
     const meteora = await readJson<MeteoraDiscoveryRow[]>(
@@ -380,11 +506,22 @@ function main() {
         : a.representationId.localeCompare(b.representationId),
     );
     await writeFile(OUTPUT, `${JSON.stringify(pools, null, 2)}\n`, "utf8");
+    nonRoutable.sort(
+      (a, b) => a.stockMint.localeCompare(b.stockMint) || a.address.localeCompare(b.address),
+    );
+    await writeFile(
+      NON_ROUTABLE_OUTPUT,
+      `${JSON.stringify({ generatedAt: now, pools: nonRoutable }, null, 2)}\n`,
+      "utf8",
+    );
 
     const enabled = pools.filter((p) => p.enabled);
     const reps = new Set(enabled.map((p) => p.representationId));
     process.stdout.write(
       `Wrote ${OUTPUT}: ${pools.length} verified pools, ${enabled.length} enabled across ${reps.size} representations.\n`,
+    );
+    process.stdout.write(
+      `  ${nonRoutable.length} non-routable pairs recorded in ${NON_ROUTABLE_OUTPUT}\n`,
     );
     for (const [why, count] of Object.entries(rejected))
       process.stdout.write(`  rejected ${count}: ${why}\n`);

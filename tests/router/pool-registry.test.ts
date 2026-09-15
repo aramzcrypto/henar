@@ -52,7 +52,10 @@ test("committed pools.json loads, and every entry pairs a registry mint with USD
     assert.ok(known.has(p.representationId), `${p.address} names unknown representation`);
   }
   for (const p of registry.pools.filter((p) => p.enabled)) {
-    assert.equal(p.poolType, "clmm", "only CLMM has a direct adapter today");
+    assert.ok(
+      p.poolType === "clmm" || p.poolType === "whirlpool",
+      `${p.address}: ${p.poolType} has no direct adapter`,
+    );
     assert.ok((p.tvlUsd ?? 0) >= 1000, "enabled pools meet the TVL floor");
   }
 });

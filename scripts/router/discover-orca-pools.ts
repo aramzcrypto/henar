@@ -30,8 +30,8 @@ const WHIRLPOOL_ACCOUNT_BYTES = 653;
 
 type OrcaPool = {
   address: string;
-  tokenA: { mint: string };
-  tokenB: { mint: string };
+  tokenA: { mint: string; vault: string };
+  tokenB: { mint: string; vault: string };
   tickSpacing: number | null;
   feeRate: number | null;
 };
@@ -50,11 +50,15 @@ type DiscoveredPool = {
   quoteMint: string;
   tickSpacing: number | null;
   feeBps: number | null;
+  vaultA: string;
+  vaultB: string;
   tvlUsd: number | null;
   volume24hUsd: number | null;
   discoverySource: "ORCA_ONCHAIN";
   fetchedAt: string;
 };
+
+const USDC_MINT_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 async function readWhirlpools(): Promise<OrcaPool[]> {
   const rpc = process.env.SOLANA_RPC_URL;
@@ -76,8 +80,8 @@ async function readWhirlpools(): Promise<OrcaPool[]> {
     if (!decoded) continue;
     pools.push({
       address: pubkey.toBase58(),
-      tokenA: { mint: decoded.tokenMintA.toBase58() },
-      tokenB: { mint: decoded.tokenMintB.toBase58() },
+      tokenA: { mint: decoded.tokenMintA.toBase58(), vault: decoded.tokenVaultA.toBase58() },
+      tokenB: { mint: decoded.tokenMintB.toBase58(), vault: decoded.tokenVaultB.toBase58() },
       tickSpacing: decoded.tickSpacing ?? null,
       feeRate: decoded.feeRate ?? null,
     });
@@ -126,9 +130,11 @@ async function main() {
       baseMint: a,
       quoteMint: b,
       tickSpacing: pool.tickSpacing,
+      vaultA: pool.tokenA.vault,
+      vaultB: pool.tokenB.vault,
       // Whirlpool feeRate is hundredths of a bp (10000 = 1%).
       feeBps: pool.feeRate === null ? null : Math.round(pool.feeRate / 100),
-      // Chain state carries no USD value; the verification pass prices pools.
+      // Priced below, from the USDC vault, for USDC-paired pools only.
       tvlUsd: null,
       volume24hUsd: null,
       discoverySource: "ORCA_ONCHAIN",
@@ -140,6 +146,34 @@ async function main() {
   const unique = [...new Map(discovered.map((p) => [p.address, p])).values()].sort(
     (x, y) => x.stockMint.localeCompare(y.stockMint) || x.address.localeCompare(y.address),
   );
+
+  /* TVL from the pool's own USDC vault: a two-sided pool's USDC leg is about
+     half its value at the current price, so twice the balance is the figure —
+     chain data, and labelled as such. Only USDC-paired pools are priced,
+     because only those can enter the executable registry today, and an
+     unpriced pool stays disabled rather than being enabled on a guess. */
+  const usdcPools = unique.filter((pool) => pool.counterMint === USDC_MINT_ADDRESS);
+  if (usdcPools.length) {
+    const { Connection, PublicKey } = await import("@solana/web3.js");
+    const connection = new Connection(process.env.SOLANA_RPC_URL!, "confirmed");
+    const vaultOf = new Map(
+      usdcPools.map((pool) => [pool.address, pool.counterMint === pool.baseMint ? pool.vaultA : pool.vaultB]),
+    );
+    for (let i = 0; i < usdcPools.length; i += 100) {
+      const chunk = usdcPools.slice(i, i + 100);
+      const infos = await connection.getMultipleAccountsInfo(
+        chunk.map((pool) => new PublicKey(vaultOf.get(pool.address)!)),
+        "confirmed",
+      );
+      chunk.forEach((pool, index) => {
+        const info = infos[index];
+        if (!info || info.data.length < 72) return;
+        // SPL token account: amount is a u64 little-endian at offset 64.
+        const amount = info.data.readBigUInt64LE(64);
+        pool.tvlUsd = (Number(amount) / 1_000_000) * 2;
+      });
+    }
+  }
 
   await writeFile(OUTPUT, `${JSON.stringify({ fetchedAt, pools: unique }, null, 2)}\n`, "utf8");
 
