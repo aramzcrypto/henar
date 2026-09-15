@@ -76,10 +76,19 @@ test("verification state and timestamp cannot disagree; DISCOVERED is never onch
   const verified = pool({ verification: "ONCHAIN_VERIFIED", onchainVerifiedAt: "2026-09-15T00:00:00.000Z" });
   assert.deepEqual(validatePool(verified), []);
   assert.equal(isOnchainVerified(verified), true);
-  // Committed registry: nothing is chain-verified yet on this machine.
+  /* Committed registry: every record is internally consistent, and a record
+     claiming chain verification names when and what was checked. This used to
+     assert the whole file was DISCOVERED, which described the state of the
+     file rather than any property of it, and broke the moment verification
+     was actually run. */
   for (const p of loadPoolRegistry().pools) {
-    assert.equal(p.verification, "DISCOVERED", p.address);
-    assert.equal(isOnchainVerified(p), false);
+    assert.deepEqual(validatePool(p), [], p.address);
+    assert.equal(isOnchainVerified(p), p.verification === "ONCHAIN_VERIFIED", p.address);
+    if (p.verification === "ONCHAIN_VERIFIED") {
+      assert.ok(p.onchainVerifiedAt, p.address);
+      assert.ok(p.verificationDetail, p.address);
+    }
+    if (p.enabled) assert.notEqual(p.verification, "VERIFICATION_FAILED", p.address);
   }
 });
 

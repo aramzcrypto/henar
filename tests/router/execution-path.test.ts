@@ -20,11 +20,24 @@ function mintAccount(owner: PublicKey, decimals: number) {
   MintLayout.encode({ mintAuthorityOption: 0, mintAuthority: PublicKey.default, supply: 0n, decimals, isInitialized: true, freezeAuthorityOption: 0, freezeAuthority: PublicKey.default }, data);
   return { owner, data, executable: false, lamports: 1, rentEpoch: 0 };
 }
-const poolAccount = (owner: PublicKey) => ({ owner, data: Buffer.alloc(8), executable: false, lamports: 1, rentEpoch: 0 });
+/**
+ * A pool account whose own bytes name a pair, at the layout offsets for its
+ * type. An empty buffer is not a valid stand-in: verification reads the pair
+ * out of the account, and a fixture that cannot hold one would let the pair
+ * check pass by never running.
+ */
+const CLMM_MINT_OFFSETS = { base: 73, quote: 105 };
+function poolAccountFor(owner: PublicKey, baseMint: string, quoteMint: string, bytes = 1544) {
+  const data = Buffer.alloc(bytes);
+  new PublicKey(baseMint).toBuffer().copy(data, CLMM_MINT_OFFSETS.base);
+  new PublicKey(quoteMint).toBuffer().copy(data, CLMM_MINT_OFFSETS.quote);
+  return { owner, data, executable: false, lamports: 1, rentEpoch: 0 };
+}
 
 test("on-chain verification: ONCHAIN_VERIFIED only when owner and both mints agree; failures disable the pool and keep the timestamp null", () => {
   const p = pool("raydium", key(1), { programId: "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK", verification: "DISCOVERED", onchainVerifiedAt: null, observedTokenPrograms: { base: TOKEN_2022_PROGRAM_ID.toBase58(), quote: TOKEN_PROGRAM_ID.toBase58() } });
   const program = new PublicKey(p.programId);
+  const poolAccount = (owner: PublicKey) => poolAccountFor(owner, p.baseMint, p.quoteMint);
   const ok = classifyPoolVerification(p, poolAccount(program), mintAccount(TOKEN_2022_PROGRAM_ID, 8), mintAccount(TOKEN_PROGRAM_ID, 6), 123, "2026-09-15T00:00:00.000Z");
   assert.equal(ok.verification, "ONCHAIN_VERIFIED");
   const applied = applyVerification(p, ok, "2026-09-15T01:00:00.000Z");
@@ -91,4 +104,51 @@ test("quoteAndBuild refuses without the execution flag and without builder deps"
   const r2 = await api.quoteAndBuild({ representationId: rep.id, side: "buy", amount: "1000000", owner: OWNER });
   assert.equal(r2.status, 503);
   delete process.env.HENAR_ROUTER_EXECUTION;
+});
+
+/**
+ * Regression: verification must confirm the pool trades the recorded pair.
+ *
+ * The pass used to check only that the pool account existed under the right
+ * program and that the two mints the registry claimed existed somewhere on
+ * chain. A record pointing at a real pool trading a different pair verified
+ * cleanly, and Native execution trusts the record to choose what it swaps
+ * through. All 587 registry pools passed under that rule.
+ */
+test("a pool trading a different pair than the registry records is refused", () => {
+  const program = new PublicKey("CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK");
+  const p = pool("raydium", key(1), { programId: program.toBase58(), verification: "DISCOVERED", onchainVerifiedAt: null, observedTokenPrograms: null });
+  const mints = [mintAccount(TOKEN_2022_PROGRAM_ID, 8), mintAccount(TOKEN_PROGRAM_ID, 6)] as const;
+
+  // The pair the registry records: verified.
+  const right = classifyPoolVerification(p, poolAccountFor(program, p.baseMint, p.quoteMint), ...mints, 123);
+  assert.equal(right.verification, "ONCHAIN_VERIFIED");
+  assert.match(right.detail, /pool pair, owner and both mints verified/);
+
+  // Reversed order is the same unordered pair, so it is still the same market.
+  const reversed = classifyPoolVerification(p, poolAccountFor(program, p.quoteMint, p.baseMint), ...mints, 123);
+  assert.equal(reversed.verification, "ONCHAIN_VERIFIED");
+
+  // A real pool under the right program, trading something else entirely.
+  const wrongPair = classifyPoolVerification(p, poolAccountFor(program, key(77), p.quoteMint), ...mints, 123);
+  assert.equal(wrongPair.verification, "VERIFICATION_FAILED");
+  assert.match(wrongPair.detail, /pool trades .*, registry says/);
+  const applied = applyVerification(p, wrongPair, "2026-09-15T01:00:00.000Z");
+  assert.equal(applied.enabled, false);
+  assert.equal(applied.onchainVerifiedAt, null);
+
+  // An account too short to hold the pair is unverified, never verified by default.
+  const truncated = classifyPoolVerification(p, poolAccountFor(program, p.baseMint, p.quoteMint, 8), ...mints, 123);
+  assert.equal(truncated.verification, "VERIFICATION_FAILED");
+  assert.match(truncated.detail, /too short for the clmm layout/);
+
+  // A layout with no decoder cannot be called verified: it stays DISCOVERED,
+  // keeps its existing enablement, and carries no verification timestamp.
+  const undecodable = pool("meteora", key(2), { programId: program.toBase58(), verification: "DISCOVERED", onchainVerifiedAt: null, observedTokenPrograms: null, enabled: false, disabledReason: "no direct adapter" });
+  const pending = classifyPoolVerification(undecodable, poolAccountFor(program, undecodable.baseMint, undecodable.quoteMint), ...mints, 123);
+  assert.equal(pending.verification, "DISCOVERED");
+  assert.match(pending.detail, /no decoder for dlmm/);
+  const kept = applyVerification(undecodable, pending, "2026-09-15T01:00:00.000Z");
+  assert.equal(kept.onchainVerifiedAt, null);
+  assert.equal(kept.disabledReason, "no direct adapter");
 });

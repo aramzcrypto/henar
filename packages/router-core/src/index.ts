@@ -13,6 +13,7 @@ export { ROUTER_FLAGS, flagEnabled, type RouterFlag } from "./flags";
 export * from "./native-state";
 export * from "./validation";
 export * from "./split";
+export * from "./pool-mints";
 export * from "./verify-pools";
 export {
   JsonlFileSink,

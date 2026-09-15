@@ -2,14 +2,24 @@
  * On-chain pool verification — the only writer of ONCHAIN_VERIFIED /
  * VERIFICATION_FAILED and of `onchainVerifiedAt`.
  *
- * For each pool: read the pool account (owner must be the registry program)
- * and both mint accounts (program, decimals, extensions via
- * `inspectionFromAccount`). A pool passes when every fact agrees with the
- * registry and both mints are supported. `classifyPoolVerification` is pure
- * so it is unit-tested on synthetic accounts; `verifyPoolsOnchain` does the
- * RPC reads.
+ * For each pool: read the pool account (owner must be the registry program,
+ * and its own bytes must name the pair the registry records) and both mint
+ * accounts (program, decimals, extensions via `inspectionFromAccount`). A pool
+ * passes when every fact agrees with the registry and both mints are
+ * supported.
+ *
+ * Confirming the pool's own pair is not optional. Without it this pass proved
+ * only that the account existed under the right program and that the two mints
+ * the registry claimed existed somewhere on chain, so a record pointing at a
+ * real pool trading a different pair verified cleanly — and Native execution
+ * trusts the record to choose what it swaps through. A pool whose layout
+ * cannot be decoded stays DISCOVERED: unconfirmed is not verified.
+ *
+ * `classifyPoolVerification` is pure so it is unit-tested on synthetic
+ * accounts; `verifyPoolsOnchain` does the RPC reads.
  */
 import { PublicKey, type AccountInfo, type Connection } from "@solana/web3.js";
+import { canDecodePoolMints, decodePoolMints, mintsAgree } from "./pool-mints";
 import { inspectionFromAccount } from "./token-extensions";
 import type { MintInspection, VerifiedPool } from "./types";
 
@@ -32,8 +42,16 @@ export function classifyPoolVerification(
   readAt = new Date().toISOString(),
 ): PoolVerificationOutcome {
   const problems: string[] = [];
+  let unconfirmedPair: string | null = null;
   if (!poolAccount) problems.push("pool account missing");
   else if (poolAccount.owner.toBase58() !== pool.programId) problems.push(`pool owned by ${poolAccount.owner.toBase58()}, registry says ${pool.programId}`);
+  else if (!canDecodePoolMints(pool.poolType)) unconfirmedPair = `no decoder for ${pool.poolType}; pair not confirmed against the pool account`;
+  else {
+    const decoded = decodePoolMints(pool.poolType, poolAccount.data);
+    if (!decoded) problems.push(`pool account is ${poolAccount.data.length} bytes, too short for the ${pool.poolType} layout`);
+    else if (!mintsAgree(decoded, pool.baseMint, pool.quoteMint))
+      problems.push(`pool trades ${decoded.base}/${decoded.quote}, registry says ${pool.baseMint}/${pool.quoteMint}`);
+  }
   const base = baseAccount ? inspectionFromAccount(pool.baseMint, baseAccount, readAt) : null;
   const quote = quoteAccount ? inspectionFromAccount(pool.quoteMint, quoteAccount, readAt) : null;
   if (!base) problems.push("base mint account missing");
@@ -44,10 +62,17 @@ export function classifyPoolVerification(
     problems.push(`base program ${base.program} differs from venue metadata ${pool.observedTokenPrograms.base}`);
   if (quote && pool.observedTokenPrograms?.quote && quote.program !== pool.observedTokenPrograms.quote)
     problems.push(`quote program ${quote.program} differs from venue metadata ${pool.observedTokenPrograms.quote}`);
+  const verification = problems.length
+    ? "VERIFICATION_FAILED"
+    : unconfirmedPair
+      ? "DISCOVERED"
+      : "ONCHAIN_VERIFIED";
   return {
     address: pool.address,
-    verification: problems.length ? "VERIFICATION_FAILED" : "ONCHAIN_VERIFIED",
-    detail: problems.length ? problems.join("; ") : `pool owner and both mints verified at slot ${slot ?? "?"}`,
+    verification,
+    detail: problems.length
+      ? problems.join("; ")
+      : (unconfirmedPair ?? `pool pair, owner and both mints verified at slot ${slot ?? "?"}`),
     observedTokenPrograms: { base: base?.program ?? null, quote: quote?.program ?? null },
     baseMint: base,
     quoteMint: quote,
@@ -58,14 +83,19 @@ export function classifyPoolVerification(
 /** Apply an outcome to a registry record (returns a new record; never mutates). */
 export function applyVerification(pool: VerifiedPool, outcome: PoolVerificationOutcome, at: string): VerifiedPool {
   const ok = outcome.verification === "ONCHAIN_VERIFIED";
+  const failed = outcome.verification === "VERIFICATION_FAILED";
   return {
     ...pool,
     verification: outcome.verification,
     onchainVerifiedAt: ok ? at : null,
     verificationDetail: outcome.detail,
     observedTokenPrograms: outcome.observedTokenPrograms,
-    enabled: ok ? pool.enabled : false,
-    disabledReason: ok ? pool.disabledReason : `VERIFICATION_FAILED: ${outcome.detail}`,
+    // A contradicted pool is disabled. A merely unconfirmed one keeps the
+    // enablement it already had: the guard refuses anything not
+    // ONCHAIN_VERIFIED anyway, and inventing a disabledReason here would
+    // overwrite the real one recorded at build time.
+    enabled: failed ? false : pool.enabled,
+    disabledReason: failed ? `VERIFICATION_FAILED: ${outcome.detail}` : pool.disabledReason,
   };
 }
 
