@@ -100,6 +100,26 @@ function computeQuote(m: Sdk, common: Common, state: PoolState, amountIn: bigint
   );
 }
 
+/**
+ * What an Orca SDK failure actually means.
+ *
+ * A whirlpool that cannot fill a size reports it by running out of initialised
+ * tick arrays: "Swap input value traversed too many arrays. Out of bounds at
+ * attempt to traverse tick index -11264." That is insufficient liquidity at
+ * that size, and it says neither "liquidity" nor "amount", so it was being
+ * recorded as SDK_ERROR. A benchmark then reads a thin pool as a broken
+ * adapter: 14 of the Orca refusals at $50k were this message.
+ */
+export function classifyOrcaError(message: string): UnavailableReason {
+  if (/timeout|abort/i.test(message)) return "VENUE_TIMEOUT";
+  if (
+    /liquidity|amount/i.test(message) ||
+    /traversed too many arrays|out of bounds|tick ?array|tick index|TickArraySequence/i.test(message)
+  )
+    return "INSUFFICIENT_LIQUIDITY";
+  return "SDK_ERROR";
+}
+
 function pickPool(pools: VerifiedPool[]) {
   const usable = pools.filter((p) => p.venue === "orca" && p.enabled && p.poolType === "whirlpool" && p.programId === ORCA_WHIRLPOOL_PROGRAM);
   usable.sort((a, b) => (b.tvlUsd ?? 0) - (a.tvlUsd ?? 0));
@@ -195,8 +215,7 @@ export class OrcaAdapter implements VenueAdapter {
       if (!(pair.has(a) && pair.has(b))) return fail("QUOTE_TERMS_MISMATCH", "on-chain mints differ from registry pool", pool.address);
       return this.toQuote(m, common, request, pool, state, fromRaw(request.amount), ctx);
     } catch (error) {
-      const message = (error as Error).message;
-      return fail(/timeout|abort/i.test(message) ? "VENUE_TIMEOUT" : /liquidity|amount/i.test(message) ? "INSUFFICIENT_LIQUIDITY" : "SDK_ERROR", message, pool.address);
+      return fail(classifyOrcaError((error as Error).message), (error as Error).message, pool.address);
     }
   }
 

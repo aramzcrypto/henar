@@ -17,6 +17,7 @@
 import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 import { poolsForRepresentation } from "./pool-registry";
 import { flagEnabled } from "./flags";
+import { requestScopedConnection } from "./request-cache";
 import { DEFAULT_SPLIT_OPTIONS, optimizeSplit, type SplitOptions } from "./split";
 import { routerRepresentation } from "./representations";
 import { benchmarkRecord, type TelemetrySink } from "./telemetry";
@@ -259,8 +260,17 @@ async function quoteRepresentationUnrecorded(
 
   const deadlineMs = options.deadlineMs ?? DEFAULT_VENUE_DEADLINE_MS;
   const pools = options.poolsOverride ?? poolsForRepresentation(input.representationId);
+  /* Every adapter and every curve fetch in this request reads through one
+     memoizing view of the connection. Five pools each re-read the same two
+     mint accounts and asked for their own slot, and the split optimizer then
+     read all of it again through `curve()`; in production that left four of
+     five native quotes timing out and the optimizer short of the two curves a
+     split needs. Freshness is unchanged, since all of it already happened
+     inside a single request. */
+  const scoped = options.connection ? requestScopedConnection(options.connection) : null;
+  scoped?.begin();
   const ctx: QuoteContext = {
-    connection: options.connection ?? null,
+    connection: scoped?.connection ?? options.connection ?? null,
     pools,
     now,
     deadlineMs,
