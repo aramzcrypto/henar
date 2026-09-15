@@ -143,3 +143,52 @@ production at https://henarapp.vercel.app on 14 September at 23:05.
 
 Landing components now carry an `l` prefix to keep them out of the shared
 namespace.
+
+## During the hackathon (15–16 September 2026) — the router
+
+Submitted progress update, 3,796 characters. 52 commits, 312 tests passing,
+deployed to production throughout. The landing page work of the first night is
+recorded above; this period is the router and the data underneath it.
+
+Since the hackathon started, work moved from the landing page to the router itself. 52 commits, 312 tests passing, all deployed to production.
+
+VERIFIED ONCHAIN DATA
+Every pool in the routing registry is now verified against mainnet: 587 pools checked for program owner, the pair each one actually trades, and both mint accounts. The earlier pass had a real gap. It confirmed a pool account existed under the right program and that the two mints we recorded existed somewhere on chain, but never that the pool traded those mints, so a record pointing at a different market would have passed. Pair decoding was added for the three admitted layouts (Orca Whirlpool, Raydium CLMM, Raydium CPMM) and cross-checked against the venue SDKs on twelve live accounts.
+
+MINT FACTS READ FROM CHAIN
+2212 representation mints verified for decimals, token program, Token-2022 extensions, scaled UI multiplier, and the slot they were read at. All are Token-2022 across three decimal families, and the multipliers are not all 1, so any amount computed without them would be wrong rather than merely imprecise. This was the blocker for native execution: the planner refuses a representation without decimals and a token program, and the product catalogue carries neither.
+
+NATIVE EXECUTION
+Routes Henar builds itself now execute. A gate plans, builds and simulates each route against mainnet before it counts as usable, and representative Raydium and Orca routes pass 12 of 12 on buys and sells with output above the plan floor.
+
+FEE REDUCED FROM 15 TO 10 BPS
+One constant serves the router and the market path, so native and external routes are charged identically and neither can be charged twice.
+
+SPLIT ROUTING
+The optimizer was discarding routes that were better for the user. Three separate layers rejected a split for failing to beat a different baseline, including one comparison against the best single Henar pool that threw away a route beating Jupiter by 5.95 bps. The optimizer now reports every construction with what it is worth and the caller decides. The fixed per leg penalty was removed in favour of real network cost, and allocation resolution now uses coarse to fine refinement.
+
+BEST EXECUTION IN THE PRODUCT
+Henar Router appears in the trade ticket as a competing quote ranked by final net user output, alongside Jupiter, Raydium and OpenOcean. It is shown only when the engine builds something no single venue offered, so a route that resolves to one venue is never listed twice. Execution follows the ranking: the route with the best net return is the one the trade button builds.
+
+QUOTE PERFORMANCE
+Native quotes were timing out in production and the router could not build anything. The cause was rate limiting, not slow code, and every rejection was being recorded as a venue with no liquidity. Reads are now cached per request, production RPC is paced with retry, and the endpoint moved to dRPC. Raydium quote latency went from 8.1 seconds and failing to 0.86 seconds.
+
+FIRM QUOTES RESTORED
+Jupiter answers a firm RFQ with zero slippage and a threshold equal to the output, which is better protection than requested. Our adapter required exact equality and refused those quotes, so Jupiter disappeared from the comparison on the pairs where it had a firm price.
+
+MEASUREMENT
+Two 196 observation benchmark matrices across 25 assets, four sizes and both directions, with rate limit survival, checkpointing and a build and simulation gate, plus route forensics and a per request tracer. The matrices showed Henar routes selected on 18 percent of buys and 27 percent of sells, ahead of Jupiter in 58 percent of paired comparisons, and native liquidity running out entirely at 50,000 dollars. OKX was evaluated as a second liquidity source and documented as not viable under the constraints.
+
+### Corrections made to earlier claims
+
+Two conclusions reported during this period were wrong and were corrected in
+the repository rather than left standing.
+
+- The 15 bps fee was reported as larger than the whole routing gap, on the
+  basis that removing it flipped the sign of the Native versus Jupiter
+  comparison. The engine charges that fee on every venue including Jupiter, so
+  it cancels out of the comparison entirely and adding it back was double
+  counting. The corrected reading is a genuine routing gap of about 10 bps.
+- Pool verification was reported as complete at 587 of 587 before the pass
+  actually checked the pair each pool trades. The number was the same
+  afterwards, but only the second one meant anything.
