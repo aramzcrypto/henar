@@ -7,6 +7,8 @@ import type {
 import {
   minimumOutput,
   QUOTE_TTL_MS,
+  RateLimitError,
+  retryAfterMs,
   validateExecutionRequest,
 } from "../shared";
 
@@ -67,7 +69,14 @@ export async function quoteJupiter(
     cache: "no-store",
     signal: AbortSignal.timeout(8_000),
   });
-  if (!response.ok) throw new Error("No route from Jupiter.");
+  // A 429 is Jupiter refusing to answer, not Jupiter answering "no route".
+  // Callers that pace themselves need to tell those apart to retry correctly.
+  if (response.status === 429)
+    throw new RateLimitError(
+      "Jupiter rate limit (429).",
+      retryAfterMs(response.headers.get("retry-after")),
+    );
+  if (!response.ok) throw new Error(`No route from Jupiter (status ${response.status}).`);
   const value = schema.parse(await response.json());
   const output = BigInt(value.outAmount);
   if (

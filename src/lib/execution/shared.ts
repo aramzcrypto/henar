@@ -8,6 +8,30 @@ import type {
 
 export const QUOTE_TTL_MS = 15_000;
 
+/**
+ * A quote source pushing back, kept distinct from a source having no route.
+ *
+ * Conflating the two is how a rate-limited benchmark reports imaginary
+ * illiquidity, so the 429 carries its own type and the server's own wait.
+ */
+export class RateLimitError extends Error {
+  readonly retryAfterMs: number | null;
+  constructor(message: string, retryAfterMs: number | null) {
+    super(message);
+    this.name = "RateLimitError";
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+/** Retry-After as seconds or an HTTP date; milliseconds, or null if absent. */
+export function retryAfterMs(header: string | null): number | null {
+  if (!header) return null;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1_000;
+  const at = Date.parse(header);
+  return Number.isFinite(at) ? Math.max(0, at - Date.now()) : null;
+}
+
 export function validateExecutionRequest(request: ExecutionQuoteRequest) {
   new PublicKey(request.inputMint);
   new PublicKey(request.outputMint);

@@ -19,7 +19,7 @@
  *   npm run router:benchmark:matrix -- [limitRepresentations]
  *   env: BENCH_SIZES="10,100,1000,5000,10000,25000,50000" HENAR_ROUTER_MATRIX_LOG=logs/router-matrix.jsonl
  */
-import { appendFile, mkdir } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { Connection } from "@solana/web3.js";
 import {
   MemorySink,
@@ -28,11 +28,15 @@ import {
   quoteRepresentation,
   routerRepresentation,
   summarizeBenchmarks,
+  unavailableQuote,
   type QuoteRequest,
+  type VenueAdapter,
 } from "@henar/router-core";
 import { DEFAULT_EXECUTION_POLICY, guardResult } from "@henar/execution-guard";
 import { capabilityOf, selectRoute } from "@henar/router-app";
 import { jupiterMetadata } from "@/lib/equities/jupiter";
+import { RateLimitError, retryAfterMs } from "@/lib/execution/shared";
+import { createLimiter } from "./rate-limit";
 import { jupiterAdapter } from "@henar/venue-jupiter";
 import { raydiumAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
@@ -66,6 +70,12 @@ export type MatrixRecord = {
   side: "buy" | "sell";
   sizeUsd: number;
   amountIn: string;
+  /** Slot of the single state read every size on this representation used. */
+  snapshotSlot: number | null;
+  /** The slot the guard was told was current; a past one refuses every quote. */
+  guardSlot: number | null;
+  /** Set when a venue could not be measured because it kept rate limiting. */
+  rateLimited: string[];
   /** For sells: where the token quantity came from. Null for buys. */
   sellBasis: {
     referencePriceUsd: number;
@@ -96,28 +106,120 @@ export type MatrixRecord = {
   live: true;
 };
 
-const DEFAULT_SIZES = [10, 100, 1_000, 5_000, 10_000, 25_000, 50_000];
+/* Tiny, ordinary retail, meaningful, large. $100/$5k/$25k only interpolate
+   between these and cost a fifth of the run each. */
+const DEFAULT_SIZES = [10, 1_000, 10_000, 50_000];
 
 async function main() {
   const rpc = process.env.SOLANA_RPC_URL;
   const key = process.env.JUPITER_API_KEY;
   if (!rpc || !key) throw new Error("SOLANA_RPC_URL and JUPITER_API_KEY are required; the matrix never runs on fixtures.");
-  const connection = new Connection(rpc, "confirmed");
   const sizes = (process.env.BENCH_SIZES ?? DEFAULT_SIZES.join(",")).split(",").map(Number).filter((n) => n > 0);
   const log = process.env.HENAR_ROUTER_MATRIX_LOG ?? "logs/router-matrix.jsonl";
   await mkdir("logs", { recursive: true });
   const run = new Date().toISOString();
   const limit = Number(process.argv[2] ?? "25");
-  const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter];
+  const directAdapters = [raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter];
   const sink = new MemorySink();
   const registry = loadPoolRegistry();
   const reps = [...registry.byRepresentation.entries()].filter(([, p]) => p.some((x) => x.enabled)).map(([id]) => id).slice(0, limit);
-  const records: MatrixRecord[] = [];
   let skippedSells = 0;
 
   /* One reference snapshot for the run, so every sell in it is derived from a
      price with a known source and time rather than whatever was current when
      that row happened to execute. */
+  /* One RPC queue for the whole run, and a slower one for Jupiter. The
+     previous run died on a fatal RPC 429 after 35 of 350 observations; these
+     trade wall-clock for finishing.
+
+     The queue is installed under the Connection itself rather than around the
+     few calls this script makes directly. Every adapter reads chain state
+     through this same Connection, so a limiter wrapped only around call sites
+     here throttles almost nothing: a second attempt at the run still died at
+     23 observations because the adapters' own reads never passed through it. */
+  const records: MatrixRecord[] = [];
+  let rpcCalls = 0;
+  const rpcLimit = createLimiter({
+    minIntervalMs: Number(process.env.BENCH_RPC_INTERVAL_MS ?? "120"),
+    retries: Number(process.env.BENCH_RPC_RETRIES ?? "8"),
+    label: "rpc",
+    onBackoff: (waitMs, attempt) =>
+      process.stdout.write(`  rpc backoff ${waitMs}ms (attempt ${attempt})\n`),
+  });
+  const connection = new Connection(rpc, {
+    commitment: "confirmed",
+    // A 429 is thrown so the limiter owns the retry and the wait: web3.js's
+    // own retry is fixed at five quick attempts and then fatal, which is
+    // exactly how the last two runs were lost.
+    fetch: ((input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) =>
+      rpcLimit(async () => {
+        rpcCalls += 1;
+        const response = await fetch(input, init);
+        if (response.status === 429)
+          throw new RateLimitError(
+            "RPC rate limit (429).",
+            retryAfterMs(response.headers.get("retry-after")),
+          );
+        return response;
+      })) as never,
+  });
+  /* Every venue is asked through one serialised RPC queue, so the 6s default
+     would time out venues merely for being late in the queue. A timeout is
+     recorded as an unavailable venue, and a venue we throttled ourselves must
+     never be mistaken for a venue with no liquidity. */
+  const deadlineMs = Number(process.env.BENCH_DEADLINE_MS ?? "60000");
+  const jupiterLimit = createLimiter({
+    minIntervalMs: Number(process.env.BENCH_JUPITER_INTERVAL_MS ?? "900"),
+    label: "jupiter",
+    onBackoff: (waitMs, attempt) =>
+      process.stdout.write(`  jupiter backoff ${waitMs}ms (attempt ${attempt})\n`),
+  });
+
+  /* Jupiter is asked through the paced queue, and a 429 is re-thrown so the
+     queue can honour Retry-After and retry instead of recording the venue as
+     having no route. Only a rate limit that survives every retry is recorded,
+     and it is recorded as RATE_LIMIT_RETRY. */
+  const pacedJupiter: VenueAdapter = {
+    ...jupiterAdapter,
+    venue: jupiterAdapter.venue,
+    capabilities: jupiterAdapter.capabilities.bind(jupiterAdapter),
+    health: jupiterAdapter.health.bind(jupiterAdapter),
+    buildSwapInstructions: jupiterAdapter.buildSwapInstructions.bind(jupiterAdapter),
+    getQuote: async (request, ctx) =>
+      jupiterLimit(async () => {
+        const quote = await jupiterAdapter.getQuote(request, ctx);
+        if (quote.unavailableReason === "RATE_LIMIT_RETRY")
+          throw new RateLimitError(quote.unavailableDetail ?? "Jupiter rate limit (429).", null);
+        return quote;
+      }).catch((error: unknown) =>
+        error instanceof RateLimitError
+          ? unavailableQuote("jupiter", request, "RATE_LIMIT_RETRY", error.message, null, ctx.now)
+          : Promise.reject(error),
+      ),
+  };
+  const adapters = [pacedJupiter, ...directAdapters];
+
+  /* Resume: an observation is identified by representation, side and notional,
+     so a killed run continues instead of restarting. Rows from a different
+     schema are ignored, because mixing methodologies would corrupt the
+     aggregate rather than extend it. */
+  const done = new Set<string>();
+  const keyOf = (representationId: string, side: string, sizeUsd: number) =>
+    `${representationId}|${side}|${sizeUsd}`;
+  try {
+    const existing = await readFile(log, "utf8");
+    for (const line of existing.split("\n")) {
+      if (!line.trim()) continue;
+      const row = JSON.parse(line) as MatrixRecord;
+      if (row.schema !== "henar.router.matrix.v2") continue;
+      done.add(keyOf(row.representationId, row.side, row.sizeUsd));
+      records.push(row);
+    }
+    if (done.size) process.stdout.write(`resuming: ${done.size} observations already recorded in ${log}\n`);
+  } catch {
+    // No prior log; a fresh run.
+  }
+
   const referenceAt = new Date().toISOString();
   const reference = await jupiterMetadata(
     reps
@@ -128,6 +230,9 @@ async function main() {
   for (const id of reps) {
     const rep = routerRepresentation(id);
     if (!rep) continue;
+    // One state read per representation, recorded so every row below is
+    // attributable to a known chain position.
+    const snapshotSlot = await connection.getSlot("confirmed");
     for (const sizeUsd of sizes) {
       const usdc = BigInt(Math.round(sizeUsd * 1_000_000));
       const requests: { request: QuoteRequest; sellBasis: MatrixRecord["sellBasis"] }[] = [
@@ -165,8 +270,15 @@ async function main() {
         skippedSells += 1;
       }
       for (const { request, sellBasis } of requests) {
+        if (done.has(keyOf(id, request.side, sizeUsd))) continue;
         const now = Date.now();
-        const result = await quoteRepresentation(request, { adapters, connection, enabled: true, telemetry: sink, telemetryTags: { run, matrix: "1" } });
+        const result = await quoteRepresentation(request, { adapters, connection, enabled: true, deadlineMs, telemetry: sink, telemetryTags: { run, matrix: "1" } });
+        /* The guard needs the CURRENT slot, not the snapshot's.
+           Reusing the snapshot slot as "now" refused every native quote as
+           ROUTE_STATE_STALE — the guard requires currentSlot >= quote.slot,
+           and a quote taken after the snapshot is always ahead of it. That
+           cost a whole 196-observation run: native was approved zero times,
+           for a reason that was the harness's clock, not the venue's state. */
         const slot = await connection.getSlot("confirmed");
         const guarded = guardResult(result, DEFAULT_EXECUTION_POLICY, { now, currentSlot: slot, reference: null, representationDecimals: rep.decimals });
         const ranked = result.best ? [result.best, ...result.alternatives] : result.alternatives;
@@ -209,6 +321,11 @@ async function main() {
         const routePlan = (selectable?.quote.rawRouteMetadata as { route?: { venue?: string }[] } | null)?.route ?? null;
         const rec: MatrixRecord = {
           schema: "henar.router.matrix.v2",
+          snapshotSlot,
+          guardSlot: slot,
+          rateLimited: result.exclusions
+            .filter((x) => /rate|429/i.test(`${x.reason} ${x.detail ?? ""}`))
+            .map((x) => x.venue),
           sellBasis,
           venues,
           bestObserved: observed
@@ -264,6 +381,7 @@ async function main() {
     const sorted = [...e.diffs].sort((a, b) => a - b);
     process.stdout.write(`  $${String(size).padStart(6)}: henar wins ${e.henar}/${e.n}, median diff ${sorted.length ? sorted[Math.floor(sorted.length / 2)] : "n/a"} bps\n`);
   }
+  process.stdout.write(`  rpc calls through the queue: ${rpcCalls}\n`);
   process.stdout.write(`  telemetry: direct win rate ${s.directWinRate === null ? "n/a" : `${(s.directWinRate * 100).toFixed(0)}%`}, median ${s.medianDirectVsJupiterBps ?? "n/a"} bps\n`);
 }
 

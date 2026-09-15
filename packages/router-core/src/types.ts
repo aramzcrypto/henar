@@ -81,6 +81,8 @@ export type UnavailableReason =
   | "VENUE_NOT_CONFIGURED"
   | "VENUE_UNHEALTHY"
   | "VENUE_TIMEOUT"
+  // The venue refused to answer, which is not the same as having no route.
+  | "RATE_LIMIT_RETRY"
   | "SDK_ERROR"
   | "QUOTE_TERMS_MISMATCH"
   // guard (Task 9) — declared now so adapters can already emit them

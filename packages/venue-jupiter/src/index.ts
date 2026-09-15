@@ -11,7 +11,7 @@
  * benchmark script can show which pools it touched.
  */
 import { quoteJupiter } from "@/lib/execution/adapters/jupiter";
-import { QUOTE_TTL_MS } from "@/lib/execution/shared";
+import { QUOTE_TTL_MS, RateLimitError } from "@/lib/execution/shared";
 import {
   fromRaw,
   unavailableQuote,
@@ -88,11 +88,15 @@ export class JupiterAdapter implements VenueAdapter {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const reason = /terms did not match/i.test(message)
-        ? "QUOTE_TERMS_MISMATCH"
-        : /abort|timeout/i.test(message)
-          ? "VENUE_TIMEOUT"
-          : "VENUE_UNHEALTHY";
+      // Jupiter pushing back is reported as such: a paced caller can retry it,
+      // and a benchmark must never read it as illiquidity.
+      const reason = error instanceof RateLimitError
+        ? "RATE_LIMIT_RETRY"
+        : /terms did not match/i.test(message)
+          ? "QUOTE_TERMS_MISMATCH"
+          : /abort|timeout/i.test(message)
+            ? "VENUE_TIMEOUT"
+            : "VENUE_UNHEALTHY";
       return unavailableQuote("jupiter", request, reason, message, null, ctx.now);
     }
 
