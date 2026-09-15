@@ -86,3 +86,59 @@ test("build is refused while HENAR_ROUTER_EXECUTION is off, and for unknown, exp
   assert.equal((await api.submit()).status, 501);
   assert.equal(USDC_MINT.length, 44);
 });
+
+/**
+ * Regression: the response must be auditable on its own.
+ *
+ * `alternatives` deliberately excludes the selected quote, which once led a
+ * reader (correctly following the field names) to conclude that a lower-output
+ * venue had won, when the winner simply was not in the list. `comparison`
+ * carries every quote with the winner flagged, and the winner must hold the
+ * highest net output of any approved quote unless a guard reason says why not.
+ */
+test("comparison lists every quote, flags the winner, and the winner is the best approved net output", async () => {
+  process.env.HENAR_ROUTER_QUOTES = "1";
+  const api = deps([
+    adapter("raydium", (r) => ok("raydium", r, SHARES(60n))),
+    adapter("jupiter", (r) => ok("jupiter", r, SHARES(40n))),
+    adapter("openocean", (r) => ok("openocean", r, SHARES(20n))),
+  ]);
+  const result = await api.quote(body);
+  assert.equal(result.status, 200);
+  const response = result.body as QuoteApiResponse;
+  const comparison = response.comparison;
+  assert.ok(comparison, "comparison must be present when quotes exist");
+
+  // Every venue that quoted appears exactly once, winner included.
+  const venues = comparison.map((c) => c.venue).sort();
+  assert.deepEqual(venues, ["jupiter", "openocean", "raydium"]);
+
+  // Exactly one winner, and it is the one the route and bestQuote refer to.
+  const selected = comparison.filter((c) => c.selected);
+  assert.equal(selected.length, 1);
+  assert.equal(selected[0]!.venue, response.route?.[0]?.venue);
+  assert.equal(selected[0]!.netOutput, response.netUserOutput);
+
+  // No approved quote beats the winner on net output.
+  const approved = comparison.filter((c) => c.approved);
+  for (const quote of approved)
+    assert.ok(
+      BigInt(selected[0]!.netOutput) >= BigInt(quote.netOutput),
+      `${quote.venue} (${quote.netOutput}) beat the selected quote (${selected[0]!.netOutput})`,
+    );
+
+  // Every row is attributable to a moment and a chain state.
+  for (const quote of comparison) {
+    assert.ok(quote.quotedAt, `${quote.venue} has no quotedAt`);
+    assert.ok(quote.stateSlot !== undefined, `${quote.venue} has no stateSlot`);
+  }
+
+  // alternatives still excludes the winner; that is now safe because
+  // comparison is complete.
+  assert.equal(
+    response.alternatives?.some(
+      (a) => a.venue === selected[0]!.venue && a.netOutput === selected[0]!.netOutput,
+    ),
+    false,
+  );
+});

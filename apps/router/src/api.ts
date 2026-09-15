@@ -83,6 +83,24 @@ export type QuoteApiResponse = {
   unavailableReason: string | null;
   /** Best approved quote regardless of executability (the meta-aggregator benchmark). */
   bestQuote: { venue: string; netOutput: string; executable: boolean; via: "henar-router" | "review-swap" | "none" } | null;
+  /** Every quote considered, winner included and flagged. `alternatives`
+   *  excludes the selected quote, which makes the response impossible to
+   *  audit on its own: a reader comparing `bestQuote` against `alternatives`
+   *  cannot see the quote that actually won. */
+  comparison:
+    | {
+        venue: string;
+        poolAddress: string | null;
+        netOutput: string;
+        priceImpactBps: number | null;
+        approved: boolean;
+        mode: string | null;
+        reason: string | null;
+        selected: boolean;
+        quotedAt: string;
+        stateSlot: number | null;
+      }[]
+    | null;
   liveValidation: "LIVE_VALIDATION_PENDING";
 };
 
@@ -184,6 +202,20 @@ export class RouterApi {
           : null,
       verification: chosen ? { poolVerification: chosen.poolAddress ? (poolByAddress(chosen.poolAddress)?.verification ?? null) : null, onchainCheckedAtQuote: chosen.onchainCheckedAtQuote, calculatorStatus: chosen.venue === "meteora-dbc" || chosen.venue === "meteora-damm-v2" ? "SDK_BACKED" : "LIVE_VALIDATION_PENDING" } : null,
       unavailableReason: chosen ? (selected ? null : (guarded.verdicts[0]?.reason ?? null)) : (result.exclusions[0]?.reason ?? "NO_VERIFIED_POOL"),
+      comparison: guarded.verdicts.length
+        ? guarded.verdicts.map((v) => ({
+            venue: v.quote.venue,
+            poolAddress: v.quote.poolAddress,
+            netOutput: v.quote.netOutput,
+            priceImpactBps: v.quote.priceImpactBps,
+            approved: v.approved,
+            mode: v.mode ?? null,
+            reason: v.reason,
+            selected: v === selected,
+            quotedAt: v.quote.quotedAt,
+            stateSlot: v.quote.slot ?? null,
+          }))
+        : null,
       bestQuote: bestApproved
         ? { venue: bestApproved.quote.venue, netOutput: bestApproved.quote.netOutput, executable: bestApproved.mode === "execute" || bestApproved.quote.venue === "jupiter", via: bestApproved.mode === "execute" ? "henar-router" : bestApproved.quote.venue === "jupiter" ? "review-swap" : "none" }
         : null,
