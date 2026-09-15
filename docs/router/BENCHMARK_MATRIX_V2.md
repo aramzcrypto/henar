@@ -94,23 +94,39 @@ $1k, $10k and $50k respectively.
 the first non-Jupiter verdict whether approved or not). Two HTZ rows reach
 2,090,936 bps. Medians are unaffected.
 
-## 5. The 15 bps fee, isolated
+## 5. The 15 bps fee: my earlier reading of this was wrong
 
-The comparison above is net of Henar's 15 bps; Jupiter as quoted here charges
-none. Removing the fee moves the median by exactly 15 bps:
+This section previously added 15 bps back to the medians above and reported a
+gross edge of about +5 bps for Henar at $10 through $10,000, concluding that
+the fee was larger than the entire routing gap. **That was incorrect.**
 
-| Notional | median net | median gross | Henar would win at 0 bps | at 15 bps |
-|---|---|---|---|---|
-| $10 | -10.00 | **+5.00** | 92% | 6% |
-| $1,000 | -10.05 | **+4.95** | 75% | 4% |
-| $10,000 | -10.07 | **+4.93** | 65% | 11% |
-| $50,000 | -23.45 | -8.45 | 42% | 23% |
+The engine applies the Henar fee to *every* venue, Jupiter included:
+`engine.ts` reduces the venue input by the fee for all venues on a buy and
+ranks each quote through `rankQuote(quote, input, henarFeeBps)`. The data says
+the same thing plainly, since on a $1,000 buy all three venues report `net ==
+gross` against a shared, already-reduced input:
 
-Henar's own routing math is roughly **5 bps better than Jupiter** at $10
-through $10,000, and the 15 bps fee converts that lead into a 10 bps deficit.
-The fee, not the routing, decides the comparison at every size below $50,000.
-At $50,000 the direct venues genuinely lose on depth and the fee is no longer
-the deciding term.
+```
+user amountIn 1000000000, henarFeeBps 15, henarFeeAmount 1500000
+  jupiter    net=395574376   gross=395574376
+  raydium    net=394375924   gross=394375924
+  openocean  net=394216587   gross=394216587
+```
+
+So the Native-versus-Jupiter comparison is **fee-neutral**: both sides paid the
+same 15 bps, and adding it back to a difference in which it already cancelled
+was double-counting.
+
+The correct reading of a median of **-10 bps** is therefore the opposite of
+what I reported: it is a genuine **routing and liquidity gap of about 10 bps**
+against Jupiter at the same fee, not a fee artifact. There was no hidden +5 bps
+gross edge.
+
+What the fee rate does change is Henar's standing against the alternative of
+using Jupiter's own app directly, where the user pays Henar nothing. Cutting
+15 bps to 10 improves every routed user's net output by 5 bps against that
+alternative. It does not close the routing gap measured here, and it never
+could have.
 
 ## 6. Availability
 
@@ -133,20 +149,26 @@ the deciding term.
 Meteora contributed nothing: `NO_VERIFIED_POOL` in all 196 observations, and
 DBC and DAMM v2 are flag-disabled in all 196.
 
-## 7. Classification: CASE C
+## 7. Classification: CASE C, for one reason rather than two
 
-The gap to Jupiter is not undiscovered liquidity and not routing intelligence.
-Best observed equals best selectable in 99% of observations, no observation
-routed through an intermediate mint, and Henar's raw quote math is ahead of
-Jupiter's by about 5 bps up to $10,000. Two things cost the comparison:
+The gap to Jupiter is not undiscovered liquidity and not routing intelligence
+in the sense of missing paths. Best observed equals best selectable in 99% of
+observations and no observation routed through an intermediate mint, so there
+is no pool the router can see and cannot use.
 
-1. **The 15 bps fee**, which is larger than the entire routing edge at every
-   size below $50,000.
-2. **Pool verification**, which makes Henar Native unreachable in 100% of
-   observations, leaving only quote-only and external venues to compete.
+What cost the comparison, corrected:
 
-Neither is a liquidity-sourcing problem. Both are internal and under Henar's
-own control.
+1. **Pool verification**, which made Henar Native unreachable in 100% of
+   observations, leaving only quote-only and external venues to compete. This
+   is the whole of it.
+2. **Not the fee.** See section 5: the fee applied equally to every venue in
+   this measurement and cancelled out of the comparison entirely.
+
+The residual 10 bps by which the direct venues trailed Jupiter at the same fee
+is a real execution-quality gap, and it is the thing worth attacking. It is
+measured on quotes that the guard refused, so it is a statement about quote
+math and pool depth rather than about routes Henar could actually have taken;
+a rerun with Native reachable is the only way to know how much of it survives.
 
 Open, unanswered by this run:
 
