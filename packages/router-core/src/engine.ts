@@ -16,6 +16,8 @@
  */
 import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 import { poolsForRepresentation } from "./pool-registry";
+import { flagEnabled } from "./flags";
+import { DEFAULT_SPLIT_OPTIONS, optimizeSplit, type SplitOptions } from "./split";
 import { routerRepresentation } from "./representations";
 import { benchmarkRecord, type TelemetrySink } from "./telemetry";
 import {
@@ -27,6 +29,9 @@ import {
   type EngineResult,
   type FeeBreakdown,
   type QuoteContext,
+  type RankedRoute,
+  type VenueCurve,
+  type VerifiedPool,
   type QuoteExclusion,
   type QuoteRequest,
   type RankedQuote,
@@ -50,6 +55,15 @@ export type EngineOptions = {
   /** Task 8: every result is recorded here. Recording never affects the result. */
   telemetry?: TelemetrySink | null;
   telemetryTags?: Record<string, string>;
+  /**
+   * Overrides HENAR_SPLIT_ROUTING. When on, every enabled pool is quoted
+   * (not only the deepest per venue) and the split optimizer may allocate
+   * across pools/venues that expose a curve.
+   */
+  splitRouting?: boolean;
+  splitOptions?: SplitOptions;
+  /** Test hook: replaces the registry lookup for this call. */
+  poolsOverride?: VerifiedPool[];
 };
 
 export function routerQuotesEnabled() {
@@ -198,6 +212,7 @@ async function quoteRepresentationUnrecorded(
     request: input,
     best: null,
     alternatives: [],
+    route: null,
     exclusions: [],
     quotedAt,
     slot: null,
@@ -243,7 +258,7 @@ async function quoteRepresentationUnrecorded(
   const venueRequest: QuoteRequest = { ...input, amount: toRaw(venueAmount) };
 
   const deadlineMs = options.deadlineMs ?? DEFAULT_VENUE_DEADLINE_MS;
-  const pools = poolsForRepresentation(input.representationId);
+  const pools = options.poolsOverride ?? poolsForRepresentation(input.representationId);
   const ctx: QuoteContext = {
     connection: options.connection ?? null,
     pools,
@@ -252,15 +267,24 @@ async function quoteRepresentationUnrecorded(
   };
 
   const latencyMs: Partial<Record<Venue, number>> = {};
+  // Split routing is on by default once the router quotes; HENAR_SPLIT_ROUTING=0 turns it off.
+  const splitRouting = options.splitRouting ?? (process.env.HENAR_SPLIT_ROUTING === undefined ? true : flagEnabled("splitRouting"));
+  // One call per venue by default (the adapter picks its deepest pool); with
+  // split routing on, one call per enabled pool so every pool is compared.
+  const calls = options.adapters.flatMap((adapter) => {
+    const venuePools = pools.filter((p) => p.venue === adapter.venue);
+    if (splitRouting && venuePools.length > 1) return venuePools.map((pool) => ({ adapter, pools: [pool] }));
+    return [{ adapter, pools: venuePools }];
+  });
   const quotes = await Promise.all(
-    options.adapters.map(async (adapter) => {
+    calls.map(async ({ adapter, pools: callPools }) => {
       const started = Date.now();
       const quote = await withDeadline(
-        adapter.getQuote(venueRequest, { ...ctx, pools: pools.filter((p) => p.venue === adapter.venue) }),
+        adapter.getQuote(venueRequest, { ...ctx, pools: callPools }),
         deadlineMs,
-        () => unavailableQuote(adapter.venue, venueRequest, "VENUE_TIMEOUT", `no quote within ${deadlineMs}ms`, null, now),
+        () => unavailableQuote(adapter.venue, venueRequest, "VENUE_TIMEOUT", `no quote within ${deadlineMs}ms`, callPools[0]?.address ?? null, now),
       );
-      latencyMs[adapter.venue] = Date.now() - started;
+      latencyMs[adapter.venue] = Math.max(latencyMs[adapter.venue] ?? 0, Date.now() - started);
       return quote;
     }),
   );
@@ -309,12 +333,118 @@ async function quoteRepresentationUnrecorded(
     null,
   );
 
+  let route: RankedRoute | null = null;
+  if (splitRouting && ranked.length > 1) {
+    try {
+      route = await splitAcrossPools(input, venueRequest, options, ctx, ranked, henarFeeBps, deadlineMs);
+    } catch (error) {
+      exclusions.push({ venue: ranked[0].venue, poolAddress: null, reason: "SDK_ERROR", detail: `split routing failed: ${(error as Error).message}` });
+    }
+  }
+
   return {
     ...base,
     best: ranked[0] ?? null,
     alternatives: ranked.slice(1),
+    route,
     exclusions,
     slot,
     latencyMs,
+  };
+}
+
+/**
+ * Task 12 wiring: build a curve per available quoted pool, run the marginal
+ * allocator, and return a ranked multi-leg route only when it beats the best
+ * single venue by the configured threshold. Each leg is a real VenueQuote
+ * from the same state the curve was built on.
+ */
+async function splitAcrossPools(
+  input: QuoteRequest,
+  venueRequest: QuoteRequest,
+  options: EngineOptions,
+  ctx: QuoteContext,
+  ranked: RankedQuote[],
+  henarFeeBps: number,
+  deadlineMs: number,
+): Promise<RankedRoute | null> {
+  const curves: VenueCurve[] = [];
+  await Promise.all(
+    ranked.map(async (q) => {
+      const adapter = options.adapters.find((a) => a.venue === q.venue);
+      const pool = q.poolAddress ? ctx.pools.find((p) => p.address === q.poolAddress) : null;
+      if (!adapter?.curve || !pool) return;
+      const curve = await new Promise<VenueCurve | null>((resolve) => {
+        const timer = setTimeout(() => resolve(null), deadlineMs);
+        adapter.curve!(venueRequest, pool, ctx).then((c) => { clearTimeout(timer); resolve(c); }, () => { clearTimeout(timer); resolve(null); });
+      });
+      if (curve) curves.push(curve);
+    }),
+  );
+  if (curves.length < 2) return null;
+  const venueAmount = fromRaw(venueRequest.amount);
+  const split = optimizeSplit(curves, venueAmount, options.splitOptions ?? DEFAULT_SPLIT_OPTIONS);
+  if (split.kind !== "split") return null;
+  const legs: RankedQuote[] = [];
+  const userInput = fromRaw(input.amount);
+  const totalFeeIn = input.side === "buy" ? bpsOf(userInput, henarFeeBps) : 0n;
+  let feeAllocated = 0n;
+  for (const [i, leg] of split.legs.entries()) {
+    const curve = curves.find((c) => c.venue === leg.venue && c.poolAddress === leg.poolAddress);
+    if (!curve?.quoteFor) return null;
+    const quote = curve.quoteFor(fromRaw(leg.amountIn));
+    if (quote.unavailableReason || quote.amountIn !== leg.amountIn) return null;
+    // Apportion the input-side fee by leg share (last leg takes the remainder) so
+    // per-leg identities hold and the sum equals the route fee exactly.
+    const legFeeIn = input.side === "buy" ? (i === split.legs.length - 1 ? totalFeeIn - feeAllocated : (totalFeeIn * fromRaw(leg.amountIn)) / venueAmount) : 0n;
+    feeAllocated += legFeeIn;
+    const gross = fromRaw(quote.expectedAmountOut);
+    const legFeeOut = input.side === "sell" ? bpsOf(gross, henarFeeBps) : 0n;
+    legs.push({
+      ...quote,
+      fees: {
+        inputMint: input.inputMint,
+        outputMint: input.outputMint,
+        userInput: toRaw(fromRaw(leg.amountIn) + legFeeIn),
+        henarInputFee: toRaw(legFeeIn),
+        venueInput: leg.amountIn,
+        grossVenueOutput: quote.expectedAmountOut,
+        venueFee: quote.venueFeeAmount,
+        venueFeeMint: quote.venueFeeAmount === null ? null : input.inputMint,
+        henarOutputFee: toRaw(legFeeOut),
+        netUserOutput: toRaw(gross - legFeeOut),
+        henarFeeBps,
+      },
+      henarFeeBps,
+      henarFeeAmount: toRaw(input.side === "buy" ? legFeeIn : legFeeOut),
+      henarFeeMint: input.side === "buy" ? input.inputMint : input.outputMint,
+      swapInput: leg.amountIn,
+      netOutput: toRaw(gross - legFeeOut),
+    });
+  }
+  const grossTotal = legs.reduce((s, l) => s + fromRaw(l.fees.grossVenueOutput), 0n);
+  const feeOut = input.side === "sell" ? bpsOf(grossTotal, henarFeeBps) : 0n;
+  const net = grossTotal - feeOut;
+  if (net <= fromRaw(ranked[0].netOutput)) return null;
+  return {
+    kind: "split",
+    legs,
+    fees: {
+      inputMint: input.inputMint,
+      outputMint: input.outputMint,
+      userInput: toRaw(userInput),
+      henarInputFee: toRaw(totalFeeIn),
+      venueInput: venueRequest.amount,
+      grossVenueOutput: toRaw(grossTotal),
+      venueFee: null,
+      venueFeeMint: null,
+      henarOutputFee: toRaw(feeOut),
+      netUserOutput: toRaw(net),
+      henarFeeBps,
+    },
+    netOutput: toRaw(net),
+    improvementBps: split.improvementBps,
+    penaltyBps: split.penaltyBps,
+    reason: split.reason,
   };
 }

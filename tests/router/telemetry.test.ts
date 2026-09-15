@@ -97,7 +97,7 @@ test("disabled router and all-excluded results still produce records with null c
 });
 
 test("summary computes win rate, median delta, availability and latency percentiles", () => {
-  const base = benchmarkRecord({ enabled: true, request: buy(), best: null, alternatives: [], exclusions: [], quotedAt: "", slot: null, latencyMs: {} });
+  const base = benchmarkRecord({ enabled: true, request: buy(), best: null, alternatives: [], route: null, exclusions: [], quotedAt: "", slot: null, latencyMs: {} });
   const recs = [10, -20, 30, 0, 5].map((d, i) => ({
     ...base,
     bestVenue: d > 0 ? ("raydium" as const) : ("jupiter" as const),

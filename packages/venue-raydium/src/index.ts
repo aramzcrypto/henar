@@ -233,6 +233,88 @@ export class RaydiumAdapter implements VenueAdapter {
   }
 
   /**
+   * Split-routing support: read this pool's state once and return a pure
+   * curve over it. `outputFor` and `quoteFor` run `computeAmountOutFormat`
+   * on the cached tick arrays — no I/O per evaluation.
+   */
+  async curve(request: QuoteRequest, pool: VerifiedPool, ctx: QuoteContext) {
+    if (!ctx.connection || pool.venue !== "raydium" || !pool.enabled) return null;
+    const pair = new Set([pool.baseMint, pool.quoteMint]);
+    if (!pair.has(request.inputMint) || !pair.has(request.outputMint)) return null;
+    const m = await sdk();
+    const raydium = await client(ctx.connection);
+    const [state, epochInfo, slot] = await Promise.all([
+      raydium.clmm.getPoolInfoFromRpc(pool.address),
+      ctx.connection.getEpochInfo(),
+      ctx.connection.getSlot("confirmed"),
+    ]);
+    const { computePoolInfo, tickData, poolInfo } = state;
+    const a = computePoolInfo.mintA.address;
+    const b = computePoolInfo.mintB.address;
+    if (!(pair.has(a) && pair.has(b))) return null;
+    const tokenOut = a === request.outputMint ? computePoolInfo.mintA : computePoolInfo.mintB;
+    const blockTimestamp = Math.floor(ctx.now / 1000);
+    const feeBps = poolInfo.config?.tradeFeeRate !== undefined ? Math.round(poolInfo.config.tradeFeeRate / 100) : pool.feeBps;
+    const compute = (amountIn: bigint) =>
+      m.PoolUtils.computeAmountOutFormat({
+        poolInfo: computePoolInfo,
+        tickarrayBitmapExtension: computePoolInfo.exBitmapInfo,
+        tickArrayCache: tickData[pool.address] ?? {},
+        amountIn: new BN(amountIn.toString()),
+        tokenOut,
+        slippage: 0,
+        epochInfo,
+        blockTimestamp,
+        catchLiquidityInsufficient: true,
+      });
+    const outputFor = (amountIn: bigint) => {
+      if (amountIn <= 0n) return 0n;
+      try {
+        const r = compute(amountIn);
+        return r.allTrade ? BigInt(r.amountOut.amount.raw.toString()) : null;
+      } catch {
+        return null;
+      }
+    };
+    return {
+      venue: "raydium" as const,
+      poolAddress: pool.address,
+      available: true,
+      outputFor,
+      quoteFor: (amountIn: bigint): VenueQuote => {
+        const r = compute(amountIn);
+        const out = BigInt(r.amountOut.amount.raw.toString());
+        const impactBps = Math.round(Number(r.priceImpact.toFixed(6)) * 100);
+        return {
+          venue: "raydium",
+          routeType: "DEX",
+          representationId: request.representationId,
+          poolAddress: pool.address,
+          inputMint: request.inputMint,
+          outputMint: request.outputMint,
+          amountIn: toRaw(BigInt(r.realAmountIn.amount.raw.toString())),
+          expectedAmountOut: toRaw(out),
+          minimumAmountOut: null,
+          effectivePrice: r.executionPrice.toFixed(8),
+          venueFeeBps: feeBps,
+          venueFeeAmount: toRaw(BigInt(r.fee.raw.toString())),
+          estimatedNetworkCostLamports: null,
+          priceImpactBps: Number.isFinite(impactBps) ? impactBps : null,
+          slot,
+          quotedAt: new Date(ctx.now).toISOString(),
+          expiresAt: new Date(ctx.now + QUOTE_TTL_MS).toISOString(),
+          source: "raydium-sdk-v2 PoolUtils.computeAmountOutFormat (split leg)",
+          executionPath: this.executionEnabled() ? "henar-native" : "none",
+          onchainCheckedAtQuote: true,
+          unavailableReason: r.allTrade ? null : "INSUFFICIENT_LIQUIDITY",
+          unavailableDetail: r.allTrade ? null : "pool cannot fill the leg",
+          rawRouteMetadata: { tickSpacing: computePoolInfo.tickSpacing, remainingAccounts: r.remainingAccounts.map((k) => k.toBase58()) },
+        };
+      },
+    };
+  }
+
+  /**
    * Native CLMM swap instructions via the SDK's `ClmmInstrument.
    * makeSwapBaseInInstructions` (Task 14). State is re-read from RPC at
    * build time; the pool must still match the quote and the registry, and

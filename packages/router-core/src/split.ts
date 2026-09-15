@@ -19,17 +19,9 @@
  * returned when it beats the best single venue by at least
  * `minImprovementBps` **after** subtracting `legPenaltyBps` per extra leg.
  */
-import { toRaw, type RawAmount, type Venue } from "./types";
+import { toRaw, type RawAmount, type Venue, type VenueCurve } from "./types";
 
-export type VenueCurve = {
-  venue: Venue;
-  poolAddress: string | null;
-  /** Output for `amountIn`, or null when the venue cannot fill that amount. */
-  outputFor(amountIn: bigint): bigint | null;
-  /** False excludes the venue entirely (guard refusal, disabled, stale). */
-  available: boolean;
-  unavailableReason?: string | null;
-};
+export type { VenueCurve };
 
 export type SplitOptions = {
   /** Number of allocation chunks (e.g. 20 → 5% steps). */

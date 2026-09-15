@@ -44,7 +44,7 @@ function routerApi(connection: Connection) {
       const adapter = adapters.find((a) => a.venue === leg.venue);
       if (!adapter) return { instructions: [], lookupTables: [], reason: "VENUE_NOT_CONFIGURED", detail: `no adapter for ${leg.venue}` };
       const rep = routerRepresentationForMint(leg.inputMint) ?? routerRepresentationForMint(leg.outputMint);
-      const pools = rep ? poolsForRepresentation(rep.id, { venue: leg.venue }) : [];
+      const pools = rep ? poolsForRepresentation(rep.id, { venue: leg.venue }).filter((p) => p.address === leg.poolAddress) : [];
       const now = Date.now();
       // Re-quote the exact leg through the adapter so the build uses live state.
       const quote = await adapter.getQuote(

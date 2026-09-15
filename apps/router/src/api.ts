@@ -29,7 +29,7 @@ import {
   type TelemetrySink,
   type VenueAdapter,
 } from "@henar/router-core";
-import { DEFAULT_EXECUTION_POLICY, guardResult, type GuardVerdict } from "@henar/execution-guard";
+import { DEFAULT_EXECUTION_POLICY, guardQuote, guardResult, type GuardVerdict } from "@henar/execution-guard";
 import { buildTransaction, planExecution, type BlockhashProvider, type LegInstructionBuilder } from "@henar/tx-builder";
 import type { RouterHealth } from "./health";
 
@@ -82,7 +82,7 @@ export type QuoteApiResponse = {
   liveValidation: "LIVE_VALIDATION_PENDING";
 };
 
-type CachedQuote = { response: QuoteApiResponse; verdict: GuardVerdict | null; result: EngineResult; expiresAt: number };
+type CachedQuote = { response: QuoteApiResponse; verdict: GuardVerdict | null; legVerdicts: GuardVerdict[] | null; result: EngineResult; expiresAt: number };
 
 export class RouterApi {
   private readonly cache = new Map<string, CachedQuote>();
@@ -129,8 +129,26 @@ export class RouterApi {
       userMaxSlippageBps: body.maxSlippageBps ?? null,
       allowLegacyExecution: false,
     });
-    const selected = guarded.selected;
-    const chosen: RankedQuote | null = selected?.quote ?? result.best;
+    let selected = guarded.selected;
+    let chosen: RankedQuote | null = selected?.quote ?? result.best;
+    // Split route (Task 12): every leg must pass the guard on its own; the
+    // route is used only if it still beats the best approved single venue.
+    let legVerdicts: GuardVerdict[] | null = null;
+    let routeLegs: { venue: string; poolAddress: string | null; percentBps: number }[] | null = null;
+    if (result.route?.kind === "split") {
+      const verdicts = result.route.legs.map((leg) => guardQuote(leg, this.deps.policy ?? DEFAULT_EXECUTION_POLICY, { now: this.now(), currentSlot, reference, representationDecimals: rep.decimals, userMaxSlippageBps: body.maxSlippageBps ?? null, allowLegacyExecution: false }));
+      const allApproved = verdicts.every((v) => v.approved);
+      const splitNet = fromRaw(result.route.netOutput);
+      if (allApproved && (!selected || splitNet > fromRaw(selected.quote.netOutput))) {
+        legVerdicts = verdicts;
+        const total = fromRaw(result.route.fees.venueInput);
+        routeLegs = result.route.legs.map((leg) => ({ venue: leg.venue, poolAddress: leg.poolAddress, percentBps: Number((fromRaw(leg.fees.venueInput) * 10_000n) / total) }));
+        // Represent the route by its first leg for single-quote fields; totals come from the route.
+        selected = verdicts[0];
+        chosen = result.route.legs[0];
+      }
+    }
+    const route = result.route && legVerdicts ? result.route : null;
     const quoteId = createHash("sha256").update(JSON.stringify({ request, at: result.quotedAt, venue: chosen?.venue ?? null, out: chosen?.netOutput ?? null })).digest("hex").slice(0, 32);
     const expiresAt = new Date(Math.min(this.now() + (this.deps.quoteTtlMs ?? 10_000), chosen ? Date.parse(chosen.expiresAt) : Infinity)).toISOString();
     const response: QuoteApiResponse = {
@@ -140,15 +158,15 @@ export class RouterApi {
       issuer: rep.provider,
       side: body.side,
       amountIn: body.amount,
-      expectedOutput: chosen?.fees.grossVenueOutput ?? null,
-      minOutput: selected?.minimumAmountOut ?? null,
-      netUserOutput: chosen?.netOutput ?? null,
-      minNetUserOutput: selected?.minimumNetUserOutput ?? null,
+      expectedOutput: route ? route.fees.grossVenueOutput : (chosen?.fees.grossVenueOutput ?? null),
+      minOutput: route ? legVerdicts!.reduce((s, v) => s + fromRaw(v.minimumAmountOut!), 0n).toString() : (selected?.minimumAmountOut ?? null),
+      netUserOutput: route ? route.netOutput : (chosen?.netOutput ?? null),
+      minNetUserOutput: route ? (() => { const m = legVerdicts!.reduce((s, v) => s + fromRaw(v.minimumAmountOut!), 0n); return (body.side === "sell" ? m - (m * BigInt(route.fees.henarFeeBps)) / 10_000n : m).toString(); })() : (selected?.minimumNetUserOutput ?? null),
       effectivePrice: effectivePrice(chosen, body.side, rep.decimals),
       fees: chosen ? { henarBps: chosen.henarFeeBps, henarAmount: chosen.henarFeeAmount, henarMint: chosen.henarFeeMint, venueFeeAmount: chosen.venueFeeAmount } : null,
       priceImpactBps: chosen?.priceImpactBps ?? null,
       expiresAt,
-      route: chosen ? [{ venue: chosen.venue, poolAddress: chosen.poolAddress, percentBps: 10_000 }] : null,
+      route: routeLegs ?? (chosen ? [{ venue: chosen.venue, poolAddress: chosen.poolAddress, percentBps: 10_000 }] : null),
       alternatives: guarded.verdicts.filter((v) => v !== selected).map((v) => ({ venue: v.quote.venue, netOutput: v.quote.netOutput, priceImpactBps: v.quote.priceImpactBps, approved: v.approved, reason: v.reason, failedChecks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })),
       exclusions: result.exclusions.map((x) => ({ venue: x.venue, reason: x.reason, detail: x.detail })),
       executionProtection: selected
@@ -160,7 +178,7 @@ export class RouterApi {
       unavailableReason: chosen ? (selected ? null : (guarded.verdicts[0]?.reason ?? null)) : (result.exclusions[0]?.reason ?? "NO_VERIFIED_POOL"),
       liveValidation: "LIVE_VALIDATION_PENDING",
     };
-    this.cache.set(quoteId, { response, verdict: selected, result, expiresAt: Date.parse(expiresAt) });
+    this.cache.set(quoteId, { response, verdict: selected, legVerdicts, result, expiresAt: Date.parse(expiresAt) });
     return { status: 200, body: response };
   }
 
@@ -207,7 +225,7 @@ export class RouterApi {
     const q = quoted.body as QuoteApiResponse;
     const cached = this.cache.get(q.quoteId);
     if (!cached?.verdict?.approved) return { status: 409, body: { error: "quote was not approved for execution", reason: cached?.verdict?.reason ?? q.unavailableReason, quote: q } };
-    if (cached.verdict.mode !== "execute") return { status: 409, body: { error: "quote is quote-only; no validated execution path", mode: cached.verdict.mode, quote: q } };
+    if ((cached.legVerdicts ?? [cached.verdict]).some((v) => v.mode !== "execute")) return { status: 409, body: { error: "quote is quote-only; no validated execution path", mode: cached.verdict.mode, quote: q } };
     const rep = routerRepresentation(q.representation.id);
     if (!rep) return { status: 404, body: { error: "unknown representation" } };
     let decimals = rep.decimals;
@@ -226,7 +244,7 @@ export class RouterApi {
         owner: body.owner,
         treasuryOwner: this.deps.treasuryOwner,
         userInput: fromRaw(body.amount),
-        legs: [{ verdict: cached.verdict }],
+        legs: (cached.legVerdicts ?? [cached.verdict]).map((verdict) => ({ verdict })),
         policy: this.deps.policy ?? DEFAULT_EXECUTION_POLICY,
         now: this.now(),
       });

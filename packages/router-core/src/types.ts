@@ -437,11 +437,40 @@ export type RankedQuote = VenueQuote & {
   netOutput: RawAmount;
 };
 
+/**
+ * A deterministic output curve for one pool on its current state, used by
+ * the split optimizer (Task 12). Pure: no I/O inside `outputFor`.
+ */
+export type VenueCurve = {
+  venue: Venue;
+  poolAddress: string | null;
+  /** Output for `amountIn`, or null when the venue cannot fill that amount. */
+  outputFor(amountIn: bigint): bigint | null;
+  /** False excludes the venue entirely (guard refusal, disabled, stale). */
+  available: boolean;
+  unavailableReason?: string | null;
+  /** Build a full VenueQuote for one allocated leg from the same state. */
+  quoteFor?: (amountIn: bigint) => VenueQuote;
+};
+
+/** A multi-leg route chosen by the split optimizer, ranked like a quote. */
+export type RankedRoute = {
+  kind: "single" | "split";
+  legs: RankedQuote[];
+  fees: FeeBreakdown;
+  netOutput: RawAmount;
+  improvementBps: number | null;
+  penaltyBps: number;
+  reason: string;
+};
+
 export type EngineResult = {
   enabled: boolean;
   request: QuoteRequest;
   best: RankedQuote | null;
   alternatives: RankedQuote[];
+  /** Set only when split routing is on and a split beat the best single venue. */
+  route: RankedRoute | null;
   exclusions: QuoteExclusion[];
   quotedAt: string;
   slot: number | null;
@@ -742,6 +771,11 @@ export interface VenueAdapter {
   capabilities(): VenueCapabilities;
   health(ctx: QuoteContext): Promise<VenueHealth>;
   getQuote(request: QuoteRequest, ctx: QuoteContext): Promise<VenueQuote>;
+  /**
+   * Optional: fetch one pool's state once and return a pure output curve for
+   * the split optimizer. Null when the pool cannot be curved right now.
+   */
+  curve?(request: QuoteRequest, pool: VerifiedPool, ctx: QuoteContext): Promise<VenueCurve | null>;
   /**
    * Prepare venue instructions for a quote. Adapters that can build require
    * `options` (owner + guard-approved minimum out) and are additionally gated
