@@ -57,6 +57,7 @@
     "@meteora-ag/cp-amm-sdk": "1.4.8",
     "@meteora-ag/dlmm": "1.9.14",
     "@meteora-ag/dynamic-bonding-curve-sdk": "1.5.12",
+    "@noble/hashes": "1.8.0",
     "@orao-network/solana-vrf": "0.8.0",
     "@orca-so/common-sdk": "0.7.1",
     "@orca-so/whirlpools-sdk": "0.22.0",
