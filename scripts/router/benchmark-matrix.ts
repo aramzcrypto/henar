@@ -107,7 +107,7 @@ export type MatrixRecord = {
   intermediateMints: string[];
   winner: "henar" | "jupiter" | "tie" | "none";
   differenceBps: number | null;
-  exclusions: { venue: string; reason: string }[];
+  exclusions: { venue: string; reason: string; detail?: string | null }[];
   live: true;
 };
 
@@ -246,6 +246,9 @@ async function main() {
     // One state read per representation, recorded so every row below is
     // attributable to a known chain position.
     const snapshotSlot = await connection.getSlot("confirmed");
+    // Owner discovery for the gate happens here, outside any quote's freshness
+    // window, so a native candidate is never demoted for our latency.
+    await gate.warm(rep.mint, USDC_MINT);
     for (const sizeUsd of sizes) {
       const usdc = BigInt(Math.round(sizeUsd * 1_000_000));
       const requests: { request: QuoteRequest; sellBasis: MatrixRecord["sellBasis"] }[] = [
@@ -386,7 +389,10 @@ async function main() {
           jupiter: { netOutput: jup?.netOutput ?? null, priceImpactBps: jup?.priceImpactBps ?? null, latencyMs: jup ? (result.latencyMs.jupiter ?? null) : null, reason: result.exclusions.find((x) => x.venue === "jupiter")?.reason ?? null },
           winner: diff === null ? (hOut ? "henar" : jOut ? "jupiter" : "none") : diff > 0 ? "henar" : diff < 0 ? "jupiter" : "tie",
           differenceBps: diff,
-          exclusions: result.exclusions.map((x) => ({ venue: x.venue, reason: x.reason })),
+          /* The detail is kept, not just the reason. Reporting why Native
+             disappeared at $50k needed the message behind SDK_ERROR, and a
+             log that records only the code cannot answer it. */
+          exclusions: result.exclusions.map((x) => ({ venue: x.venue, reason: x.reason, detail: x.detail ?? null })),
           live: true,
         };
         records.push(rec);

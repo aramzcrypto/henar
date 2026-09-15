@@ -114,6 +114,21 @@ export function createNativeGate(options: {
   }
 
   return {
+    /**
+     * Pre-discover the owners a later gate check will need.
+     *
+     * Owner discovery costs up to 15 candidates times three RPC reads, and on
+     * a paced queue that runs longer than the 15s freshness window the plan
+     * inherits from its quote. Doing it inside the check demoted 18 of 45
+     * native candidates as QUOTE_EXPIRED: a measurement of this harness's
+     * latency, not of whether the route could execute. Called once per
+     * representation before quoting, it moves that cost outside the window.
+     */
+    async warm(stockMint: string, quoteMint: string) {
+      await fundedOwner(stockMint, stockMint);
+      await fundedOwner(stockMint, quoteMint);
+    },
+
     /** Plan, build and simulate one native verdict. */
     async check(verdict: GuardVerdict, request: QuoteRequest, rep: RouterRepresentation): Promise<GateResult> {
       if (rep.decimals === null || !rep.tokenProgram)
