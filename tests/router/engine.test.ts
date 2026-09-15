@@ -13,6 +13,11 @@ import {
   type VenueAdapter,
   type VenueQuote,
 } from "@henar/router-core";
+import { MARKET_FEE_BPS, tradeFee } from "@/lib/trade-fee";
+
+/* The policy fee, derived rather than written out: these tests are about fee
+   accounting, not about one particular rate. */
+const FEE_BPS = MARKET_FEE_BPS;
 
 const rep = listRouterRepresentations().find((r) => r.status === "ACTIVE")!;
 
@@ -83,24 +88,26 @@ test("buy: fee comes off the USDC input before the venue is asked", async () => 
       }),
     ],
   });
-  // 15 bps of 100 USDC = 0.15 USDC → venue sees 99.85 USDC.
-  assert.equal(seen!.amount, "99850000");
-  assert.equal(result.best?.henarFeeAmount, "150000");
+  // The fee comes off the USDC input, so the venue is asked for the remainder.
+  const input = 100_000_000n;
+  const fee = tradeFee(input);
+  assert.equal(seen!.amount, (input - fee).toString());
+  assert.equal(result.best?.henarFeeAmount, fee.toString());
   assert.equal(result.best?.henarFeeMint, USDC_MINT);
-  assert.equal(result.best?.swapInput, "99850000");
+  assert.equal(result.best?.swapInput, (input - fee).toString());
   assert.equal(result.best?.netOutput, "500000000");
   assert.deepEqual(result.best?.fees, {
     inputMint: USDC_MINT,
     outputMint: rep.mint,
     userInput: "100000000",
-    henarInputFee: "150000",
-    venueInput: "99850000",
+    henarInputFee: fee.toString(),
+    venueInput: (input - fee).toString(),
     grossVenueOutput: "500000000",
     venueFee: null,
     venueFeeMint: null,
     henarOutputFee: "0",
     netUserOutput: "500000000",
-    henarFeeBps: 15,
+    henarFeeBps: FEE_BPS,
   });
 });
 
@@ -110,20 +117,21 @@ test("sell: venue sees full input, fee comes off USDC output", async () => {
     adapters: [adapter("raydium", (r) => ok("raydium", r, "20000000", { amountIn: r.amount }))],
   });
   assert.equal(result.best?.swapInput, "100000000");
-  assert.equal(result.best?.henarFeeAmount, "30000"); // 15 bps of 20 USDC
+  assert.equal(result.best?.henarFeeAmount, tradeFee(20_000_000n).toString()); // fee on the USDC received
   assert.equal(result.best?.henarFeeMint, USDC_MINT);
-  assert.equal(result.best?.netOutput, "19970000");
+  assert.equal(result.best?.netOutput, (20_000_000n - tradeFee(20_000_000n)).toString());
   assert.equal(result.best?.fees.henarInputFee, "0");
-  assert.equal(result.best?.fees.henarOutputFee, "30000");
+  assert.equal(result.best?.fees.henarOutputFee, tradeFee(20_000_000n).toString());
   assert.equal(result.best?.fees.venueInput, "100000000");
 });
 
 test("fee cannot be charged twice: a venue quoting the user amount on a buy is rejected", () => {
   const request = buy("100000000");
   // Adapter ignored the fee-reduced amount and quoted the full user input.
-  assert.throws(() => rankQuote(ok("jupiter", request, "1", { amountIn: "100000000" }), request, 15), /fee accounting/);
+  assert.throws(() => rankQuote(ok("jupiter", request, "1", { amountIn: "100000000" }), request, FEE_BPS), /fee accounting/);
   // Correct venue input passes and userInput = venueInput + henarInputFee.
-  const ranked = rankQuote(ok("jupiter", request, "1", { amountIn: "99850000" }), request, 15);
+  const venueInput = (100_000_000n - tradeFee(100_000_000n)).toString();
+  const ranked = rankQuote(ok("jupiter", request, "1", { amountIn: venueInput }), request, FEE_BPS);
   assert.equal(BigInt(ranked.fees.venueInput) + BigInt(ranked.fees.henarInputFee), BigInt(ranked.fees.userInput));
   assert.equal(BigInt(ranked.fees.grossVenueOutput) - BigInt(ranked.fees.henarOutputFee), BigInt(ranked.fees.netUserOutput));
 });
@@ -196,12 +204,12 @@ test("only USDC ↔ verified representation is accepted", () => {
 
 test("rankQuote and compareRanked use integer math and stable tie-breaks", () => {
   const request = sell("1000");
-  const a = rankQuote(ok("jupiter", request, "1000000", { amountIn: "1000", priceImpactBps: 5 }), request, 15);
-  const b = rankQuote(ok("raydium", request, "1000000", { amountIn: "1000", priceImpactBps: 2 }), request, 15);
-  assert.equal(a.netOutput, "998500");
+  const a = rankQuote(ok("jupiter", request, "1000000", { amountIn: "1000", priceImpactBps: 5 }), request, FEE_BPS);
+  const b = rankQuote(ok("raydium", request, "1000000", { amountIn: "1000", priceImpactBps: 2 }), request, FEE_BPS);
+  assert.equal(a.netOutput, (1_000_000n - tradeFee(1_000_000n)).toString());
   assert.equal(compareRanked(a, b) > 0, true); // lower impact wins a tie
-  const c = rankQuote(ok("meteora", request, "1000001", { amountIn: "1000" }), request, 15);
+  const c = rankQuote(ok("meteora", request, "1000001", { amountIn: "1000" }), request, FEE_BPS);
   assert.equal(compareRanked(c, a) < 0, true); // more net output wins
-  const d = rankQuote(ok("jupiter", request, "1000000", { amountIn: "1000", priceImpactBps: 2, executionPath: "legacy-market-api" }), request, 15);
+  const d = rankQuote(ok("jupiter", request, "1000000", { amountIn: "1000", priceImpactBps: 2, executionPath: "legacy-market-api" }), request, FEE_BPS);
   assert.equal(compareRanked(d, b) < 0, true); // reachable path wins a full tie
 });

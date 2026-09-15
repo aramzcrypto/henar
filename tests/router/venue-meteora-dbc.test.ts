@@ -27,6 +27,7 @@ import {
 } from "@henar/venue-meteora-dbc";
 import { CURRENT_POINT, afterBuy, buildDbcMarket } from "./fixtures/meteora-dbc";
 import { PublicKey } from "@solana/web3.js";
+import { tradeFee } from "@/lib/trade-fee";
 
 const rep = listRouterRepresentations().find((r) => r.status === "ACTIVE")!;
 const key = (n: number) => new PublicKey(Buffer.alloc(32, n)).toBase58();
@@ -182,11 +183,11 @@ test("eligible DBC quote flows through the engine with the Henar fee applied onc
     return original(request, { ...c, pools: [registryPool()] });
   };
   const ranked = await quoteRepresentation(buy("100000000"), { adapters: [spy], enabled: true });
-  assert.deepEqual(venueSeen, ["99850000"]);
+  assert.deepEqual(venueSeen, [(100_000_000n - tradeFee(100_000_000n)).toString()]);
   assert.equal(ranked.best?.venue, "meteora-dbc");
-  assert.equal(ranked.best?.fees.henarInputFee, "150000");
-  assert.equal(ranked.best?.fees.venueInput, "99850000");
-  const sdk = dbc.swapQuoteExactIn(market.pool, market.config, false, new BN("99850000"), 0, false, new BN(CURRENT_POINT.toString()), false);
+  assert.equal(ranked.best?.fees.henarInputFee, tradeFee(100_000_000n).toString());
+  assert.equal(ranked.best?.fees.venueInput, (100_000_000n - tradeFee(100_000_000n)).toString());
+  const sdk = dbc.swapQuoteExactIn(market.pool, market.config, false, new BN((100_000_000n - tradeFee(100_000_000n)).toString()), 0, false, new BN(CURRENT_POINT.toString()), false);
   assert.equal(ranked.best?.fees.grossVenueOutput, sdk.outputAmount.toString());
   assert.equal(ranked.best?.fees.henarOutputFee, "0");
 });

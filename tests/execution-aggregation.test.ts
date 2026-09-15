@@ -56,7 +56,10 @@ test("OpenOcean normalizes a verified quote and deducts its provider fee", async
       slippageBps: 50,
     });
     assert.equal(quote.grossOutputAmount, "10000000");
-    assert.equal(quote.outputAmount, "9985000");
+    // OpenOcean's own provider fee, not Henar's: it is unaffected by the
+    // Henar fee constant and must not be derived from it.
+    const providerFee = (10_000_000n * BigInt(OPENOCEAN_PROVIDER_FEE_BPS)) / 10_000n;
+    assert.equal(quote.outputAmount, (10_000_000n - providerFee).toString());
     assert.equal(quote.minimumOutputAmount, "9935075");
     assert.equal(quote.providerFeeBps, OPENOCEAN_PROVIDER_FEE_BPS);
     assert.equal(quote.providerFeeAmount, "15000");

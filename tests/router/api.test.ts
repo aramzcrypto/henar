@@ -5,6 +5,7 @@ import { USDC_MINT, unavailableQuote, type QuoteRequest, type VenueAdapter, type
 import { RouterApi, RouterHealth, capabilityOf, selectRoute, type QuoteApiResponse } from "@henar/router-app";
 import type { GuardVerdict } from "@henar/execution-guard";
 import { NOW, OWNER, SHARES, key, rep } from "./fixtures/plan";
+import { tradeFee } from "@/lib/trade-fee";
 
 function adapter(venue: VenueAdapter["venue"], impl: (r: QuoteRequest) => VenueQuote): VenueAdapter {
   return {
@@ -48,7 +49,7 @@ test("quote response carries every required field; direct venues are quote-only 
   assert.equal(q.issuer, rep.provider);
   assert.equal(q.representation.mint, rep.mint);
   assert.equal(q.expectedOutput, SHARES(20n).toString());
-  assert.equal(q.fees?.henarAmount, "150000");
+  assert.equal(q.fees?.henarAmount, tradeFee(100_000_000n).toString());
   assert.equal(q.route?.[0].venue, "raydium");
   assert.equal(q.exclusions[0].reason, "NO_VERIFIED_POOL");
   assert.equal(q.liveValidation, "LIVE_VALIDATION_PENDING");

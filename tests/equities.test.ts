@@ -16,6 +16,7 @@ import {
 } from "../src/lib/equities/compatibility";
 import type { CatalogEntry } from "../src/lib/equities/providers/common";
 import { consumePublicQuoteBudget } from "../src/lib/equities/rate-limit";
+import { tradeFee } from "@/lib/trade-fee";
 
 test("canonical registry groups verified provider mints under one company", () => {
   assert.equal(equityRegistry.length, 1_339);
@@ -225,7 +226,7 @@ test("quote aggregation compares representations and includes the fixed protocol
       quote.selectedRepresentation.provider,
       equity.representations[0].provider,
     );
-    assert.equal(quote.selectedRepresentation.protocolFeeAmount, "15");
+    assert.equal(quote.selectedRepresentation.protocolFeeAmount, tradeFee(10_000n).toString());
     assert.equal(quote.alternatives.length, 3);
     assert.equal(quote.executable, false);
   } finally {

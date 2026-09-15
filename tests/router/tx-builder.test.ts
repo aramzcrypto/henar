@@ -6,6 +6,7 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } 
 import type { BuildOptions, PlannedLeg } from "@henar/router-core";
 import { buildTransaction, fixtureBlockhashProvider, type LegInstructionBuilder } from "@henar/tx-builder";
 import { NOW, OWNER, key, singleBuyPlan, splitSellPlan } from "./fixtures/plan";
+import { tradeFee } from "@/lib/trade-fee";
 
 const seen: { leg: PlannedLeg; options: BuildOptions }[] = [];
 const fakeLegBuilder: LegInstructionBuilder = async (leg, options) => {
@@ -50,7 +51,7 @@ test("buy: compute budget, idempotent ATAs, input-side fee transfer, then the ve
   // The fee instruction is a TransferChecked with the plan amount and decimals.
   const feeIx = msg.compiledInstructions[3];
   assert.equal(feeIx.data[0], 12); // TransferChecked discriminator
-  assert.equal(Buffer.from(feeIx.data).readBigUInt64LE(1), 150_000n);
+  assert.equal(Buffer.from(feeIx.data).readBigUInt64LE(1), tradeFee(100_000_000n));
   assert.equal(feeIx.data[9], 6);
   // The venue leg carries the floor it was handed.
   assert.equal(Buffer.from(msg.compiledInstructions[4].data).toString(), `min:${plan.legs[0].minimumAmountOut}`);

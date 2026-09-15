@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PublicKey } from "@solana/web3.js";
 import { USDC_MINT, constantProductCurve, listRouterRepresentations, quoteRepresentation, unavailableQuote, type QuoteContext, type QuoteRequest, type VenueAdapter, type VenueCurve, type VenueQuote, type VerifiedPool } from "@henar/router-core";
+import { tradeFee } from "@/lib/trade-fee";
 
 const rep = listRouterRepresentations().find((r) => r.status === "ACTIVE")!;
 const key = (n: number) => new PublicKey(Buffer.alloc(32, n)).toBase58();
@@ -53,10 +54,10 @@ test("with split routing on, a large order is split across two equal pools and t
     assert.equal(result.route.kind, "split");
     assert.equal(result.route.legs.length, 2);
     const legIn = result.route.legs.reduce((s, l) => s + BigInt(l.fees.venueInput), 0n);
-    assert.equal(legIn, 499_250_000n); // 500 USDC − 15 bps
+    assert.equal(legIn, 500_000_000n - tradeFee(500_000_000n)); // 500 USDC less the Henar fee
     const legFee = result.route.legs.reduce((s, l) => s + BigInt(l.fees.henarInputFee), 0n);
-    assert.equal(legFee, 750_000n);
-    assert.equal(result.route.fees.henarInputFee, "750000");
+    assert.equal(legFee, tradeFee(500_000_000n)); // charged once across the legs, not per leg
+    assert.equal(result.route.fees.henarInputFee, tradeFee(500_000_000n).toString());
     assert.ok(BigInt(result.route.netOutput) > BigInt(result.best!.netOutput));
     for (const leg of result.route.legs) assert.equal(BigInt(leg.fees.userInput), BigInt(leg.fees.venueInput) + BigInt(leg.fees.henarInputFee));
   }

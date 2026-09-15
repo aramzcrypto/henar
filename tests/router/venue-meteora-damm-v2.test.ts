@@ -22,6 +22,7 @@ import { buildDammV2Market } from "./fixtures/meteora-damm-v2";
 
 const rep = listRouterRepresentations().find((r) => r.status === "ACTIVE")!;
 import { PublicKey } from "@solana/web3.js";
+import { tradeFee } from "@/lib/trade-fee";
 const key = (n: number) => new PublicKey(Buffer.alloc(32, n)).toBase58();
 const POOL = key(21);
 const LAUNCH = key(22);
@@ -133,9 +134,9 @@ test("engine ranks a DAMM v2 quote with the fee breakdown intact", async () => {
   adapter.getQuote = (request, c) => original(request, { ...c, pools: [registryPool()] });
   const result = await quoteRepresentation(buy("100000000"), { adapters: [adapter], enabled: true });
   assert.equal(result.best?.venue, "meteora-damm-v2");
-  const sdk = cp.swapQuoteExactInput(market.pool, new BN(CURRENT_POINT.toString()), new BN("99850000"), 0, false, false, 8, 6);
+  const sdk = cp.swapQuoteExactInput(market.pool, new BN(CURRENT_POINT.toString()), new BN((100_000_000n - tradeFee(100_000_000n)).toString()), 0, false, false, 8, 6);
   assert.equal(result.best?.fees.grossVenueOutput, sdk.outputAmount.toString());
-  assert.equal(result.best?.fees.henarInputFee, "150000");
+  assert.equal(result.best?.fees.henarInputFee, tradeFee(100_000_000n).toString());
 });
 
 test("build refuses without the execution flag, then without owner/min-out, and never with a stale quote", async () => {

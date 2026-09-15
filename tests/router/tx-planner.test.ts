@@ -7,16 +7,17 @@ import { USDC_MINT, buildPoolRegistry } from "@henar/router-core";
 import { DEFAULT_EXECUTION_POLICY } from "@henar/execution-guard";
 import { assertPlanFloors, planExecution } from "@henar/tx-builder";
 import { DEC, NOW, OWNER, SHARES, TREASURY, approve, buy, key, pool, quoteFor, rep, representation, sell, singleBuyPlan, splitSellPlan } from "./fixtures/plan";
+import { tradeFee } from "@/lib/trade-fee";
 
 test("single-leg buy plan: fee on input, venue input = user input − fee, floor from the guard, ATAs and programs listed", () => {
   const plan = singleBuyPlan();
   assert.equal(plan.side, "buy");
   assert.equal(plan.provider, rep.provider);
   assert.equal(plan.legs.length, 1);
-  assert.equal(plan.legs[0].amountIn, "99850000");
+  assert.equal(plan.legs[0].amountIn, (100_000_000n - tradeFee(100_000_000n)).toString());
   assert.equal(plan.legs[0].percentBps, 10_000);
   assert.equal(plan.henarFee.on, "input");
-  assert.equal(plan.henarFee.amount, "150000");
+  assert.equal(plan.henarFee.amount, tradeFee(100_000_000n).toString());
   assert.equal(plan.henarFee.mint, USDC_MINT);
   assert.equal(plan.henarFee.tokenProgram, TOKEN_PROGRAM_ID.toBase58());
   assert.equal(plan.henarFee.destination, getAssociatedTokenAddressSync(new PublicKey(USDC_MINT), new PublicKey(TREASURY), true).toBase58());
@@ -50,8 +51,8 @@ test("split sell plan: legs sum exactly, aggregate floor is the sum of leg floor
   assert.equal(plan.henarFee.on, "output");
   assert.equal(plan.henarFee.mint, USDC_MINT);
   const sumMin = floors[0] + floors[1];
-  assert.equal(plan.totals.minimumNetUserOutput, (sumMin - (sumMin * 15n) / 10_000n).toString());
-  assert.equal(plan.henarFee.amount, ((50_000_000n * 15n) / 10_000n).toString()); // fee on expected gross output
+  assert.equal(plan.totals.minimumNetUserOutput, (sumMin - tradeFee(sumMin)).toString());
+  assert.equal(plan.henarFee.amount, tradeFee(50_000_000n).toString()); // fee on expected gross output
   assert.ok(plan.compute.estimatedUnits > 300_000);
   assert.equal(plan.accountCount, 12 + 24 + 26);
   assert.equal(plan.lookupTables.required, true);

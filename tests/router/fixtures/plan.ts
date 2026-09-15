@@ -18,6 +18,7 @@ import {
 } from "@henar/router-core";
 import { DEFAULT_EXECUTION_POLICY, guardQuote, type GuardVerdict } from "@henar/execution-guard";
 import { planExecution, type PlanInput } from "@henar/tx-builder";
+import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 
 export const key = (n: number) => new PublicKey(Buffer.alloc(32, n)).toBase58();
 export const rep = listRouterRepresentations().find((r) => r.status === "ACTIVE")!;
@@ -42,13 +43,13 @@ export function pool(venue: Venue, address: string, overrides: Partial<VerifiedP
 }
 
 export function quoteFor(venue: Venue, request: QuoteRequest, out: bigint, poolAddress: string, extra: Partial<VenueQuote> = {}): RankedQuote {
-  const swapIn = request.side === "buy" ? (BigInt(request.amount) - (BigInt(request.amount) * 15n) / 10_000n).toString() : request.amount;
+  const swapIn = request.side === "buy" ? (BigInt(request.amount) - (BigInt(request.amount) * BigInt(MARKET_FEE_BPS)) / 10_000n).toString() : request.amount;
   const q: VenueQuote = {
     ...unavailableQuote(venue, request, "SDK_ERROR", null, poolAddress, NOW),
     amountIn: swapIn, expectedAmountOut: out.toString(), unavailableReason: null, unavailableDetail: null, priceImpactBps: 10, slot: SLOT,
     onchainCheckedAtQuote: true, executionPath: "none", expiresAt: new Date(NOW + 10_000).toISOString(), source: `${venue}:fixture`, ...extra,
   };
-  return rankQuote(q, request, 15);
+  return rankQuote(q, request, MARKET_FEE_BPS);
 }
 
 export function approve(quote: RankedQuote, pools: VerifiedPool[]): GuardVerdict {
