@@ -2308,7 +2308,9 @@ export function Stockroom({
             </div>
             <Row label="Network">Solana mainnet</Row>
             <Row label="Slippage tolerance">0.50% · fixed</Row>
-            <Row label="Market protocol fee">0.15%</Row>
+            <Row label="Market protocol fee">
+              {(MARKET_FEE_BPS / 100).toFixed(2)}%
+            </Row>
             <Row label="Routing">Jupiter</Row>
             <p>
               Network fees and account funding are shown with your executable

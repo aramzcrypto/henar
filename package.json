@@ -49,7 +49,8 @@
     "router:validate": "node --env-file-if-exists=.env.local --import tsx scripts/router/validate-native.ts",
     "router:pools:build": "node --import tsx scripts/router/build-pool-registry.ts",
     "router:benchmark:matrix": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark-matrix.ts",
-    "router:benchmark": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark.ts"
+    "router:benchmark": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark.ts",
+    "router:forensics": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-forensics.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",

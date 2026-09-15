@@ -10,6 +10,7 @@
  * the fee and program set, which is what a malicious server could alter.
  */
 import { PublicKey, type AddressLookupTableAccount, type VersionedTransaction } from "@solana/web3.js";
+import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const COMPUTE_BUDGET = "ComputeBudget111111111111111111111111111111";
@@ -56,7 +57,7 @@ export function validateRouterTransaction(
       for (const p of leg.programIds!) aggregatorPrograms.add(p);
     } else if (!VENUE_PROGRAMS.has(leg.programId)) fail("leg program");
   }
-  if (plan.henarFee.bps !== 15) fail("fee bps");
+  if (plan.henarFee.bps !== MARKET_FEE_BPS) fail("fee bps");
   const feeMint = plan.henarFee.on === "input" ? expected.inputMint : expected.outputMint;
   if (plan.henarFee.mint !== feeMint) fail("fee mint");
 
