@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { USDC_MINT, venueNativeDiscovery } from "@henar/router-core";
+import { USDC_MINT, venueNativeDiscovery, ROUTING_ASSETS } from "@henar/router-core";
 
 type Entry = {
   id: string;
@@ -75,28 +75,44 @@ test("a pool known only from Jupiter forensics is never enabled", () => {
   }
 });
 
-test("every enabled pool is a USDC-paired route above the floor", () => {
+test("every enabled pool is a USDC route or a routing leg, above the floor", () => {
   for (const pool of REGISTRY.filter((p) => p.enabled)) {
-    assert.equal(pool.eligibility, "ROUTER_ELIGIBLE", `${pool.id} eligibility`);
     const mints = [pool.baseMint, pool.quoteMint];
-    assert.ok(mints.includes(USDC_MINT), `${pool.id} is not USDC-paired`);
     assert.ok(mints.includes(pool.mint), `${pool.id} does not hold its own mint`);
     assert.ok(
       pool.tvlUsd !== null && pool.tvlUsd >= MIN_TVL_USD,
       `${pool.id} enabled with TVL ${pool.tvlUsd}`,
     );
+    /* Two kinds of enabled pool, and nothing else. A direct route pairs the
+       representation with USDC. A routing leg pairs it with an approved
+       intermediate and can only ever be one leg of a multi-leg route, which
+       the guard enforces by refusing it for a direct quote. An enabled pool
+       that is neither would be an unapproved asset inside an automatic
+       route. */
+    if (pool.eligibility === "ROUTER_ELIGIBLE") {
+      assert.ok(mints.includes(USDC_MINT), `${pool.id} is not USDC-paired`);
+      continue;
+    }
+    assert.equal(pool.eligibility, "ROUTING_LEG", `${pool.id} eligibility`);
+    assert.ok(!mints.includes(USDC_MINT), `${pool.id} is a USDC route, not a leg`);
+    const counter = mints.find((m) => m !== pool.mint)!;
+    assert.ok(counter in ROUTING_ASSETS, `${pool.id} routes through ${counter}, which is not an approved intermediate`);
   }
 });
 
-test("non-USDC pairs are recorded outside the executable registry", () => {
-  // pools.json is what the router loads and `validatePool` requires a USDC
-  // pair, so non-routable liquidity is kept in its own artifact rather than
-  // by weakening that contract.
-  for (const pool of REGISTRY)
+test("a pair outside the approved set never reaches the executable registry", () => {
+  /* The registry now holds routing legs as well as USDC routes, so the old
+     rule that every entry is USDC-paired no longer holds. What must still
+     hold is that nothing else gets in: a pool pairing a representation with
+     an arbitrary token is intelligence, kept in its own artifact, and an
+     automatic route must never pass through it. */
+  for (const pool of REGISTRY) {
+    const counter = [pool.baseMint, pool.quoteMint].find((m) => m !== pool.mint);
     assert.ok(
-      [pool.baseMint, pool.quoteMint].includes(USDC_MINT),
-      `${pool.id} reached the executable registry without a USDC side`,
+      counter === USDC_MINT || counter! in ROUTING_ASSETS,
+      `${pool.id} reached the executable registry paired with ${counter}`,
     );
+  }
   const intelligence = JSON.parse(
     readFileSync("src/data/router/non-routable-pairs.json", "utf8"),
   ) as { pools: { counterMint: string; status: string }[] };

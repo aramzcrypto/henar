@@ -6,7 +6,8 @@
  *
  *   npm run router:verify:mints
  *
- * Reads every known representation mint, not only those with an enabled pool:
+ * Reads every known representation mint plus USDC and the routing assets, not
+ * only mints with an enabled pool:
  * partial coverage is how this became a blocker in the first place, since a
  * representation that gains a pool later would otherwise still be unverified.
  *
@@ -18,6 +19,8 @@
 import { writeFile } from "node:fs/promises";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
+  ROUTING_ASSETS,
+  USDC_MINT,
   inspectionFromAccount,
   listRouterRepresentations,
   verifiedMintFromInspection,
@@ -37,7 +40,13 @@ export async function verifyMintsCli(argv = process.argv) {
     throw new Error("SOLANA_RPC_URL is required for on-chain mint verification.");
   }
   const connection = new Connection(rpc, "confirmed");
-  const mints = [...new Set(listRouterRepresentations().map((r) => r.mint))].sort();
+  /* Representation mints and the assets a route may pass through. A routing
+     leg is valued and settled in SOL or USDT, so those mints carry exactly the
+     same execution-critical facts as a representation: without their decimals
+     a leg cannot be valued and the planner cannot size it. */
+  const mints = [
+    ...new Set([...listRouterRepresentations().map((r) => r.mint), USDC_MINT, ...Object.keys(ROUTING_ASSETS)]),
+  ].sort();
   const verifiedAt = new Date().toISOString();
   const rows: VerifiedMint[] = [];
   const missing: string[] = [];

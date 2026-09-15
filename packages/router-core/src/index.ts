@@ -53,8 +53,10 @@ export {
 
 export { VENUE_NATIVE_SOURCES, venueNativeDiscovery } from "./types";
 export {
+  valueTwoSidedPool,
   valueWhirlpool,
   type PoolValuation,
   type PoolValuationMethod,
+  type TwoSidedValuationInput,
   type WhirlpoolValuationInput,
 } from "./valuation";

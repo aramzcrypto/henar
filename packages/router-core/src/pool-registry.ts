@@ -10,7 +10,7 @@
  *  - a pool is only usable when `enabled` is true.
  */
 import pools from "@/data/router/pools.json";
-import { USDC_MINT, type VerifiedPool, type Venue } from "./types";
+import { ROUTING_ASSETS, USDC_MINT, type VerifiedPool, type Venue } from "./types";
 
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
@@ -32,8 +32,18 @@ export function validatePool(pool: VerifiedPool) {
   // Eligibility is derived from the pair, never declared freely: a record
   // may only call itself ROUTER_ELIGIBLE if it is exactly {mint, USDC}.
   const usdcPair = pair.has(USDC_MINT);
+  const routingAsset = [...pair].find((m) => m !== pool.mint && m in ROUTING_ASSETS) ?? null;
   if (pool.eligibility === "ROUTER_ELIGIBLE" && !usdcPair)
     problems.push("ROUTER_ELIGIBLE pool does not pair with USDC");
+  /* A routing leg pairs the representation with an approved intermediate and
+     nothing else. Anything paired with USDC is a direct route, and anything
+     paired with an asset outside the intermediate universe is infrastructure:
+     calling either a routing leg would put an unapproved asset in the middle
+     of an automatic route. */
+  if (pool.eligibility === "ROUTING_LEG" && usdcPair)
+    problems.push("USDC-paired pool is a direct route, not a routing leg");
+  if (pool.eligibility === "ROUTING_LEG" && !routingAsset)
+    problems.push("ROUTING_LEG pool does not pair with an approved routing asset");
   if (pool.eligibility === "STOCK_PAIRED_INFRASTRUCTURE" && usdcPair)
     problems.push("USDC-paired pool must be ROUTER_ELIGIBLE, not infrastructure");
   if (pool.eligibility === "STOCK_PAIRED_INFRASTRUCTURE" && pool.enabled)
@@ -93,6 +103,31 @@ let cached: PoolRegistry | null = null;
 export function loadPoolRegistry(): PoolRegistry {
   if (!cached) cached = buildPoolRegistry(pools as VerifiedPool[]);
   return cached;
+}
+
+/**
+ * Pools that trade exactly this pair, in either order.
+ *
+ * Selection used to be "the deepest enabled pool for this representation",
+ * which was safe only while every pool was a USDC pair. With routing legs
+ * admitted, the deepest pool for a representation can be its SOL pool, and
+ * offering that for a USDC request would lose the quote entirely. A pool is
+ * now only ever offered for the pair it actually trades.
+ */
+export function poolsForPair(
+  mintA: string,
+  mintB: string,
+  options?: { includeDisabled?: boolean; registry?: PoolRegistry },
+) {
+  const registry = options?.registry ?? loadPoolRegistry();
+  const wanted = new Set([mintA, mintB]);
+  if (wanted.size !== 2) return [];
+  return registry.pools.filter(
+    (pool) =>
+      (options?.includeDisabled || pool.enabled) &&
+      wanted.has(pool.baseMint) &&
+      wanted.has(pool.quoteMint),
+  );
 }
 
 export function poolsForRepresentation(

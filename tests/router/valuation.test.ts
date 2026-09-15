@@ -6,7 +6,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { valueWhirlpool } from "@henar/router-core";
+import { valueWhirlpool, valueTwoSidedPool } from "@henar/router-core";
 
 const usdc = (whole: number) => BigInt(Math.round(whole * 1_000_000));
 /** 8-decimal equity mint, as xStocks and Backpack both use. */
@@ -123,4 +123,45 @@ test("a pool below the floor is valued honestly, not rounded up", () => {
   // 120 + 400 = 520: real, and still under the $1,000 floor.
   assert.equal(result.tvlUsd, 520);
   assert.ok(result.tvlUsd! < 1_000);
+});
+
+/**
+ * A routing leg pairs a representation with SOL or USDT, so neither side can
+ * be taken at face value and both need a verified price.
+ */
+test("a two-sided pool values each side at its own price, or reports nothing", () => {
+  const side = (over: Partial<Parameters<typeof valueTwoSidedPool>[0]["a"]> = {}) => ({
+    rawAmount: 1_000_000_000n,
+    decimals: 9,
+    scaledUiMultiplier: 1,
+    priceUsd: 200,
+    label: "SOL",
+    ...over,
+  });
+  // 1 SOL at $200 plus 2 shares at $150.
+  const valued = valueTwoSidedPool({
+    a: side(),
+    b: side({ rawAmount: 200_000_000n, decimals: 8, priceUsd: 150, label: "NVDAx" }),
+  });
+  assert.equal(valued.method, "BOTH_SIDES_AT_REFERENCE");
+  assert.equal(Math.round(valued.tvlUsd!), 200 + 300);
+
+  // The multiplier converts raw to the units a price is quoted in.
+  const scaled = valueTwoSidedPool({
+    a: side({ rawAmount: 0n }),
+    b: side({ rawAmount: 200_000_000n, decimals: 8, priceUsd: 150, scaledUiMultiplier: 2, label: "NVDAx" }),
+  });
+  assert.equal(Math.round(scaled.tvlUsd!), 600);
+
+  // Half a valuation is not a conservative estimate, it is a wrong one.
+  for (const broken of [
+    { a: side({ priceUsd: null }), b: side() },
+    { a: side(), b: side({ decimals: null }) },
+    { a: side({ scaledUiMultiplier: 0 }), b: side() },
+    { a: side({ priceUsd: Number.NaN }), b: side() },
+  ]) {
+    const result = valueTwoSidedPool(broken);
+    assert.equal(result.method, "UNAVAILABLE", result.detail);
+    assert.equal(result.tvlUsd, null);
+  }
 });

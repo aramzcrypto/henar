@@ -272,7 +272,16 @@ async function quoteRepresentationUnrecorded(
   const venueRequest: QuoteRequest = { ...input, amount: toRaw(venueAmount) };
 
   const deadlineMs = options.deadlineMs ?? DEFAULT_VENUE_DEADLINE_MS;
-  const pools = options.poolsOverride ?? poolsForRepresentation(input.representationId);
+  /* Only pools that trade the requested pair are offered to the adapters.
+     Every adapter picks its deepest pool for the representation, which was
+     safe while every registry pool was a USDC pair. Routing legs put a
+     representation's SOL pool in the same list, and on several assets that is
+     the deepest one: an adapter would pick it for a USDC request and lose the
+     quote to a terms mismatch. A pool is offered for the pair it trades and
+     no other. */
+  const allPools = options.poolsOverride ?? poolsForRepresentation(input.representationId);
+  const requestedPair = new Set([input.inputMint, input.outputMint]);
+  const pools = allPools.filter((pool) => requestedPair.has(pool.baseMint) && requestedPair.has(pool.quoteMint));
   /* Every adapter and every curve fetch in this request reads through one
      memoizing view of the connection. Five pools each re-read the same two
      mint accounts and asked for their own slot, and the split optimizer then

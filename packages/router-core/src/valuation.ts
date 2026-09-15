@@ -24,6 +24,7 @@
 
 export type PoolValuationMethod =
   | "USDC_VAULT_PLUS_STOCK_AT_REFERENCE"
+  | "BOTH_SIDES_AT_REFERENCE"
   | "UNAVAILABLE";
 
 export type PoolValuation = {
@@ -87,5 +88,43 @@ export function valueWhirlpool(input: WhirlpoolValuationInput): PoolValuation {
     tvlUsd,
     method: "USDC_VAULT_PLUS_STOCK_AT_REFERENCE",
     detail: `USDC $${usdcValue.toFixed(2)} + stock $${stockValue.toFixed(2)} at $${referencePriceUsd} x${scaledUiMultiplier}`,
+  };
+}
+
+/**
+ * A pool whose quote side is not USDC.
+ *
+ * Routing legs pair a representation with SOL or USDT, so neither side can be
+ * taken at face value. Each is valued at its own verified price, on the same
+ * terms as the USDC case: a side without a price makes the whole valuation
+ * UNAVAILABLE rather than half a number, because half a pool's depth is not a
+ * conservative estimate of the pool's depth, it is a wrong one.
+ */
+export type TwoSidedValuationInput = {
+  a: { rawAmount: bigint; decimals: number | null; scaledUiMultiplier: number; priceUsd: number | null; label: string };
+  b: { rawAmount: bigint; decimals: number | null; scaledUiMultiplier: number; priceUsd: number | null; label: string };
+};
+
+export function valueTwoSidedPool(input: TwoSidedValuationInput): PoolValuation {
+  const sides = [input.a, input.b];
+  for (const side of sides) {
+    if (side.decimals === null || !Number.isInteger(side.decimals) || side.decimals < 0)
+      return { tvlUsd: null, method: "UNAVAILABLE", detail: `${side.label} decimals unverified` };
+    if (side.priceUsd === null || !Number.isFinite(side.priceUsd) || side.priceUsd <= 0)
+      return { tvlUsd: null, method: "UNAVAILABLE", detail: `${side.label} has no verified price` };
+    if (!Number.isFinite(side.scaledUiMultiplier) || side.scaledUiMultiplier <= 0)
+      return { tvlUsd: null, method: "UNAVAILABLE", detail: `${side.label} scaled UI multiplier is not positive` };
+  }
+  const value = (side: TwoSidedValuationInput["a"]) => {
+    const displayUnits = (Number(side.rawAmount) / 10 ** (side.decimals as number)) * side.scaledUiMultiplier;
+    return displayUnits * (side.priceUsd as number);
+  };
+  const tvlUsd = value(input.a) + value(input.b);
+  if (!Number.isFinite(tvlUsd) || tvlUsd < 0)
+    return { tvlUsd: null, method: "UNAVAILABLE", detail: "valuation is not a finite non-negative number" };
+  return {
+    tvlUsd,
+    method: "BOTH_SIDES_AT_REFERENCE",
+    detail: `${input.a.label} ${value(input.a).toFixed(2)} + ${input.b.label} ${value(input.b).toFixed(2)}`,
   };
 }

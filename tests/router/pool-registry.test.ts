@@ -109,3 +109,34 @@ test("buildPoolRegistry rejects duplicates and indexes by representation", () =>
   assert.equal(poolsForRepresentation(rep.id, { registry, venue: "meteora" }).length, 0);
   assert.equal(poolsForRepresentation("unknown", { registry }).length, 0);
 });
+
+/**
+ * Routing legs are real liquidity that is not a direct route.
+ *
+ * A representation/SOL pool is exactly the edge a USDC to SOL to NVDAx route
+ * needs, but it is never a USDC route itself. The eligibility says which of
+ * the two a pool is, and the validator refuses a record that claims the wrong
+ * one, because an automatic route passing through an unapproved asset is the
+ * failure this guards against.
+ */
+test("a routing leg pairs a representation with an approved intermediate and nothing else", () => {
+  const SOL = "So11111111111111111111111111111111111111112";
+  const BONK = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
+  const leg = (over: Partial<VerifiedPool> = {}) =>
+    pool({ eligibility: "ROUTING_LEG", baseMint: rep.mint, quoteMint: SOL, ...over });
+
+  assert.deepEqual(validatePool(leg()), []);
+
+  // USDC-paired is a direct route, and must not hide as a leg.
+  assert.ok(validatePool(leg({ quoteMint: USDC_MINT })).some((m) => /direct route, not a routing leg/.test(m)));
+
+  // An asset outside the intermediate universe is infrastructure, not a leg.
+  assert.ok(validatePool(leg({ quoteMint: BONK })).some((m) => /approved routing asset/.test(m)));
+
+  // And a direct route still has to be USDC-paired.
+  assert.ok(
+    validatePool(pool({ eligibility: "ROUTER_ELIGIBLE", baseMint: rep.mint, quoteMint: SOL })).some((m) =>
+      /does not pair with USDC/.test(m),
+    ),
+  );
+});
