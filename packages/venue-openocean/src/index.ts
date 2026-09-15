@@ -31,7 +31,9 @@ export class OpenOceanAdapter implements VenueAdapter {
     }
     if (r.inputMint !== request.inputMint || r.outputMint !== request.outputMint || r.inputAmount !== request.amount)
       return unavailableQuote(this.venue, request, "QUOTE_TERMS_MISMATCH", "adapter response drifted from request", null, ctx.now);
-    const impact = r.priceImpactPct === null ? null : Math.round(Number(r.priceImpactPct) * 10_000);
+    // OpenOcean reports impact as a percent string (e.g. "0.12%", may be negative).
+    const pct = r.priceImpactPct === null ? NaN : Number(String(r.priceImpactPct).replace("%", "").trim());
+    const impact = Number.isFinite(pct) ? Math.round(Math.abs(pct) * 100) : null;
     return {
       venue: this.venue,
       routeType: "DEX",
