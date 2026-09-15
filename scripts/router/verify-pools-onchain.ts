@@ -4,6 +4,10 @@
  *
  *   npm run router:verify:pools           (enabled pools only)
  *   npm run router:verify:pools -- --all  (every record)
+ *
+ * Also runs as `prebuild` on Vercel (`--if-configured`), so every deployed
+ * artifact carries a registry verified against mainnet at build time; the
+ * committed file stays DISCOVERED until a verified copy is committed.
  */
 import { readFile, writeFile } from "node:fs/promises";
 import { Connection } from "@solana/web3.js";
@@ -13,7 +17,16 @@ const FILE = "src/data/router/pools.json";
 
 async function main() {
   const rpc = process.env.SOLANA_RPC_URL;
-  if (!rpc) throw new Error("SOLANA_RPC_URL is required for on-chain verification.");
+  if (!rpc) {
+    // `--if-configured` (the prebuild hook) skips quietly where no RPC exists,
+    // e.g. local builds; the registry then stays DISCOVERED and the guard
+    // keeps refusing execution — fail closed, never fail the build.
+    if (process.argv.includes("--if-configured")) {
+      process.stdout.write("verify-pools: SOLANA_RPC_URL not set; registry left as DISCOVERED (LIVE_VALIDATION_PENDING)\n");
+      return;
+    }
+    throw new Error("SOLANA_RPC_URL is required for on-chain verification.");
+  }
   const all = process.argv.includes("--all");
   const pools = JSON.parse(await readFile(FILE, "utf8")) as VerifiedPool[];
   const targets = pools.filter((p) => all || p.enabled);
