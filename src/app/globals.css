@@ -12777,11 +12777,3 @@ body {
 .router-compare-trade { margin-top: 10px; width: 100%; padding: 10px 12px; border-radius: 10px; border: 0; background: var(--accent, #46b3a8); color: #0b0b0c; font-weight: 600; font-size: 13px; cursor: pointer; }
 .router-compare-trade:disabled { opacity: 0.5; cursor: default; }
 .router-compare-status { margin: 6px 0 0; font-size: 12px; opacity: 0.8; display: block; }
-
-/* A Henar row carries what the optimizer built: allocation, floor and fee. */
-.quote-route-detail {
-  display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  opacity: 0.66;
-}

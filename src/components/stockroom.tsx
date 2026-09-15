@@ -1774,12 +1774,12 @@ export function Stockroom({
                     >
                       {rankedCandidates.slice(0, 4).map((candidate, index) => {
                         const source = getExecutionSourceBrand(candidate.source).label;
-                        /* A Henar row states what the optimizer built: the
-                           allocation is the product, not a footnote. */
+                        /* The row names the liquidity it was built over, like
+                           every other row. The allocation, pool count and
+                           impact belong in the route detail, not in a list a
+                           user scans for a number. */
                         const allocation = candidate.henar
-                          ? candidate.legs
-                              .map((leg) => `${Math.round(leg.percent ?? 0)}% ${getExecutionSourceBrand(leg.venue).label}`)
-                              .join(" + ")
+                          ? Array.from(new Set(candidate.legs.map((leg) => getExecutionSourceBrand(leg.venue).label))).join(" + ")
                           : Array.from(new Set(candidate.legs.map((step) => step.venue))).slice(0, 2).join(" · ");
                         return (
                           <div
@@ -1791,18 +1791,10 @@ export function Stockroom({
                               <strong>{source}</strong>
                               <span>
                                 {allocation || "Direct route"}
-                                {candidate.henar
-                                  ? ` · ${candidate.legs.length} pools${candidate.priceImpactBps === null ? "" : ` · ${(candidate.priceImpactBps / 100).toFixed(2)}% impact`}`
-                                  : candidate.providerFeeBps > 0
-                                    ? ` · ${percent(candidate.providerFeeBps)} provider fee`
-                                    : ""}
+                                {!candidate.henar && candidate.providerFeeBps > 0
+                                  ? ` · ${percent(candidate.providerFeeBps)} provider fee`
+                                  : ""}
                               </span>
-                              {candidate.henar && (
-                                <small className="quote-route-detail">
-                                  Min {new Decimal(candidate.minimumOutput || "0").toSignificantDigits(8).toFixed()} {receive.symbol}
-                                  {" · "}Henar fee {percent(tradeFeeBps)} · atomic
-                                </small>
-                              )}
                             </div>
                             {index === 0 && <span className="best-badge">Best</span>}
                             <div className="quote-output">
