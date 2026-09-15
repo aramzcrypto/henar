@@ -70,16 +70,19 @@ async function main() {
   process.stdout.write(`  fee: ${MARKET_FEE_BPS} bps\n\n`);
 
   const adapters: VenueAdapter[] = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter];
-  const result = await quoteRepresentation(request, { adapters, connection, enabled: true, deadlineMs: 60_000 });
+  const quoteStart = Date.now();
+  const result = await quoteRepresentation(request, { adapters, connection, enabled: true, deadlineMs: 6_000 });
+  const quoteMs = Date.now() - quoteStart;
   const slot = await connection.getSlot("confirmed");
   const guarded = guardResult(result, DEFAULT_EXECUTION_POLICY, { now: Date.now(), currentSlot: slot, reference: null, representationDecimals: rep.decimals });
 
-  process.stdout.write("every quote, ranked by net user output:\n");
+  process.stdout.write(`every quote, ranked by net user output (whole request ${quoteMs}ms at the production 6s deadline):\n`);
   const ranked = result.best ? [result.best, ...result.alternatives] : result.alternatives;
   for (const q of ranked) {
     const verdict = guarded.verdicts.find((v) => v.quote.venue === q.venue && v.quote.poolAddress === q.poolAddress);
     process.stdout.write(
       `  ${q.venue.padEnd(10)} ${ui(q.netOutput, decimals).padStart(14)}  impact ${String(q.priceImpactBps ?? "?").padStart(5)}bps  ` +
+        `${String(result.latencyMs[q.venue] ?? "?").padStart(5)}ms  ` +
         `pool ${(q.poolAddress ?? "-").slice(0, 8)}  ${verdict ? (verdict.approved ? `APPROVED ${capabilityOf(verdict)}` : `REFUSED ${verdict.reason}`) : "no verdict"}\n`,
     );
   }
