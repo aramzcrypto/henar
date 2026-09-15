@@ -517,6 +517,14 @@ export type EngineResult = {
   alternatives: RankedQuote[];
   /** Set only when split routing is on and a split beat the best single venue. */
   route: RankedRoute | null;
+  /**
+   * Why there is (or is not) a split route.
+   *
+   * Without this, "why is there no Henar row?" cannot be answered from a
+   * production response, and the answer differs entirely between "no second
+   * curve could be built" and "the gain was under a basis point".
+   */
+  splitReason: string | null;
   exclusions: QuoteExclusion[];
   quotedAt: string;
   slot: number | null;

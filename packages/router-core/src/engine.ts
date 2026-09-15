@@ -226,6 +226,7 @@ async function quoteRepresentationUnrecorded(
     best: null,
     alternatives: [],
     route: null,
+      splitReason: null,
     exclusions: [],
     quotedAt,
     slot: null,
@@ -356,10 +357,14 @@ async function quoteRepresentationUnrecorded(
   );
 
   let route: RankedRoute | null = null;
+  let splitReason: string | null = splitRouting ? (ranked.length > 1 ? null : "only one venue quoted; nothing to split across") : "split routing is off";
   if (splitRouting && ranked.length > 1) {
     try {
-      route = await splitAcrossPools(input, venueRequest, options, ctx, ranked, henarFeeBps, deadlineMs);
+      const outcome = await splitAcrossPools(input, venueRequest, options, ctx, ranked, henarFeeBps, deadlineMs);
+      route = outcome.route;
+      splitReason = outcome.reason;
     } catch (error) {
+      splitReason = `split routing failed: ${(error as Error).message}`;
       exclusions.push({ venue: ranked[0].venue, poolAddress: null, reason: "SDK_ERROR", detail: `split routing failed: ${(error as Error).message}` });
     }
   }
@@ -369,6 +374,7 @@ async function quoteRepresentationUnrecorded(
     best: ranked[0] ?? null,
     alternatives: ranked.slice(1),
     route,
+    splitReason,
     exclusions,
     slot,
     latencyMs,
@@ -389,7 +395,7 @@ async function splitAcrossPools(
   ranked: RankedQuote[],
   henarFeeBps: number,
   deadlineMs: number,
-): Promise<RankedRoute | null> {
+): Promise<{ route: RankedRoute | null; reason: string }> {
   const curves: VenueCurve[] = [];
   await Promise.all(
     ranked.map(async (q) => {
@@ -403,25 +409,28 @@ async function splitAcrossPools(
       if (curve) curves.push(curve);
     }),
   );
-  if (curves.length < 2) return null;
+  if (curves.length < 2)
+    return { route: null, reason: `only ${curves.length} venue curve${curves.length === 1 ? "" : "s"} could be built; a split needs two` };
   const venueAmount = fromRaw(venueRequest.amount);
   const split = optimizeSplit(curves, venueAmount, options.splitOptions ?? DEFAULT_SPLIT_OPTIONS);
-  if (split.kind !== "split") return null;
+  if (split.kind !== "split") return { route: null, reason: split.reason };
   /* Economically meaningless splits are suppressed here, and only here. The
      optimizer reports every construction it finds; this is the smallest gain
      worth an extra leg at all. Anything above it is handed up so the caller
      can rank it against quotes the optimizer cannot split across — that
      comparison, not this one, decides whether the split is used. */
-  if ((split.netImprovementBps ?? 0) < (options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS)) return null;
+  if ((split.netImprovementBps ?? 0) < (options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS))
+    return { route: null, reason: `${split.reason}; below the ${options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS} bp floor for an extra leg` };
   const legs: RankedQuote[] = [];
   const userInput = fromRaw(input.amount);
   const totalFeeIn = input.side === "buy" ? bpsOf(userInput, henarFeeBps) : 0n;
   let feeAllocated = 0n;
   for (const [i, leg] of split.legs.entries()) {
     const curve = curves.find((c) => c.venue === leg.venue && c.poolAddress === leg.poolAddress);
-    if (!curve?.quoteFor) return null;
+    if (!curve?.quoteFor) return { route: null, reason: `no re-quotable curve for ${leg.venue}` };
     const quote = curve.quoteFor(fromRaw(leg.amountIn));
-    if (quote.unavailableReason || quote.amountIn !== leg.amountIn) return null;
+    if (quote.unavailableReason || quote.amountIn !== leg.amountIn)
+      return { route: null, reason: `leg ${leg.venue} could not be re-quoted at its allocation: ${quote.unavailableReason ?? "terms drifted"}` };
     // Apportion the input-side fee by leg share (last leg takes the remainder) so
     // per-leg identities hold and the sum equals the route fee exactly.
     const legFeeIn = input.side === "buy" ? (i === split.legs.length - 1 ? totalFeeIn - feeAllocated : (totalFeeIn * fromRaw(leg.amountIn)) / venueAmount) : 0n;
@@ -453,8 +462,9 @@ async function splitAcrossPools(
   const grossTotal = legs.reduce((s, l) => s + fromRaw(l.fees.grossVenueOutput), 0n);
   const feeOut = input.side === "sell" ? bpsOf(grossTotal, henarFeeBps) : 0n;
   const net = grossTotal - feeOut;
-  if (net <= fromRaw(ranked[0].netOutput)) return null;
-  return {
+  if (net <= fromRaw(ranked[0].netOutput))
+    return { route: null, reason: "the split does not beat the best ranked quote once fees are applied" };
+  return { route: {
     kind: "split",
     legs,
     fees: {
@@ -474,5 +484,5 @@ async function splitAcrossPools(
     improvementBps: split.improvementBps,
     costBps: split.costBps,
     reason: split.reason,
-  };
+  }, reason: split.reason };
 }

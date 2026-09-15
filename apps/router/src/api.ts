@@ -89,6 +89,8 @@ export type QuoteApiResponse = {
     priceImpactBps: number | null;
     executable: boolean;
   } | null;
+  /** Why there is, or is not, a Henar-constructed route. */
+  henarRouteReason: string | null;
   alternatives: { venue: string; netOutput: string; priceImpactBps: number | null; approved: boolean; reason: string | null; failedChecks: string[]; routePlan?: unknown }[];
   /** Jupiter's own route plan (AMM labels, pools, split) for venue-coverage analysis. */
   benchmarkRoutePlan: unknown;
@@ -287,6 +289,7 @@ export class RouterApi {
       expiresAt,
       route: routeLegs ?? (chosen ? [{ venue: chosen.venue, poolAddress: chosen.poolAddress, percentBps: 10_000 }] : null),
       henarRoute,
+      henarRouteReason: result.splitReason,
       alternatives: guarded.verdicts.filter((v) => v !== selected).map((v) => ({ venue: v.quote.venue, netOutput: v.quote.netOutput, priceImpactBps: v.quote.priceImpactBps, approved: v.approved, reason: v.reason, failedChecks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })),
       benchmarkRoutePlan: (guarded.verdicts.find((v) => v.quote.venue === "jupiter")?.quote.rawRouteMetadata as { route?: unknown } | null)?.route ?? null,
       exclusions: result.exclusions.map((x) => ({ venue: x.venue, reason: x.reason, detail: x.detail })),
