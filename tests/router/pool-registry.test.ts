@@ -11,6 +11,9 @@ import {
   type VerifiedPool,
   intermediateRepresentationId,
 } from "@henar/router-core";
+import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
+import { meteoraAdapter } from "@henar/venue-meteora";
+import { orcaAdapter } from "@henar/venue-orca";
 
 const rep = listRouterRepresentations()[0];
 
@@ -61,24 +64,46 @@ test("committed pools.json loads, and every entry pairs a registry mint with USD
      Meteora DLMM joined that set with the private-market products, whose
      liquidity is DLMM; it quotes through the official SDK and builds nothing,
      so those routes are compared and guarded, then executed through the
-     reviewed market path. */
-  const QUOTABLE = new Set(["clmm", "whirlpool", "dlmm"]);
+     reviewed market path. Raydium CPMM joined it when `raydiumCpmmAdapter`
+     landed with a quote, a curve and a builder — the registry had gone on
+     disabling those pools with a reason that said no adapter existed. */
+  const QUOTABLE = new Set(["clmm", "whirlpool", "dlmm", "cpmm"]);
   for (const p of registry.pools.filter((p) => p.enabled)) {
     assert.ok(QUOTABLE.has(p.poolType), `${p.address}: ${p.poolType} has no direct adapter`);
     assert.ok((p.tvlUsd ?? 0) >= 1000, "enabled pools meet the TVL floor");
   }
 });
 
-test("public equity enablement is unchanged by private-market admission", () => {
-  /* Private-market products brought DLMM pools into the registry. No public
-     equity pool may have been enabled or re-typed by that pass: the public
-     routing surface is exactly the Raydium CLMM and Orca Whirlpool pools it
-     was before. */
-  const publicPools = loadPoolRegistry().pools.filter((p) => p.provider === "xstocks" || p.provider === "backpack" || p.provider === "ondo");
-  for (const p of publicPools.filter((p) => p.enabled))
-    assert.ok(p.poolType === "clmm" || p.poolType === "whirlpool", `${p.address}: public equity enabled on ${p.poolType}`);
-  const privatePools = loadPoolRegistry().pools.filter((p) => p.provider === "prestocks" || p.provider === "tessera");
+test("private-market and public-equity pools stay separate populations", () => {
+  /* The original point of this test was that admitting private-market
+     products must not quietly change public routing. That still holds, but
+     the assertion cannot be "public equities are Raydium and Orca only" any
+     more: public equities are now enabled on Meteora DLMM and Raydium CPMM
+     too, deliberately, because those venues carry 13% and 9% of winning
+     external routes. What must remain true is the separation itself. */
+  const pools = loadPoolRegistry().pools;
+  const privatePools = pools.filter((p) => p.provider === "prestocks" || p.provider === "tessera");
+  assert.ok(privatePools.length > 0, "private-market pools are present");
   for (const p of privatePools) assert.equal(p.poolType, "dlmm", `${p.address}: private-market pool is not DLMM`);
+
+  const publicPools = pools.filter((p) => p.provider === "xstocks" || p.provider === "backpack" || p.provider === "ondo");
+  const publicIds = new Set(publicPools.map((p) => p.address));
+  for (const p of privatePools)
+    assert.ok(!publicIds.has(p.address), `${p.address} appears as both a public and a private pool`);
+});
+
+test("every pool type the registry enables has an adapter that declares it", () => {
+  /* The registry and the adapters are edited in different files, and they
+     drifted: 66 Raydium CPMM pools sat disabled behind "no direct adapter"
+     for as long as the adapter existed. This ties the two together, so a
+     pool type can only be enabled while some adapter claims it, and an
+     adapter's arrival is noticed rather than waiting to be remembered. */
+  const declared = new Set(
+    [raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, orcaAdapter].flatMap((a) => a.capabilities().poolTypes),
+  );
+  const enabledTypes = new Set(loadPoolRegistry().pools.filter((p) => p.enabled).map((p) => p.poolType));
+  for (const type of enabledTypes)
+    assert.ok(declared.has(type), `pools of type ${type} are enabled but no adapter declares it`);
 });
 
 test("pools that do not pair with USDC are rejected", () => {

@@ -144,3 +144,79 @@ test("deterministic rounding: chunk remainder lands on the last chunk so inputs 
   assert.deepEqual(once, again);
   assert.equal(optimizeSplit([a], 0n, opts).kind, "none");
 });
+
+/* ------------------------------------------------------------------------ *
+ * Three-leg refinement.
+ *
+ * The optimizer used to refine only the boundary between the first two legs,
+ * so on a three-leg construction one boundary was exact and the other stayed
+ * at the coarse 1/granularity resolution. Measured against Jupiter, Henar's
+ * gap widened from about 3 bps at $1,000 to 8 bps at $10,000 — exactly the
+ * range where a winning external route goes from one venue to three.
+ * ------------------------------------------------------------------------ */
+
+test("the default leg cap is three, because winning external routes use more than two at size", () => {
+  assert.equal(DEFAULT_SPLIT_OPTIONS.maxLegs, 3);
+});
+
+test("a three-leg split refines every boundary, not just the first pair", () => {
+  /* Three pools of deliberately different depth, so the correct allocation is
+     uneven and a coarse 1/granularity grid cannot land on it. */
+  const curves = [
+    constantProductCurve("raydium", "a", 3_000_000_000n, 600_000_000n, 10),
+    constantProductCurve("orca", "b", 1_700_000_000n, 340_000_000n, 25),
+    constantProductCurve("meteora", "c", 900_000_000n, 180_000_000n, 5),
+  ];
+  const amount = 700_000_000n;
+  const refined = optimizeSplit(curves, amount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3 });
+  assert.equal(refined.kind, "split");
+  assert.equal(refined.legs.length, 3);
+
+  // Accounting still exact across three legs.
+  assert.equal(refined.legs.reduce((s, l) => s + BigInt(l.amountIn), 0n), amount);
+  assert.equal(refined.legs.reduce((s, l) => s + BigInt(l.amountOut), 0n), BigInt(refined.totalOut));
+  assert.equal(refined.legs.reduce((s, l) => s + l.percentBps, 0), 10_000);
+
+  // Refinement must beat the coarse allocation it started from.
+  const coarse = optimizeSplit(curves, amount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3, refineSteps: 0 });
+  assert.ok(
+    BigInt(refined.totalOut) > BigInt(coarse.totalOut),
+    `refined ${refined.totalOut} should beat coarse ${coarse.totalOut}`,
+  );
+  // And it must still beat the best single venue, or it should not be a split.
+  assert.ok(BigInt(refined.totalOut) > BigInt(refined.bestSingleOut!));
+});
+
+test("a third leg is never worse than two on the same curves", () => {
+  const curves = [
+    constantProductCurve("raydium", "a", 2_000_000_000n, 400_000_000n, 10),
+    constantProductCurve("orca", "b", 1_500_000_000n, 300_000_000n, 10),
+    constantProductCurve("meteora", "c", 1_000_000_000n, 200_000_000n, 10),
+  ];
+  for (const amount of [50_000_000n, 300_000_000n, 900_000_000n]) {
+    const two = optimizeSplit(curves, amount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 2 });
+    const three = optimizeSplit(curves, amount, { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3 });
+    assert.ok(
+      BigInt(three.totalOut) >= BigInt(two.totalOut),
+      `at ${amount}: three legs ${three.totalOut} < two legs ${two.totalOut}`,
+    );
+  }
+});
+
+test("refinement never publishes an empty leg", () => {
+  /* One pool so much deeper than the others that the refined boundary wants
+     to give a leg nothing at all. That leg must be dropped, not reported at
+     0% with an instruction that moves no tokens. */
+  const curves = [
+    constantProductCurve("raydium", "deep", 500_000_000_000n, 100_000_000_000n, 1),
+    constantProductCurve("orca", "dust", 2_000_000n, 400_000n, 300),
+    constantProductCurve("meteora", "dust2", 1_000_000n, 200_000n, 300),
+  ];
+  const r = optimizeSplit(curves, 400_000_000n, { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3 });
+  for (const leg of r.legs) {
+    assert.ok(BigInt(leg.amountIn) > 0n, `leg ${leg.venue} has zero input`);
+    assert.ok(leg.percentBps > 0, `leg ${leg.venue} has zero share`);
+  }
+  assert.equal(r.legs.reduce((s, l) => s + BigInt(l.amountIn), 0n), 400_000_000n);
+  assert.equal(r.legs.reduce((s, l) => s + l.percentBps, 0), 10_000);
+});

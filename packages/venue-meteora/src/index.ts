@@ -33,6 +33,7 @@ import {
   type QuoteRequest,
   type VenueAdapter,
   type VenueCapabilities,
+  type VenueCurve,
   type VenueHealth,
   type VenueQuote,
   type VerifiedPool,
@@ -110,6 +111,93 @@ export async function quoteWithBinArrays(
   };
 }
 
+/**
+ * One `swapQuote` result reduced to a `VenueQuote`.
+ *
+ * Shared by `getQuote` and by the curve's `quoteFor`, so a leg the split
+ * optimizer allocates is priced by exactly the code that priced the whole
+ * order. Returns null when the pool cannot fill the amount asked, which the
+ * curve reports as "cannot fill" and the quote path reports as insufficient
+ * liquidity.
+ */
+function buildQuote(
+  request: QuoteRequest,
+  pool: VerifiedPool,
+  instance: Pick<Dlmm, "lbPair">,
+  quote: ReturnType<Dlmm["swapQuote"]>,
+  binArraysLoaded: number,
+  slot: number,
+  ctx: QuoteContext,
+  amountIn: bigint = BigInt(request.amount),
+): VenueQuote | null {
+  const consumed = BigInt(quote.consumedInAmount.toString());
+  const out = BigInt(quote.outAmount.toString());
+  if (consumed !== amountIn || out <= 0n) return null;
+  const impact = Number(quote.priceImpact.toString());
+  return {
+    venue: "meteora",
+    routeType: "DEX",
+    representationId: request.representationId,
+    poolAddress: pool.address,
+    inputMint: request.inputMint,
+    outputMint: request.outputMint,
+    amountIn: toRaw(consumed),
+    expectedAmountOut: toRaw(out),
+    minimumAmountOut: null,
+    effectivePrice: null,
+    venueFeeBps: pool.feeBps,
+    venueFeeAmount: toRaw(BigInt(quote.fee.toString())),
+    estimatedNetworkCostLamports: null,
+    priceImpactBps: Number.isFinite(impact) ? Math.round(impact * 100) : null,
+    slot,
+    quotedAt: new Date(ctx.now).toISOString(),
+    expiresAt: new Date(ctx.now + QUOTE_TTL_MS).toISOString(),
+    source: "@meteora-ag/dlmm swapQuote",
+    executionPath: "none",
+    // Mints and program re-read from chain by the caller matched the registry.
+    onchainCheckedAtQuote: true,
+    unavailableReason: null,
+    unavailableDetail: null,
+    rawRouteMetadata: {
+      binStep: instance.lbPair.binStep,
+      activeId: instance.lbPair.activeId,
+      binArraysLoaded,
+      binArrays: quote.binArraysPubkey.map((k: PublicKey) => k.toBase58()),
+      feeOnInput: quote.feeOnInput,
+      protocolFee: quote.protocolFee.toString(),
+    },
+  };
+}
+
+/**
+ * Price an arbitrary amount against bin arrays that were already fetched.
+ *
+ * `swapQuote` is synchronous, so once the arrays are in hand every allocation
+ * the split optimizer wants to try is a pure call. Returned null means "this
+ * pool cannot fill that amount": either the SDK said there is no liquidity,
+ * or it filled only part of the amount, which is not an output for the amount
+ * asked and must never be presented as one.
+ */
+export function cachedBinArrayQuote(
+  instance: Pick<Dlmm, "swapQuote">,
+  binArrays: Parameters<Dlmm["swapQuote"]>[3],
+  swapForY: boolean,
+) {
+  return (amountIn: bigint): ReturnType<Dlmm["swapQuote"]> | null => {
+    if (amountIn <= 0n) return null;
+    let quote: ReturnType<Dlmm["swapQuote"]>;
+    try {
+      quote = instance.swapQuote(new BN(amountIn.toString()), swapForY, new BN(0), binArrays, false);
+    } catch (error) {
+      if (isInsufficientLiquidity(error)) return null;
+      throw error;
+    }
+    if (BigInt(quote.consumedInAmount.toString()) !== amountIn) return null;
+    if (BigInt(quote.outAmount.toString()) <= 0n) return null;
+    return quote;
+  };
+}
+
 export class MeteoraAdapter implements VenueAdapter {
   readonly venue = "meteora" as const;
 
@@ -176,48 +264,10 @@ export class MeteoraAdapter implements VenueAdapter {
       const swapForY = request.inputMint === x;
       const outcome = await quoteWithBinArrays(instance, new BN(request.amount), swapForY);
       if (!outcome.ok) return fail("INSUFFICIENT_LIQUIDITY", outcome.detail, pool.address);
-      const { quote } = outcome;
 
-      const consumed = BigInt(quote.consumedInAmount.toString());
-      const out = BigInt(quote.outAmount.toString());
-      if (consumed !== BigInt(request.amount))
-        return fail("INSUFFICIENT_LIQUIDITY", "pool cannot fill the full amount", pool.address);
-      if (out <= 0n) return fail("INSUFFICIENT_LIQUIDITY", "zero output", pool.address);
-
-      const impact = Number(quote.priceImpact.toString());
-      return {
-        venue: "meteora",
-        routeType: "DEX",
-        representationId: request.representationId,
-        poolAddress: pool.address,
-        inputMint: request.inputMint,
-        outputMint: request.outputMint,
-        amountIn: toRaw(consumed),
-        expectedAmountOut: toRaw(out),
-        minimumAmountOut: null,
-        effectivePrice: null,
-        venueFeeBps: pool.feeBps,
-        venueFeeAmount: toRaw(BigInt(quote.fee.toString())),
-        estimatedNetworkCostLamports: null,
-        priceImpactBps: Number.isFinite(impact) ? Math.round(impact * 100) : null,
-        slot,
-        quotedAt: new Date(ctx.now).toISOString(),
-        expiresAt: new Date(ctx.now + QUOTE_TTL_MS).toISOString(),
-        source: "@meteora-ag/dlmm swapQuote",
-        executionPath: "none",
-        // Mints and program re-read from chain above matched the registry.
-        onchainCheckedAtQuote: true,
-        unavailableReason: null,
-        unavailableDetail: null,
-        rawRouteMetadata: {
-          binStep: instance.lbPair.binStep,
-          activeId: instance.lbPair.activeId,
-          binArraysLoaded: outcome.binArraysLoaded,
-          binArrays: quote.binArraysPubkey.map((k: PublicKey) => k.toBase58()),
-          feeOnInput: quote.feeOnInput,
-          protocolFee: quote.protocolFee.toString(),
-        },
-      };
+      const built = buildQuote(request, pool, instance, outcome.quote, outcome.binArraysLoaded, slot, ctx);
+      if (!built) return fail("INSUFFICIENT_LIQUIDITY", "pool cannot fill the full amount", pool.address);
+      return built;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const reason = isInsufficientLiquidity(error)
@@ -226,6 +276,68 @@ export class MeteoraAdapter implements VenueAdapter {
           ? "VENUE_TIMEOUT"
           : "SDK_ERROR";
       return fail(reason, message, pool.address);
+    }
+  }
+
+  /**
+   * A pure output curve over one DLMM pool.
+   *
+   * `swapQuote` is synchronous; only fetching the bin arrays is not. So the
+   * arrays are loaded once here, at the widest bound the adapter will walk,
+   * and every allocation the split optimizer tries is then priced off that
+   * one read. Without this the optimizer could never place a leg on Meteora,
+   * whatever the registry held: it splits across curves, and Meteora had
+   * none. Measured on 16 September 2026, Meteora DLMM appears in 13% of
+   * winning external routes for Henar's listed equities.
+   *
+   * An amount the cached arrays cannot fill returns null rather than a
+   * partial fill, so the optimizer allocates away from it exactly as it does
+   * for a pool that is out of liquidity.
+   */
+  async curve(request: QuoteRequest, pool: VerifiedPool, ctx: QuoteContext): Promise<VenueCurve | null> {
+    if (!ctx.connection || pool.venue !== "meteora" || !pool.enabled) return null;
+    const pair = new Set([pool.baseMint, pool.quoteMint]);
+    if (!pair.has(request.inputMint) || !pair.has(request.outputMint)) return null;
+    try {
+      const DLMM = await dlmm();
+      const connection: Connection = ctx.connection;
+      const [instance, slot] = await Promise.all([
+        DLMM.create(connection, new PublicKey(pool.address), { cluster: "mainnet-beta" }),
+        connection.getSlot("confirmed"),
+      ]);
+      const x = instance.tokenX.publicKey.toBase58();
+      const y = instance.tokenY.publicKey.toBase58();
+      if (!(pair.has(x) && pair.has(y))) return null;
+      if (instance.program.programId.toBase58() !== pool.programId) return null;
+
+      const swapForY = request.inputMint === x;
+      const binArrays = await instance.getBinArrayForSwap(swapForY, MAX_BIN_ARRAYS);
+      if (!binArrays.length) return null;
+
+      const priceAt = cachedBinArrayQuote(instance, binArrays, swapForY);
+
+      return {
+        venue: "meteora",
+        poolAddress: pool.address,
+        available: true,
+        outputFor: (amountIn) => {
+          if (amountIn <= 0n) return 0n;
+          try {
+            const q = priceAt(amountIn);
+            return q ? BigInt(q.outAmount.toString()) : null;
+          } catch {
+            return null;
+          }
+        },
+        quoteFor: (amountIn) => {
+          const q = priceAt(amountIn);
+          const built = q ? buildQuote(request, pool, instance, q, binArrays.length, slot, ctx, amountIn) : null;
+          if (!built) throw new Error(`meteora cannot fill ${amountIn} on ${pool.address}`);
+          return built;
+        },
+      };
+    } catch {
+      return null;
     }
   }
 

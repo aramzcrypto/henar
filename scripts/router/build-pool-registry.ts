@@ -29,9 +29,20 @@ const OUTPUT = "src/data/router/pools.json";
 const NON_ROUTABLE_OUTPUT = "src/data/router/non-routable-pairs.json";
 const MIN_TVL_USD = 1_000;
 
+/**
+ * `direct` means Henar has an adapter that can quote this program itself.
+ *
+ * CPMM became direct when `raydiumCpmmAdapter` landed with a quote, a curve
+ * and a builder, and is registered in the production quote path; the flag was
+ * simply never flipped, so every CPMM pool stayed disabled with a reason that
+ * said Henar had no adapter. Raydium CPMM appears in 9% of winning external
+ * routes for Henar's listed equities (measured 16 September 2026).
+ *
+ * AMM v4 stays false: there is no adapter for it.
+ */
 const RAYDIUM_PROGRAMS: Record<string, { poolType: string; direct: boolean }> = {
   CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK: { poolType: "clmm", direct: true },
-  CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C: { poolType: "cpmm", direct: false },
+  CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C: { poolType: "cpmm", direct: true },
   "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8": { poolType: "amm_v4", direct: false },
 };
 
@@ -71,6 +82,9 @@ type MeteoraDiscoveryRow = {
     tokenYMint: string;
     binStep: number;
     baseFeeBps: number | null;
+    /** Meteora data API. Null is "unknown", which is not zero. */
+    tvlUsd?: number | null;
+    blacklisted?: boolean;
   }[];
   fetchedAt: string;
   error: string | null;
@@ -363,6 +377,17 @@ function main() {
           reject("meteora: not an exact mint/USDC pair");
           continue;
         }
+        /* Judged by the same measured floor as every other venue, now that
+           discovery reads TVL from Meteora's data API. Previously every pair
+           was parked as "liquidity not yet reviewed", which made the venue
+           unreachable no matter how deep the pool: nobody was ever going to
+           review 291 pairs by hand. Unknown TVL still fails the floor, so an
+           unreadable pair is refused rather than assumed liquid. */
+        const tvl = typeof pair.tvlUsd === "number" && Number.isFinite(pair.tvlUsd) ? pair.tvlUsd : null;
+        let disabledReason: string | null = null;
+        if (pair.blacklisted) disabledReason = "pool is blacklisted by Meteora";
+        else if (tvl === null) disabledReason = "DLMM liquidity unknown; data API returned no TVL";
+        else if (tvl < MIN_TVL_USD) disabledReason = `TVL $${Math.round(tvl)} below $${MIN_TVL_USD} floor`;
         pools.push({
           id: `meteora:${pair.address}`,
           representationId: rep.representationId,
@@ -378,8 +403,8 @@ function main() {
           feeBps: pair.baseFeeBps,
           feeConfig: { binStep: pair.binStep },
           observedTokenPrograms: null,
-          tvlUsd: null,
-          discoveredFrom: "rpc:DLMM.getLbPairs",
+          tvlUsd: tvl,
+          discoveredFrom: "rpc:DLMM.getLbPairs+datapi",
           discoveredAt: row.fetchedAt,
           verifiedAt: now,
           verification: "DISCOVERED",
@@ -387,11 +412,8 @@ function main() {
           verificationDetail: null,
           eligibility: "ROUTER_ELIGIBLE",
           dbc: null,
-          // DLMM discovery reports no TVL; a pair is enabled only after a
-          // reviewer records liquidity. Until then the adapter reports
-          // NO_VERIFIED_POOL, which is the honest state.
-          enabled: false,
-          disabledReason: "DLMM liquidity not yet reviewed",
+          enabled: disabledReason === null,
+          disabledReason,
         });
       }
     }
@@ -498,6 +520,38 @@ function main() {
         enabled: routable,
         disabledReason: routable ? null : "STOCK_PAIRED_INFRASTRUCTURE: not a USDC↔equity route",
       });
+    }
+
+    /* `pools.json` has three writers, and this one used to overwrite the
+       other two.
+   
+         - this builder owns direct USDC↔equity pools for the public issuers,
+           rebuilt from the discovery artifacts above;
+         - `router:admit:legs` and `router:qualify:intermediates` own
+           ROUTING_LEG and INTERMEDIATE_ROUTE rows, the two-hop path
+           infrastructure;
+         - `router:discover:private` owns PreStocks and Tessera pools.
+   
+       A documented `npm run router:pools:build` therefore deleted 431 routing
+       legs (117 of them enabled) and all 182 private-market pools, silently
+       taking two-hop paths and Pre-IPO routing down with it. Rows this
+       builder does not produce by construction are now carried over exactly
+       as written; the deploy-time on-chain verification pass remains the
+       authority on whether a carried row is still real. */
+    const PUBLIC_PROVIDERS = new Set(["xstocks", "backpack", "ondo"]);
+    const mine = (p: Pool) => PUBLIC_PROVIDERS.has(p.provider) && p.eligibility === "ROUTER_ELIGIBLE";
+    const existing = (await readJson<Pool[]>(OUTPUT)) ?? [];
+    const built = new Set(pools.map((p) => p.id));
+    const carried = existing.filter((p) => !mine(p) && !built.has(p.id));
+    if (carried.length) {
+      pools.push(...carried);
+      const byKind = new Map<string, number>();
+      for (const p of carried) {
+        const kind = PUBLIC_PROVIDERS.has(p.provider) ? p.eligibility : p.provider;
+        byKind.set(kind, (byKind.get(kind) ?? 0) + 1);
+      }
+      const summary = [...byKind.entries()].sort().map(([k, n]) => `${n} ${k}`).join(", ");
+      process.stdout.write(`  carried over ${carried.length} pools written by another script (${summary})\n`);
     }
 
     pools.sort((a, b) =>

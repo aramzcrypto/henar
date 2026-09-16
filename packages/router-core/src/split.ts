@@ -54,7 +54,20 @@ export type SplitOptions = {
   refineSteps?: number;
 };
 
-export const DEFAULT_SPLIT_OPTIONS: SplitOptions = { granularity: 20, maxLegs: 2, extraLegCostBps: 0, refineSteps: 60 };
+/**
+ * Three legs, not two.
+ *
+ * Measured against Jupiter on Henar's own listed equities (16 September 2026,
+ * `docs/router/COMPETITIVENESS_2026-09-16.md`): a winning external route used
+ * a mean of 1.15 venues at $1,000, 2.73 at $10,000 and 3.27 at $50,000. A
+ * two-leg cap cannot express the shape of the trade at size, and the measured
+ * gap widened from about 3 bps to 8 bps over exactly that range.
+ *
+ * The cap is on legs the optimizer may *open*, not a target. One venue still
+ * wins whenever it is genuinely best, and the caller ranks the construction
+ * against every single-venue quote before anything is emitted.
+ */
+export const DEFAULT_SPLIT_OPTIONS: SplitOptions = { granularity: 24, maxLegs: 3, extraLegCostBps: 0, refineSteps: 60 };
 
 export type SplitLeg = { venue: Venue; poolAddress: string | null; amountIn: RawAmount; amountOut: RawAmount; percentBps: number };
 
@@ -76,6 +89,14 @@ export type SplitResult = {
   reason: string;
   excluded: { venue: Venue; reason: string }[];
 };
+
+/**
+ * Passes of pairwise refinement. Each pass is O(legs^2) ternary searches over
+ * already-cached state, so the bound exists to stop a pathological curve
+ * oscillating, not because more passes would be expensive. Convergence
+ * normally happens on the second pass, which then finds nothing and breaks.
+ */
+const MAX_REFINE_SWEEPS = 4;
 
 function chunks(total: bigint, granularity: number): bigint[] {
   const g = BigInt(Math.max(1, granularity));
@@ -140,20 +161,49 @@ export function optimizeSplit(curves: VenueCurve[], amountIn: bigint, options: S
      a few dozen evaluations of curves already built from cached state. The
      refined allocation is adopted only when it genuinely produces more. */
   let refined = false;
-  if (legs.length === 2) {
-    const [first, second] = legs.map(([curve]) => curve);
-    const best = refineBoundary(first, second, amountIn, options.refineSteps ?? 60);
-    if (best && best.total > splitOut) {
-      currentOut.set(first, best.outA);
-      currentOut.set(second, best.outB);
-      allocated.set(first, best.amountA);
-      allocated.set(second, amountIn - best.amountA);
-      legs = [
-        [first, best.amountA],
-        [second, amountIn - best.amountA],
-      ];
-      splitOut = best.total;
-      refined = true;
+  if (legs.length >= 2) {
+    /* Pairwise refinement, swept until a full pass finds nothing.
+       Refining only the first two legs left every third-leg boundary at the
+       coarse 1/granularity resolution, which is the whole reason a third leg
+       used to be worth less than it should be. Holding the other legs fixed
+       and refining one pair at a time keeps each step a one-dimensional
+       ternary search over a concave sum, and the total is monotonic because a
+       pair is adopted only when it strictly improves. */
+    const refineSteps = options.refineSteps ?? 60;
+    for (let sweep = 0; sweep < MAX_REFINE_SWEEPS; sweep += 1) {
+      let improvedThisSweep = false;
+      for (let i = 0; i < legs.length; i += 1) {
+        for (let j = i + 1; j < legs.length; j += 1) {
+          const a = legs[i][0];
+          const b = legs[j][0];
+          const pairTotal = legs[i][1] + legs[j][1];
+          if (pairTotal <= 1n) continue;
+          const before = currentOut.get(a)! + currentOut.get(b)!;
+          const best = refineBoundary(a, b, pairTotal, refineSteps);
+          if (!best || best.total <= before) continue;
+          legs[i] = [a, best.amountA];
+          legs[j] = [b, pairTotal - best.amountA];
+          currentOut.set(a, best.outA);
+          currentOut.set(b, best.outB);
+          allocated.set(a, best.amountA);
+          allocated.set(b, pairTotal - best.amountA);
+          splitOut = splitOut - before + best.total;
+          improvedThisSweep = true;
+          refined = true;
+        }
+      }
+      if (!improvedThisSweep) break;
+    }
+    /* A refined boundary can empty a leg. Carrying a zero-amount leg would
+       publish a route with a 0% allocation and pay for an instruction that
+       moves nothing. */
+    const emptied = legs.filter(([, v]) => v <= 0n);
+    if (emptied.length) {
+      for (const [curve] of emptied) {
+        allocated.set(curve, 0n);
+        currentOut.set(curve, 0n);
+      }
+      legs = legs.filter(([, v]) => v > 0n);
     }
   }
 

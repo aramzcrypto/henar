@@ -319,7 +319,15 @@ async function quoteRepresentationUnrecorded(
   // One call per venue by default (the adapter picks its deepest pool); with
   // split routing on, one call per enabled pool so every pool is compared.
   const calls = options.adapters.flatMap((adapter) => {
-    const venuePools = pools.filter((p) => p.venue === adapter.venue);
+    /* Same venue AND a pool type the adapter declares. Raydium CLMM and CPMM
+       share the venue id `raydium` but not a program, so matching on venue
+       alone handed each adapter the other's pools: every one of those calls
+       could only come back NO_VERIFIED_POOL, after paying for the RPC reads
+       to find that out. With CPMM pools now enabled that was about to double
+       for no quotes. An adapter that declares no pool type still receives the
+       venue's pools, which is how the aggregators keep working. */
+    const declared = adapter.capabilities().poolTypes;
+    const venuePools = pools.filter((p) => p.venue === adapter.venue && (!declared.length || declared.includes(p.poolType)));
     if (splitRouting && venuePools.length > 1) return venuePools.map((pool) => ({ adapter, pools: [pool] }));
     return [{ adapter, pools: venuePools }];
   });
