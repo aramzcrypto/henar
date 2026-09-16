@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Info } from "lucide-react";
 import { rateIsStrategyReturn, type DepositAvailability } from "@/lib/strategies/presentation";
 import type { PoolStats } from "@/lib/strategies/pool-stats";
 import type { StrategyDefinition, StrategyInstance } from "@/lib/strategies/types";
@@ -9,7 +8,7 @@ import type { StrategyDefinition, StrategyInstance } from "@/lib/strategies/type
 const QUICK = [100, 500, 1_000];
 
 function money(value: number) {
-  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -57,7 +56,6 @@ export function StrategyTicket({
 
   const isAccumulate = instance.strategyType === "SMART_ACCUMULATE";
   const isRange = instance.strategyType === "RANGE_YIELD";
-  const price = instance.state.kind === "SMART_ACCUMULATE" ? instance.state.currentReference : instance.state.kind === "RANGE_YIELD" ? instance.state.currentPrice : null;
 
   return (
     <aside className="earn-ticket strategy-ticket" aria-label={`${instance.name} deposit`}>
@@ -90,61 +88,38 @@ export function StrategyTicket({
         </div>
       </div>
 
-      <details className="fee-disclosure" open>
-        <summary>
-          <span>
-            <Info size={14} /> What this would do
-          </span>
-          <span>0% fee</span>
-        </summary>
-        <div className="trade-details">
-          {rate ? (
-            <Row label={`${rate.label} · ${rate.window}`}>
-              {rate.value.toFixed(2)}% <small className="ticket-source">{rate.source}</small>
+      <div className="ticket-rows">
+        {rate && (
+          <Row label={rate.label}>
+            {rate.value.toFixed(2)}% <small className="ticket-source">{rate.source} · {rate.window}</small>
+          </Row>
+        )}
+
+        {isAccumulate ? (
+          <>
+            <Row label="Buys between">
+              {instance.state.kind === "SMART_ACCUMULATE" && instance.state.levels.length
+                ? `${money(Number(instance.state.levels[instance.state.levels.length - 1].price))} and ${money(Number(instance.state.levels[0].price))}`
+                : "—"}
             </Row>
-          ) : isAccumulate ? null : (
-            <Row label="Rate">Unavailable</Row>
-          )}
+            <Row label="If price never falls">Your USDC stays USDC</Row>
+          </>
+        ) : isRange ? (
+          <>
+            <Row label="Range">
+              {instance.state.kind === "RANGE_YIELD" ? `${money(Number(instance.state.lowerPrice))} – ${money(Number(instance.state.upperPrice))}` : "—"}
+            </Row>
+            {projected !== null && <Row label="At that rate">{money(projected)} a year</Row>}
+          </>
+        ) : (
+          <>
+            {projected !== null && <Row label="At that rate">{money(projected)} a year</Row>}
+            <Row label="Principal">Stays in USDC</Row>
+          </>
+        )}
 
-          {isAccumulate ? (
-            <>
-              <Row label="Current price">{price ? money(Number(price)) : "—"}</Row>
-              <Row label="Buys between">
-                {instance.state.kind === "SMART_ACCUMULATE" && instance.state.levels.length
-                  ? `${money(Number(instance.state.levels[instance.state.levels.length - 1].price))} and ${money(Number(instance.state.levels[0].price))}`
-                  : "—"}
-              </Row>
-              <Row label="Levels">{instance.state.kind === "SMART_ACCUMULATE" ? `${instance.state.levels.length} · ${instance.state.distribution === "DEEPER_DIP" ? "more capital lower" : "even"}` : "—"}</Row>
-              <Row label="If price never falls">Your {instance.market.quoteSymbol} stays as {instance.market.quoteSymbol}</Row>
-            </>
-          ) : isRange ? (
-            <>
-              <Row label="Current price">{price ? money(Number(price)) : "—"}</Row>
-              <Row label="Active range">
-                {instance.state.kind === "RANGE_YIELD" ? `${money(Number(instance.state.lowerPrice))} – ${money(Number(instance.state.upperPrice))}` : "—"}
-              </Row>
-              <Row label="Split at deposit">Half {instance.market.assetSymbol}, half {instance.market.quoteSymbol}</Row>
-              {projected !== null && <Row label="At the current fee rate">{money(projected)} a year</Row>}
-              <Row label="Out of range">Earns no fees until price returns</Row>
-            </>
-          ) : (
-            <>
-              {projected !== null ? (
-                <>
-                  <Row label="At the current rate">{money(projected)} a year in interest</Row>
-                  <Row label="That buys">{instance.state.kind === "EARN_STOCKS" ? instance.state.targetStockSymbol : "stock"}, not more {instance.market.quoteSymbol}</Row>
-                </>
-              ) : (
-                <Row label="Interest buys">{instance.state.kind === "EARN_STOCKS" ? instance.state.targetStockSymbol : "stock"}</Row>
-              )}
-              <Row label="Your principal">Stays in {instance.market.quoteSymbol}, never converted</Row>
-            </>
-          )}
-
-          <Row label="Henar fee">0% during preview</Row>
-          {rate?.caveat && <Row label="Note">{rate.caveat}</Row>}
-        </div>
-      </details>
+        <Row label="Henar fee">0%</Row>
+      </div>
 
       <button className="primary strategy-deposit" disabled aria-disabled="true">
         {deposits.label}

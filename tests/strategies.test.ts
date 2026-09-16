@@ -420,8 +420,12 @@ test("every strategy is internal-demo-only, unaudited and charges nothing", () =
 
 test("Smart Accumulate is described as one-way, because the primitive is", () => {
   const definition = definitionBySlug("smart-accumulate")!;
-  assert.match(definition.returnSource, /stays converted/);
-  assert.ok(definition.risks.some((r) => /one-way/i.test(r)));
+  /* The promise has to match the protocol: Meteora's limit-order fills are
+     permanent, so the copy must say so somewhere a reader will see it. Which
+     sentence carries it can change; that it is carried cannot. */
+  const described = [definition.summary, definition.returnSource, definition.riskSummary, ...definition.risks].join(" ");
+  assert.match(described, /one-way|permanent|stays converted/i);
+  assert.match(described, /not yield/i, "it must not read as a yield product");
   // And its operator model states the constraint the protocol imposes.
   assert.match(definition.operatorModel, /no operator/i);
 });

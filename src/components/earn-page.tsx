@@ -9,8 +9,8 @@ import type { StrategyDefinition, StrategyInstance } from "@/lib/strategies/type
 export function usd(value: number | null | undefined, compact = true) {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   if (compact) {
-    if (Math.abs(value) >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
-    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    if (Math.abs(value) >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
     if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
   }
   return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -20,36 +20,23 @@ export function ComingSoonTag({ label }: { label: string }) {
   return <span className="earn-tag earn-tag-soon">{label}</span>;
 }
 
-/** The pair or asset the pool trades, for the row subtitle. */
-function poolLabel(instance: StrategyInstance, stats: PoolStats | null) {
-  const protocol = instance.market.protocol === "kamino" ? "Kamino" : "Meteora DLMM";
-  if (instance.market.protocol === "kamino") return `${protocol} · ${instance.market.quoteSymbol} reserve`;
-  return `${protocol} · ${stats?.pair ?? `${instance.market.assetSymbol}/${instance.market.quoteSymbol}`}`;
-}
-
 /**
- * The headline figure for a pool.
+ * The one figure a pool leads with.
  *
- * A cash-yield pool has a supply rate and a market-making pool has a fee
- * rate. An accumulation pool has neither — its return is the price it pays —
- * so it shows the price rather than borrowing a yield number that would not
- * mean anything.
+ * A cash-yield pool has a rate and a market-making pool has a fee rate. An
+ * accumulation pool has neither — its return is the price it pays — so it
+ * leads with the price instead of borrowing a number it does not earn.
  */
-function headline(instance: StrategyInstance, stats: PoolStats | null) {
+export function headlineFigure(instance: StrategyInstance, stats: PoolStats | null) {
   if (!rateIsStrategyReturn(instance.strategyType)) {
     const price = instance.state.kind === "SMART_ACCUMULATE" ? instance.state.currentReference : null;
     return { value: price ? `$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—", label: `${instance.market.assetSymbol ?? "Stock"} price` };
   }
   if (!stats?.rate) return { value: "—", label: "Rate unavailable" };
-  return { value: `${stats.rate.value.toFixed(2)}%`, label: `${stats.rate.label} · ${stats.rate.window}` };
+  return { value: `${stats.rate.value.toFixed(2)}%`, label: stats.rate.label };
 }
 
-/**
- * Earn: three strategy pools.
- *
- * Each pool is real and running on its protocol. What is not built is
- * Henar's deposit path into it, which is what "coming soon" refers to.
- */
+/** Earn: three pools, each live on its protocol, none open for deposits yet. */
 export function EarnPage({
   definitions,
   instances,
@@ -61,7 +48,7 @@ export function EarnPage({
   poolStats: Record<string, PoolStats | null>;
   deposits: DepositAvailability;
 }) {
-  const rows = definitions
+  const pools = definitions
     .map((definition) => {
       const instance = instances.find((i) => i.definitionId === definition.id) ?? null;
       return instance ? { definition, instance, stats: poolStats[instance.id] ?? null } : null;
@@ -75,39 +62,36 @@ export function EarnPage({
         <p>Put your cash and stocks to work.</p>
       </div>
 
-      {rows.length === 0 ? (
-        <p className="fin-empty">Strategy pools are unavailable right now.</p>
+      {pools.length === 0 ? (
+        <p className="fin-empty">Pools are unavailable right now.</p>
       ) : (
-        <div className="earn-pool-list">
-          <div className="earn-pool-head strategy-pool-row">
-            <span>Pool</span>
-            <span>Deposit</span>
-            <span>Rate</span>
-            <span>Pool size</span>
-            <span>Status</span>
-            <span />
-          </div>
-          {rows.map(({ definition, instance, stats }) => {
-            const figure = headline(instance, stats);
+        <div className="pool-cards">
+          {pools.map(({ definition, instance, stats }) => {
+            const figure = headlineFigure(instance, stats);
             return (
-              <Link className="earn-pool-row strategy-pool-row" key={definition.id} href={`/earn/strategies/${definition.slug}`}>
-                <span className="earn-pool-market">
-                  <span>
-                    <strong>{instance.name}</strong>
-                    <small>{poolLabel(instance, stats)}</small>
-                  </span>
-                </span>
-                <span className="strategy-pool-deposit">{definition.deposits}</span>
-                <span className="strategy-pool-rate">
-                  <b>{figure.value}</b>
-                  <small>{figure.label}</small>
-                </span>
-                <span>{usd(stats?.liquidityUsd)}</span>
-                <span>
+              <Link className="pool-card" key={definition.id} href={`/earn/strategies/${definition.slug}`}>
+                <div className="pool-card-top">
+                  <span className="pool-card-protocol">{definition.protocols[0]}</span>
                   <ComingSoonTag label={deposits.label} />
-                </span>
-                <span className="earn-pool-arrow">
-                  <ArrowRight size={14} />
+                </div>
+                <h2>{instance.name}</h2>
+                <p>{definition.summary}</p>
+                <div className="pool-card-figure">
+                  <strong>{figure.value}</strong>
+                  <small>{figure.label}</small>
+                </div>
+                <dl className="pool-card-facts">
+                  <div>
+                    <dt>Deposit</dt>
+                    <dd>{definition.deposits}</dd>
+                  </div>
+                  <div>
+                    <dt>Pool size</dt>
+                    <dd>{usd(stats?.liquidityUsd)}</dd>
+                  </div>
+                </dl>
+                <span className="pool-card-cta">
+                  View pool <ArrowRight size={14} />
                 </span>
               </Link>
             );
@@ -116,9 +100,7 @@ export function EarnPage({
       )}
 
       <p className="onchain-method earn-footnote">
-        Each pool is live on its own protocol; depositing into one through Henar is not built yet. Rates are read from{" "}
-        {[...new Set(rows.map(({ stats }) => stats?.rate?.source).filter(Boolean))].join(" and ") || "their protocols"} and carry the window they were measured over. Henar&apos;s existing USDC product is at{" "}
-        <Link href="/earn/usdc-stocks">Earn stocks</Link>.
+        Each pool is live on its protocol. Depositing through Henar is not built yet.
       </p>
     </div>
   );

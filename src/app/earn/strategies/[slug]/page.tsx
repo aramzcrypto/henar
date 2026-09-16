@@ -7,7 +7,6 @@ import { rateLimitedConnection } from "@/lib/rpc-limiter";
 import { definitionBySlug } from "@/lib/strategies/definitions";
 import { strategyInstanceBySlug } from "@/lib/strategies/engine";
 import { marketRegistryReport } from "@/lib/strategies/markets";
-import { evaluateStrategy } from "@/lib/strategies/runner";
 import { depositAvailability, statsForStrategy } from "@/lib/strategies/pool-stats";
 import { KAMINO } from "@/lib/strategies/adapters/kamino";
 
@@ -30,10 +29,7 @@ export default async function Page({ params }: Props) {
   const rpc = process.env.SOLANA_RPC_URL;
   const instance = await strategyInstanceBySlug(slug, { connection: rpc ? rateLimitedConnection(rpc) : null }).catch(() => null);
   if (!instance) notFound();
-  const [evaluation, stats] = await Promise.all([
-    evaluateStrategy(instance).catch(() => null),
-    statsForStrategy({ protocol: instance.market.protocol, address: instance.market.address, market: KAMINO.mainMarket }).catch(() => null),
-  ]);
+  const stats = await statsForStrategy({ protocol: instance.market.protocol, address: instance.market.address, market: KAMINO.mainMarket }).catch(() => null);
   return (
     <div className="app page-earn">
       <AppHeader active="earn" />
@@ -41,7 +37,6 @@ export default async function Page({ params }: Props) {
         <StrategyDetail
           definition={definition}
           instance={instance}
-          proposals={evaluation?.proposals ?? []}
           markets={marketRegistryReport({ requireLimitOrders: definition.strategyType === "SMART_ACCUMULATE" })}
           stats={stats}
           deposits={depositAvailability()}
