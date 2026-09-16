@@ -101,11 +101,15 @@ to three.
 4. **Stop charging the fee on resold aggregator routes, or cut it.** On crypto
    Henar is Jupiter minus 10 bps in every observation. This is a pricing
    decision, not an engineering one, and no amount of routing work changes it.
-5. **The market-maker tier (HumidiFi, ZeroFi, BisonFi, GoonFi, TesseraV,
+5. ~~**The market-maker tier (HumidiFi, ZeroFi, BisonFi, GoonFi, TesseraV,
    Kipseli, Archer) is not an adapter you can write.** These quote off-chain
    through permissioned programs and are reachable only through an aggregator
-   that has a relationship with them. This is the part of
-   `MISSING_LIQUIDITY.md` that still holds.
+   that has a relationship with them.~~
+   **Corrected the same day, see `EDGES_2026-09-16.md`.** This was an
+   assumption, not a measurement, and it is wrong. Their pools are ordinary
+   on-chain accounts under ordinary programs and nothing about them is
+   permissioned. They are closed-source, which blocks reimplementing their
+   curve but not pricing them by simulation.
 
 ## How to reproduce
 
@@ -188,5 +192,8 @@ prices you cannot honour measures nothing.
    Henar's own fee, charged on a route Jupiter would have given the user for
    nothing. This is a pricing decision and no amount of engineering
    substitutes for it.
-2. **Access to the market-maker tier.** Not an adapter anyone can write.
-3. Everything else is now measured, and small.
+2. **Access to the market-maker tier.** Reachable after all, by simulation
+   rather than by SDK — see `EDGES_2026-09-16.md`.
+3. **Quoting the company rather than the mint**, which is worth a measured
+   20 bps median and is larger than this entire gap.
+4. Everything else is now measured, and small.
