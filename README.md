@@ -86,6 +86,8 @@ npm run earnings:build        # filed results powering the calendar
 npm run calendar:warm -- 200  # widen the local research cache
 ```
 
+Session handoff notes: [16 September 2026](docs/HANDOFF_2026-09-16.md).
+
 The repository also contains release checks for protocol configuration, routes, transaction size, treasury accounts, and deployment planning. See [validation evidence](docs/VALIDATION.md), [mainnet setup](docs/MAINNET.md), and [security review](docs/SECURITY_REVIEW_RETEST_2026-09-13.md).
 
 The current review and test evidence supports a hackathon preview. A funded public launch still requires deployed-binary verification, capped rollout testing, operational monitoring, and an independent smart-contract audit.
