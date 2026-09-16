@@ -114,3 +114,79 @@ The comparison harness is not committed; it issues production quotes against
 mint pair, size and side, and compares net output. `npm run router:benchmark:matrix`
 covers the same ground with a native-engine breakdown but needs
 `JUPITER_API_KEY` and `SOLANA_RPC_URL` locally.
+
+---
+
+# Part 2 — what changed, and what the numbers are now
+
+Same day, after the work below. Measurements are live production quotes
+against Jupiter's public API, as above.
+
+## What was built
+
+1. **Three-leg splits with real refinement.** The cap was two legs, and only
+   the first pair's boundary was refined; the rest sat on the coarse
+   1/granularity grid. The cap is three and refinement sweeps every pair.
+2. **Meteora can be a leg.** The optimizer splits across curves and Meteora
+   had none, so no allocation could ever land on it. It has one now, priced
+   off a single bin-array read.
+3. **Meteora has pools.** 291 public-equity pairs discovered on chain, 50
+   above the $1,000 TVL floor, including Micron at $4.2M. There were zero
+   before — the discovery script had never run successfully.
+4. **Raydium CPMM enabled.** The adapter existed; the registry flag did not.
+5. **The headline is a price Henar can fill.** See Part 3.
+
+## Splits now work, and are worth something
+
+12 split constructions across 16 equities at $5,000 and $25,000:
+
+| | |
+| --- | --- |
+| Median gain over the best single native pool | **+3 bps** |
+| Best observed | +21 bps |
+| Splits that lost to a single pool | **0** |
+| Three-venue routes | 2 |
+| Routes with a Meteora leg | 2 |
+
+A real one, SPCX at $10,000: Raydium 54.66%, Meteora 26.28%, Orca 19.06%.
+Neither the third leg nor the Meteora leg was expressible this morning.
+
+## The native engine still loses to Jupiter
+
+| Notional | Native vs Jupiter | Native wins |
+| --- | --- | --- |
+| $10,000 | -23 bps | 0 of 11 |
+| $50,000 | -54 bps | 0 of 10 |
+
+This is the part routing work cannot fix. Jupiter's winning routes run
+through HumidiFi, ZeroFi, BisonFi, GoonFi, TesseraV, Kipseli, Archer and
+Quantum — permissioned market makers that quote off-chain and are reachable
+only through an aggregator with a relationship to them. Henar's engine is now
+good at using the liquidity it can see; the liquidity it can see is a strict
+subset.
+
+## The user-facing gap
+
+| Notional | Before | After |
+| --- | --- | --- |
+| $1,000 | -13.0 bps | **-11.4 bps** |
+| $10,000 | -18.2 bps | **-18.7 bps** |
+
+Barely moved, and that is the honest headline. Henar selected Jupiter in 24
+of 32 observations, and a resold Jupiter route with a 10 bps fee on top is
+Jupiter minus 10 bps by construction. The routing work pays only on the rows
+Henar's own engine wins, which are the minority.
+
+**An interim measurement showed -3.5 and -0.4 bps. It was wrong**, and worth
+recording as a caution: it counted OpenOcean and Titan quotes that Henar
+cannot fill. Removing them removed the improvement. A benchmark that counts
+prices you cannot honour measures nothing.
+
+## What actually closes it
+
+1. **The fee on resold aggregator routes.** 10 bps of the 11 to 19 bps gap is
+   Henar's own fee, charged on a route Jupiter would have given the user for
+   nothing. This is a pricing decision and no amount of engineering
+   substitutes for it.
+2. **Access to the market-maker tier.** Not an adapter anyone can write.
+3. Everything else is now measured, and small.
