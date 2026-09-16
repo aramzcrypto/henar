@@ -11,6 +11,26 @@ export type ExecutionSource =
 
 export type QuoteProvider = "jupiter" | "raydium" | "openocean" | "titan";
 
+/**
+ * Providers whose winning quote Henar can actually fill.
+ *
+ * Two of the four are benchmarks. `/api/market` builds every market swap
+ * through Jupiter's build endpoint, and the Henar Router builds Raydium
+ * natively, so a quote from either can be honoured. OpenOcean and Titan have
+ * no builder anywhere in Henar: their venue adapters return NOT_IMPLEMENTED,
+ * and OpenOcean's says in as many words that it is a benchmark venue.
+ *
+ * Ranking purely by output therefore let a source with no builder take the
+ * ticket's "Receive" line and promise an amount the order would never
+ * produce. Measured on 16 September 2026, OpenOcean or Titan took the
+ * headline in 4 of 23 equity quotes, once by 11.6 bps.
+ *
+ * Benchmark sources stay in `candidates` and are still shown: telling the
+ * user another venue is 12 bps better is worth doing. It just is not a
+ * promise.
+ */
+export const FILLABLE_PROVIDERS = new Set<QuoteProvider>(["jupiter", "raydium"]);
+
 export type ExecutionQuoteRequest = {
   inputMint: string;
   outputMint: string;
@@ -42,7 +62,18 @@ export type NormalizedExecutionQuote = {
   quotedAt: string;
   expiresAt: string;
   transactionAvailable: boolean;
+  /** Whether Henar can build and submit this route. See FILLABLE_PROVIDERS. */
+  fillable: boolean;
 };
+
+/**
+ * What a quote adapter returns.
+ *
+ * Fillability is Henar's property, not the provider's — a provider has no
+ * idea whether Henar has a builder for it — so adapters do not set it and
+ * cannot get it wrong. `available()` derives it on the way in.
+ */
+export type SourceExecutionQuote = Omit<NormalizedExecutionQuote, "fillable">;
 
 export type ExecutionSourceResult =
   | {

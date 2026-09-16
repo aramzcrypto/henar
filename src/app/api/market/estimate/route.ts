@@ -91,6 +91,11 @@ export async function POST(request: Request) {
               quotedAt: engine.quotedAt,
               expiresAt: engine.expiresAt,
               transactionAvailable: false,
+              /* Henar's own engine, used as the backstop for private-market
+                 pairs the HTTP aggregators do not index. The router builds
+                 and submits this route itself, so unlike OpenOcean or Titan
+                 it is a quote the user can actually be given. */
+              fillable: true,
             };
         }
       }

@@ -7,13 +7,13 @@ import type {
   AggregatedExecutionQuote,
   ExecutionQuoteRequest,
   ExecutionSource,
-  NormalizedExecutionQuote,
+  SourceExecutionQuote,
 } from "./types";
 
 const adapters: Array<
   [
     ExecutionSource,
-    (request: ExecutionQuoteRequest) => Promise<NormalizedExecutionQuote>,
+    (request: ExecutionQuoteRequest) => Promise<SourceExecutionQuote>,
   ]
 > = [
   ["jupiter", quoteJupiter],
@@ -38,7 +38,8 @@ function indicativeKey(request: ExecutionQuoteRequest) {
   return `${request.inputMint}:${request.outputMint}:${request.amount}:${request.slippageBps}`;
 }
 
-async function aggregateWithAdapters(
+/** Exported for tests: the selection rule is the part worth pinning down. */
+export async function aggregateWithAdapters(
   request: ExecutionQuoteRequest,
   selected: typeof adapters,
   timeoutMs?: number,
@@ -46,7 +47,7 @@ async function aggregateWithAdapters(
   const tasks = selected.map(([, adapter]) => adapter(request));
   const bounded = timeoutMs
     ? tasks.map((task) =>
-        new Promise<NormalizedExecutionQuote>((resolve, reject) => {
+        new Promise<SourceExecutionQuote>((resolve, reject) => {
           const timer = setTimeout(
             () => reject(new Error("Quote source timed out.")),
             timeoutMs,
@@ -85,8 +86,16 @@ async function aggregateWithAdapters(
           : -1;
     });
   const quotedAt = new Date().toISOString();
+  /* The headline is the best quote Henar can actually fill, not the best
+     quote it can see. Every market swap is built through Jupiter; OpenOcean
+     and Titan quote only. Ranking on output alone put their numbers on the
+     ticket's Receive line, promising the user an amount the order could never
+     produce. Non-fillable sources stay in `candidates` and are still shown,
+     because "another venue is 12 bps better" is worth knowing — it just is
+     not a promise. */
+  const fillable = candidates.filter((quote) => quote.fillable);
   return {
-    selected: candidates[0] ?? null,
+    selected: fillable[0] ?? null,
     candidates,
     sources,
     quotedAt,

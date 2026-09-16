@@ -113,13 +113,39 @@ test("portfolio and packs compatibility group by company without merging token b
 });
 
 test("public quote work is bounded per client and resets at window expiry", () => {
-  const request = new Request("https://henar.test/api/quote", {
-    headers: { "x-forwarded-for": "203.0.113.44" },
-  });
-  for (let index = 0; index < 20; index++)
-    assert.equal(consumePublicQuoteBudget(request, 10_000), true);
-  assert.equal(consumePublicQuoteBudget(request, 10_000), false);
-  assert.equal(consumePublicQuoteBudget(request, 70_001), true);
+  /* The bound is configurable, so the test sets it rather than encoding a
+     number that moves: what matters is that a client is bounded at all, that
+     the bound is the one configured, and that the window expires. */
+  const previous = process.env.HENAR_PUBLIC_QUOTE_BUDGET;
+  process.env.HENAR_PUBLIC_QUOTE_BUDGET = "20";
+  try {
+    const request = new Request("https://henar.test/api/quote", {
+      headers: { "x-forwarded-for": "203.0.113.44" },
+    });
+    for (let index = 0; index < 20; index++)
+      assert.equal(consumePublicQuoteBudget(request, 10_000), true);
+    assert.equal(consumePublicQuoteBudget(request, 10_000), false);
+    assert.equal(consumePublicQuoteBudget(request, 70_001), true);
+  } finally {
+    if (previous === undefined) delete process.env.HENAR_PUBLIC_QUOTE_BUDGET;
+    else process.env.HENAR_PUBLIC_QUOTE_BUDGET = previous;
+  }
+});
+
+test("the default quote budget leaves room for a trade ticket and a comparison", () => {
+  /* Guards the reason the number was raised: a ticket refreshing four times a
+     minute across three pairs, plus the markets page, must not exhaust it. */
+  const previous = process.env.HENAR_PUBLIC_QUOTE_BUDGET;
+  delete process.env.HENAR_PUBLIC_QUOTE_BUDGET;
+  try {
+    const request = new Request("https://henar.test/api/quote", {
+      headers: { "x-forwarded-for": "203.0.113.77" },
+    });
+    for (let index = 0; index < 40; index++)
+      assert.equal(consumePublicQuoteBudget(request, 10_000), true, `quote ${index + 1} was refused`);
+  } finally {
+    if (previous !== undefined) process.env.HENAR_PUBLIC_QUOTE_BUDGET = previous;
+  }
 });
 
 test("market overview intersects Jupiter activity with exact verified mints", async () => {

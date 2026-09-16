@@ -2,7 +2,7 @@ import { z } from "zod";
 import type {
   ExecutionQuoteRequest,
   ExecutionSource,
-  NormalizedExecutionQuote,
+  SourceExecutionQuote,
 } from "../types";
 import {
   minimumOutput,
@@ -44,7 +44,7 @@ function key() {
 export async function quoteJupiter(
   request: ExecutionQuoteRequest,
   options?: { source?: ExecutionSource; dexes?: string[]; allowSlippageAdjustment?: boolean },
-): Promise<NormalizedExecutionQuote> {
+): Promise<SourceExecutionQuote> {
   validateExecutionRequest(request);
   const source = options?.source ?? "jupiter";
   const params = new URLSearchParams({

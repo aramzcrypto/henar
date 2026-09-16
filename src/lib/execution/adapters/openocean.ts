@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ExecutionQuoteRequest, NormalizedExecutionQuote } from "../types";
+import type { ExecutionQuoteRequest, SourceExecutionQuote } from "../types";
 import { QUOTE_TTL_MS, validateExecutionRequest } from "../shared";
 
 export const OPENOCEAN_PROVIDER_FEE_BPS = 15;
@@ -63,7 +63,7 @@ async function respectOpenOceanRateLimit() {
 
 export async function quoteOpenOcean(
   request: ExecutionQuoteRequest,
-): Promise<NormalizedExecutionQuote> {
+): Promise<SourceExecutionQuote> {
   validateExecutionRequest(request);
   const params = new URLSearchParams({
     inTokenAddress: request.inputMint,

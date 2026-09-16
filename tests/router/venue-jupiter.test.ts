@@ -17,6 +17,7 @@ const request: QuoteRequest = {
 
 function normalized(overrides: Partial<NormalizedExecutionQuote> = {}): NormalizedExecutionQuote {
   return {
+    fillable: true,
     source: "jupiter",
     quoteProvider: "jupiter",
     quoteId: null,

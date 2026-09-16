@@ -3,8 +3,9 @@ import type {
   ExecutionQuoteRequest,
   ExecutionSource,
   ExecutionSourceResult,
-  NormalizedExecutionQuote,
+  SourceExecutionQuote,
 } from "./types";
+import { FILLABLE_PROVIDERS } from "./types";
 
 export const QUOTE_TTL_MS = 15_000;
 
@@ -59,9 +60,12 @@ export function unavailable(
 }
 
 export function available(
-  quote: NormalizedExecutionQuote,
+  quote: SourceExecutionQuote,
 ): ExecutionSourceResult {
-  return { source: quote.source, status: "available", quote };
+  /* Derived here, once, rather than in each adapter: whether Henar can fill a
+     route is a property of the provider, and an adapter that forgot to set it
+     would put a quote-only venue back on the headline. */
+  return { source: quote.source, status: "available", quote: { ...quote, fillable: FILLABLE_PROVIDERS.has(quote.quoteProvider) } };
 }
 
 export function sourceReason(error: unknown) {

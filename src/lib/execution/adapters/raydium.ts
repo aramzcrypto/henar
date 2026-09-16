@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ExecutionQuoteRequest, NormalizedExecutionQuote } from "../types";
+import type { ExecutionQuoteRequest, SourceExecutionQuote } from "../types";
 import { QUOTE_TTL_MS, validateExecutionRequest } from "../shared";
 
 const schema = z.object({
@@ -24,7 +24,7 @@ const schema = z.object({
 
 export async function quoteRaydium(
   request: ExecutionQuoteRequest,
-): Promise<NormalizedExecutionQuote> {
+): Promise<SourceExecutionQuote> {
   validateExecutionRequest(request);
   const params = new URLSearchParams({
     inputMint: request.inputMint,

@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import type { ExecutionQuoteRequest, NormalizedExecutionQuote } from "../types";
+import type { ExecutionQuoteRequest, SourceExecutionQuote } from "../types";
 import {
   minimumOutput,
   QUOTE_TTL_MS,
@@ -18,7 +18,7 @@ function titanUrl() {
 
 export async function quoteTitan(
   request: ExecutionQuoteRequest,
-): Promise<NormalizedExecutionQuote> {
+): Promise<SourceExecutionQuote> {
   validateExecutionRequest(request);
   const { V1Client } = await import("@titanexchange/sdk-ts");
   const client = await withDeadline(V1Client.connect(titanUrl()), 5_000);
