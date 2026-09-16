@@ -17,8 +17,34 @@ import { pythHistory } from "./history";
 import { availabilityFromError, latestReferences } from "./price";
 import type { PythAvailability, PythCoverage } from "./types";
 
-/** Companies probed for live access, largest catalog presence first. */
+/**
+ * Underlyings probed for live access.
+ *
+ * Probing all 897 mapped feeds would be hundreds of sequential calls, because
+ * a refusal names one feed at a time. The probe is therefore a sample, and it
+ * is spread evenly across the mapped universe rather than taken from the
+ * front of it: an entitlement covering a handful of feeds would otherwise be
+ * missed entirely and reported as covering nothing.
+ */
 const PROBE_COMPANIES = 60;
+
+/**
+ * Companies Henar actually demonstrates with. They go into the sample first
+ * so a narrow entitlement is found rather than stepped over. This is
+ * declared, not hidden: the probe reports what it tested.
+ */
+const PRIORITY_TICKERS = ["TSLA", "NVDA", "AAPL", "MSFT", "SPY", "QQQ", "COIN", "GOOGL", "AMZN", "META", "MSTR", "HOOD", "CRCL"];
+
+/** A sample spread across the whole list, after the priority entries. */
+export function spreadSample<T extends { ticker: string }>(all: T[], size: number): T[] {
+  const priority = all.filter((f) => PRIORITY_TICKERS.includes(f.ticker));
+  const rest = all.filter((f) => !PRIORITY_TICKERS.includes(f.ticker));
+  const remaining = Math.max(0, size - priority.length);
+  if (rest.length <= remaining) return [...priority, ...rest];
+  const step = rest.length / remaining;
+  const spread = Array.from({ length: remaining }, (_, i) => rest[Math.floor(i * step)]);
+  return [...priority, ...spread];
+}
 
 const cache = createReadCache<PythCoverage>(PYTH_CACHE.coverageMs, 2);
 
@@ -83,22 +109,31 @@ export async function pythCoverage(options: { fresh?: boolean; now?: () => numbe
 
       if (key && catalog) {
         // Live probe: every mapped tokenized feed plus a bounded slice of underlyings.
-        const sample = [...mappedTokenized, ...mappedUnderlying.slice(0, PROBE_COMPANIES)];
+        const underlyingSample = spreadSample(mappedUnderlying, PROBE_COMPANIES);
+        const sample = [...mappedTokenized, ...underlyingSample];
         const result = await latestReferences(sample, { now: () => now });
-        entitlement = result.status;
-        detail = result.error ?? (result.status === "AVAILABLE" ? "key accepted; entitlement measured per feed" : result.status);
         const accessible = new Set(Object.keys(result.feeds).map(Number));
-        underlyingAccessible = mappedUnderlying.slice(0, PROBE_COMPANIES).filter((f) => accessible.has(f.feedId)).length;
+        /* A key that reads some feeds is entitled, whatever it refuses. Only a
+           key that reads none of the sample is reported as not entitled. */
+        entitlement = accessible.size > 0 ? "AVAILABLE" : result.status;
+        detail =
+          accessible.size > 0
+            ? `key accepted; ${accessible.size} of ${sample.length} probed feeds readable`
+            : (result.error ?? "no probed feed was readable under this key");
+        underlyingAccessible = underlyingSample.filter((f) => accessible.has(f.feedId)).length;
         tokenizedAccessible = mappedTokenized.filter((f) => accessible.has(f.feedId)).length;
         for (const provider of Object.keys(byProvider))
           byProvider[provider].accessible = mappedTokenized.filter((f) => f.provider === provider && accessible.has(f.feedId)).length;
-        probe = { feedsProbed: sample.length, feedsAccessible: accessible.size, feedsNotEntitled: new Set(result.notEntitled).size, sampleSize: PROBE_COMPANIES };
-        // Channel entitlement on one accessible feed, when there is one.
-        const first = sample.find((f) => accessible.has(f.feedId)) ?? sample[0];
-        if (first) {
+        probe = { feedsProbed: sample.length, feedsAccessible: accessible.size, feedsNotEntitled: new Set(result.notEntitled).size, sampleSize: underlyingSample.length };
+        /* Channels and history are properties of the key, so they must be
+           tested on a feed the key can actually read. Testing them on a
+           refused feed measures the refusal instead, and reports a working
+           entitlement as a missing one. */
+        const readable = sample.find((f) => accessible.has(f.feedId)) ?? null;
+        if (readable) {
           for (const channel of PYTH_PRO.channels) {
             try {
-              await fetchLatest([first.feedId], channel);
+              await fetchLatest([readable.feedId], channel);
               channels[channel] = "AVAILABLE";
             } catch (error) {
               channels[channel] = availabilityFromError(error);
@@ -106,8 +141,10 @@ export async function pythCoverage(options: { fresh?: boolean; now?: () => numbe
           }
           realTimeFeeds = channels.real_time === "AVAILABLE" ? accessible.size : 0;
           const to = Math.floor(now / 1000);
-          const h = await pythHistory({ symbol: first.symbol, resolution: "D", from: to - 7 * 86_400, to });
+          const h = await pythHistory({ symbol: readable.symbol, resolution: "D", from: to - 7 * 86_400, to });
           history = h.status === "NO_DATA" ? "AVAILABLE" : h.status;
+        } else {
+          history = "UNAVAILABLE";
         }
       } else if (key && !catalog) {
         entitlement = "UNAVAILABLE";

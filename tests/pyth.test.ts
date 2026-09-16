@@ -11,6 +11,7 @@ import { equityForTicker } from "../src/lib/equities/registry";
 import { catalogFromPayload } from "../src/lib/pyth/catalog";
 import { resolveCompanyFeeds, resolveUnderlyingFeed } from "../src/lib/pyth/feeds";
 import { classifyStatus, notEntitledFeedIds } from "../src/lib/pyth/client";
+import { spreadSample } from "../src/lib/pyth/coverage";
 import { availabilityFromError, freshnessOf, normalizeReference } from "../src/lib/pyth/price";
 import { assessFairValue, executablePriceFrom, guardStateOf } from "../src/lib/pyth/fair-value";
 import { candlesFromPayload, clampRange } from "../src/lib/pyth/history";
@@ -239,4 +240,32 @@ test("flags: read-only surfaces default on, execution flags default off, guard m
   assert.equal(pythGuardMode({}), "observe");
   assert.equal(pythGuardMode({ HENAR_PYTH_GUARD_MODE: "enforce" }), "enforce");
   assert.equal(pythGuardMode({ HENAR_PYTH_GUARD_MODE: "nonsense" }), "observe");
+});
+
+/**
+ * The entitlement probe can only afford to test a sample of the mapped
+ * universe. A narrow key — the free demo reads two of 897 mapped underlyings —
+ * is invisible to a sample taken off the front of the list, and the whole
+ * entitlement then reads as absent. The sample must therefore reach the
+ * companies Henar demonstrates with, and spread over the rest.
+ */
+test("the entitlement sample reaches demo tickers and spreads over the remainder", () => {
+  const all = Array.from({ length: 900 }, (_, i) => ({ ticker: `T${i}` }));
+  // A demo ticker far past any leading slice.
+  all[880] = { ticker: "TSLA" };
+  all[640] = { ticker: "QQQ" };
+
+  const sample = spreadSample(all, 60);
+  assert.equal(sample.length, 60);
+  assert.ok(sample.some((f) => f.ticker === "TSLA"));
+  assert.ok(sample.some((f) => f.ticker === "QQQ"));
+  // Not a leading slice: the tail of the universe is represented too.
+  const indexes = sample.map((f) => all.indexOf(f as (typeof all)[number]));
+  assert.ok(Math.max(...indexes) > 800);
+  assert.equal(new Set(sample).size, sample.length);
+});
+
+test("a sample smaller than the list keeps every entry", () => {
+  const all = [{ ticker: "A" }, { ticker: "TSLA" }, { ticker: "B" }];
+  assert.equal(spreadSample(all, 60).length, 3);
 });
