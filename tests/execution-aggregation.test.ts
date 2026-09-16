@@ -135,10 +135,17 @@ test("execution aggregation ranks exact integer output and preserves quote prove
     assert.equal(quote.selected?.source, "raydium");
     assert.equal(quote.selected?.quoteProvider, "raydium");
     assert.equal(quote.selected?.outputAmount, "110");
+    /* Two, not one: the unrestricted Jupiter source now asks both
+       /swap/v2/order and /swap/v1/quote and keeps the better answer. The two
+       endpoints disagree, and asking only the first handed the user a price
+       about 10 bps below Jupiter's own on every liquid pair. What this
+       assertion still protects is that aggregation does not additionally fan
+       out to the venue-restricted Jupiter probes — that is the capacity worth
+       reserving. `HENAR_JUPITER_RACE=0` returns it to a single call. */
     assert.equal(
       jupiterRequests,
-      1,
-      "independent quote aggregation must reserve Jupiter capacity",
+      2,
+      "unrestricted Jupiter races its two endpoints and nothing more",
     );
     assert.deepEqual(
       quote.sources.find((source) => source.source === "titan"),
@@ -214,8 +221,12 @@ test("concurrent identical indicative quotes share provider work", async () => {
       aggregateIndicativeQuotes(request),
       aggregateIndicativeQuotes(request),
     ]);
-    assert.equal(jupiterRequests, 1);
-    assert.equal(raydiumRequests, 1);
+    /* The point of this test is that two concurrent identical requests share
+       one round of provider work, not how many endpoints one provider asks.
+       Jupiter asks two (see the race above), Raydium one — and crucially
+       neither doubles because a second caller arrived. */
+    assert.equal(jupiterRequests, 2, "one shared round of Jupiter work, both endpoints");
+    assert.equal(raydiumRequests, 1, "one shared round of Raydium work");
   } finally {
     global.fetch = previousFetch;
     if (previousKey) process.env.JUPITER_API_KEY = previousKey;
