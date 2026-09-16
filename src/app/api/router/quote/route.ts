@@ -9,12 +9,13 @@ import { flagEnabled, routerRepresentationForMint, telemetrySinkFromEnv } from "
 import { RouterApi } from "@henar/router-app";
 import { rateLimitedConnection } from "@/lib/rpc-limiter";
 import { jupiterAdapter } from "@henar/venue-jupiter";
-import { raydiumAdapter } from "@henar/venue-raydium";
+import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
 import { meteoraDbcAdapter } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter } from "@henar/venue-meteora-damm-v2";
 import { openOceanAdapter } from "@henar/venue-openocean";
 import { orcaAdapter } from "@henar/venue-orca";
+import { rfqAdapter } from "@henar/venue-rfq";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -25,7 +26,7 @@ function routerApi() {
   if (!api) {
     const rpc = process.env.SOLANA_RPC_URL;
     api = new RouterApi({
-      adapters: [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter],
+      adapters: [jupiterAdapter, raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, rfqAdapter],
       connection: rpc ? rateLimitedConnection(rpc) : null,
       health: null,
       telemetry: telemetrySinkFromEnv(),

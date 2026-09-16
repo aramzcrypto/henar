@@ -519,3 +519,55 @@ Remaining live steps, in order, on the machine that has the credentials:
 
 Phase 1 is not complete until items 1–3 have run and their results are
 recorded here.
+
+## 9. Additions of 16 September 2026
+
+### Two-leg paths (`packages/router-core/src/path.ts`)
+
+A representation's deepest market is often its SOL or USDT pool. The registry
+already admits those as `ROUTING_LEG`; `INTERMEDIATE_ROUTE` records (the
+intermediate's own USDC pools, `router:discover:intermediates`) supply the
+USDC-side hop. `composePath` builds the best `USDC → I → representation`
+(or reverse) route per qualified intermediate, splitting the representation
+side across pools with the same optimizer the split uses, and the engine
+reports it as `EngineResult.path`.
+
+Sizing rule: two exact-in swaps in one transaction cannot pass the first
+hop's real output to the second. The second hop's input is therefore the
+first hop's guard floor; the difference between expected and floor stays in
+the user's wallet as `residual`, reported but not counted. The guard checks a
+path leg with its hop role (`GuardContext.pathLeg`), the USDC hop with a fixed
+`intermediateHopSlippageBps` (10), and the API selects the path only when the
+guard's floor equals the amount the path was sized on and the net beats the
+split and every direct quote. Plans carry `kind: "path"`, an `intermediate`
+ATA, and per-hop pair checks; the client validator checks the hop pairs.
+
+### Simulation gate in production (`gateSimulation`)
+
+`RouterApi.quoteAndBuild` simulates every built transaction as the owner
+before returning it. A program error, an output below the plan floor, or an
+unreported post state refuses the build with the simulation attached.
+
+### Protected submit (`/api/router/submit`)
+
+`submitWithPolicy` with a Jito bundle transport (`HENAR_PRIVATE_SUBMIT=1`,
+`JITO_BLOCK_ENGINE_URL`) and one public RPC fallback. 503 when not
+configured; the ticket falls back to its own broadcast.
+
+### Raydium CPMM (`packages/venue-raydium/src/cpmm.ts`)
+
+Same venue id as CLMM, distinguished by `poolType: "cpmm"`; adapters are
+chosen by pool type (`adapterForPool`). Planner stamps the program id from
+the registry record.
+
+### RFQ (`packages/venue-rfq`)
+
+Firm quotes over a documented JSON protocol, quote-only. No open maker today.
+
+### DBC Studio (`packages/dbc-studio`, `/studio`)
+
+Monitor (reuses `refreshDbcLifecycle`/`dbcMetadata`), configuration engine
+over `buildCurveWithMarketCap` + `validateConfigParameters`, the
+liquidity-targeted graduation model (constant-product, full-range, MODELED),
+a volatility-aware fee profile, and wallet-signed deployment with the mainnet
+guard (`deploymentProblems`). See `METEORA-DBC.md`.

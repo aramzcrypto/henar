@@ -179,6 +179,11 @@ export function AdminDashboard() {
           <span>Admin</span>
         </div>
         <div className={styles.actions}>
+          {process.env.NEXT_PUBLIC_HENAR_DBC_STUDIO === "1" && (
+            <Link href="/studio">
+              DBC Studio <ArrowUpRight size={14} />
+            </Link>
+          )}
           <Link href="/trade">
             Open app <ArrowUpRight size={14} />
           </Link>

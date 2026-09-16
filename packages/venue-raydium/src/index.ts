@@ -238,7 +238,8 @@ export class RaydiumAdapter implements VenueAdapter {
    * on the cached tick arrays — no I/O per evaluation.
    */
   async curve(request: QuoteRequest, pool: VerifiedPool, ctx: QuoteContext) {
-    if (!ctx.connection || pool.venue !== "raydium" || !pool.enabled) return null;
+    // CPMM pools share the venue id; their curve lives in the CPMM adapter.
+    if (!ctx.connection || pool.venue !== "raydium" || !pool.enabled || pool.poolType !== "clmm") return null;
     const pair = new Set([pool.baseMint, pool.quoteMint]);
     if (!pair.has(request.inputMint) || !pair.has(request.outputMint)) return null;
     const m = await sdk();
@@ -393,3 +394,4 @@ export class RaydiumAdapter implements VenueAdapter {
 
 export const raydiumAdapter = new RaydiumAdapter();
 export * from "./native";
+export * from "./cpmm";

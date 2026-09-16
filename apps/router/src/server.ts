@@ -10,7 +10,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { Connection, PublicKey } from "@solana/web3.js";
 import { flagEnabled, telemetrySinkFromEnv } from "@henar/router-core";
 import { jupiterAdapter } from "@henar/venue-jupiter";
-import { raydiumAdapter, clmmStateReader } from "@henar/venue-raydium";
+import { raydiumAdapter, raydiumCpmmAdapter, clmmStateReader } from "@henar/venue-raydium";
 import { meteoraAdapter, dlmmStateReader } from "@henar/venue-meteora";
 import { meteoraDbcAdapter, dbcStateReader } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter, dammV2StateReader } from "@henar/venue-meteora-damm-v2";
@@ -49,7 +49,7 @@ export async function startRouterServer(port = Number(process.env.PORT ?? 8787))
   });
   const health = new RouterHealth(worker, { executionEnabled: () => flagEnabled("routerExecution") });
   const api = new RouterApi({
-    adapters: [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter],
+    adapters: [jupiterAdapter, raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter],
     connection,
     health,
     telemetry: telemetrySinkFromEnv(),

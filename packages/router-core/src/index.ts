@@ -1,10 +1,12 @@
 export * from "./types";
 export {
   buildPoolRegistry,
+  intermediateRoutePools,
   listDbcPools,
   listInfrastructurePools,
   loadPoolRegistry,
   poolByAddress,
+  poolsForPair,
   poolsForRepresentation,
   validatePool,
   type PoolRegistry,
@@ -13,6 +15,7 @@ export { ROUTER_FLAGS, flagEnabled, type RouterFlag } from "./flags";
 export * from "./native-state";
 export * from "./validation";
 export * from "./split";
+export * from "./path";
 export * from "./pool-mints";
 export * from "./intermediates";
 export * from "./request-cache";

@@ -126,3 +126,30 @@ test("a missing post state is reported as unverified, not as a catastrophic shor
   assert.equal(reported.outputAccount?.address, destination.address);
   assert.equal(reported.simulatedOutput, expected.toString());
 });
+
+/**
+ * The production build path runs this gate before a transaction is returned
+ * to a wallet. It passes only on a clean simulation that verified the output;
+ * an error, a shortfall, or an unreported post state all refuse.
+ */
+test("gateSimulation: passes only when the simulation verified the output at or above the floor", async () => {
+  const { gateSimulation } = await import("@henar/router-app");
+  const { VersionedTransaction, TransactionMessage, PublicKey } = await import("@solana/web3.js");
+  const plan = singleBuyPlan();
+  const tx = new VersionedTransaction(new TransactionMessage({ payerKey: new PublicKey(OWNER), recentBlockhash: "11111111111111111111111111111111", instructions: [] }).compileToV0Message());
+  const withRaw = (r: RawSimulation) => ({ simulate: async () => r });
+  const pass = await gateSimulation(withRaw(raw(plan, BigInt(plan.totals.expectedAmountOut))), tx, plan, NOW);
+  assert.equal(pass.ok, true);
+  assert.equal(pass.simulation?.outputWithinPlan, true);
+  const short = await gateSimulation(withRaw(raw(plan, BigInt(plan.totals.minimumAmountOut) - 1n)), tx, plan, NOW);
+  assert.equal(short.ok, false);
+  assert.match(short.error!, /below plan floor/);
+  const errored = await gateSimulation(withRaw(raw(plan, 0n, { err: { InstructionError: [2, "Custom"] } })), tx, plan, NOW);
+  assert.equal(errored.ok, false);
+  const unverified = await gateSimulation(withRaw({ ...raw(plan, 0n), tokenBalances: [] }), tx, plan, NOW);
+  assert.equal(unverified.ok, false);
+  assert.match(unverified.error!, /did not verify/);
+  const threw = await gateSimulation({ simulate: async () => { throw new Error("rpc down"); } }, tx, plan, NOW);
+  assert.equal(threw.ok, false);
+  assert.match(threw.error!, /rpc down/);
+});

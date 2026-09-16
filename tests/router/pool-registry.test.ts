@@ -9,6 +9,7 @@ import {
   poolsForRepresentation,
   validatePool,
   type VerifiedPool,
+  intermediateRepresentationId,
 } from "@henar/router-core";
 
 const rep = listRouterRepresentations()[0];
@@ -49,6 +50,11 @@ test("committed pools.json loads, and every entry pairs a registry mint with USD
   const known = new Set(listRouterRepresentations().map((r) => r.id));
   for (const p of registry.pools) {
     assert.deepEqual(validatePool(p), [], p.address);
+    if (p.eligibility === "INTERMEDIATE_ROUTE") {
+      // An intermediate's own USDC pool names the intermediate, not an equity.
+      assert.equal(p.representationId, intermediateRepresentationId(p.mint), p.address);
+      continue;
+    }
     assert.ok(known.has(p.representationId), `${p.address} names unknown representation`);
   }
   for (const p of registry.pools.filter((p) => p.enabled)) {

@@ -17,6 +17,7 @@ const COMPUTE_BUDGET = "ComputeBudget111111111111111111111111111111";
 const ATA_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 const VENUE_PROGRAMS = new Set([
   "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK", // Raydium CLMM
+  "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C", // Raydium CPMM (same `raydium` venue, poolType "cpmm")
   "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo", // Meteora DLMM
   "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN", // Meteora DBC
   "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG", // Meteora DAMM v2
@@ -26,7 +27,12 @@ const VENUE_PROGRAMS = new Set([
 export type RouterPlanSummary = {
   owner: string;
   side: "buy" | "sell";
-  legs: { venue: string; poolAddress: string; programId: string; amountIn: string; expectedAmountOut: string; minimumAmountOut: string; programIds?: string[] }[];
+  /** "path" runs the legs in sequence through `intermediate`; absent means parallel legs on one pair. */
+  kind?: "parallel" | "path";
+  intermediate?: { mint: string; decimals: number; tokenProgram: string } | null;
+  /** Path only: expected intermediate left in the wallet above the first hop's floor. */
+  residual?: { mint: string; expected: string } | null;
+  legs: { venue: string; poolAddress: string; programId: string; inputMint?: string; outputMint?: string; amountIn: string; expectedAmountOut: string; minimumAmountOut: string; programIds?: string[] }[];
   totals: { amountIn: string; expectedAmountOut: string; minimumAmountOut: string; minimumNetUserOutput: string };
   henarFee: { mint: string; amount: string; bps: number; on: "input" | "output"; destination: string; tokenProgram: string; decimals: number };
   requiredPrograms: string[];
@@ -58,6 +64,20 @@ export function validateRouterTransaction(
     } else if (!VENUE_PROGRAMS.has(leg.programId)) fail("leg program");
   }
   if (plan.henarFee.bps !== MARKET_FEE_BPS) fail("fee bps");
+  if (plan.kind === "path") {
+    /* A path's legs must chain through the declared intermediate and end at
+       the user's own pair; a leg to any other asset would move the user's
+       funds somewhere the ticket never showed. */
+    const i = plan.intermediate?.mint;
+    if (!i || i === expected.inputMint || i === expected.outputMint) fail("path intermediate");
+    for (const leg of plan.legs) {
+      const okPair = plan.side === "buy"
+        ? (leg.inputMint === expected.inputMint && leg.outputMint === i) || (leg.inputMint === i && leg.outputMint === expected.outputMint)
+        : (leg.inputMint === expected.inputMint && leg.outputMint === i) || (leg.inputMint === i && leg.outputMint === expected.outputMint);
+      if (!okPair) fail("path leg pair");
+    }
+    if (!plan.legs.some((l) => l.outputMint === expected.outputMint)) fail("path never reaches the output");
+  }
   const feeMint = plan.henarFee.on === "input" ? expected.inputMint : expected.outputMint;
   if (plan.henarFee.mint !== feeMint) fail("fee mint");
 

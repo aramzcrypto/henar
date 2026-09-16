@@ -411,6 +411,8 @@ export function Stockroom({
     priceImpactBps: number | null;
     feeBps: number;
     legs: { venue: string; pool: string | null; percent: number }[];
+    /** Path routes: the asset the route passes through, and what stays in the wallet above the first hop's floor. */
+    via: { symbol: string; residual: string | null } | null;
   } | null>(null);
   /* What the router can actually execute, and for how much. Kept separately
      from the displayed Henar row: the row appears only for a distinct
@@ -423,6 +425,8 @@ export function Stockroom({
   } | null>(null);
   /** A built Henar route awaiting confirmation, in place of a market review. */
   const [routerReview, setRouterReview] = useState<RouterBuild | null>(null);
+  /** The signed quote authorization the router build was made with; reused for protected submission. */
+  const routerAuthorization = useRef<string | null>(null);
   /* The router quotes one representation against USDC. Anything else is
      outside its scope and executes through the market path. */
   const routerSide: "buy" | "sell" | null =
@@ -469,6 +473,7 @@ export function Stockroom({
       providerFeeBps: candidate.providerFeeBps,
       legs: candidate.route.map((step) => ({ venue: step.venue, pool: step.pool, percent: step.percent })),
       henar: false,
+      via: null as { symbol: string; residual: string | null } | null,
     }));
     if (henarRoute)
       rows.push({
@@ -480,6 +485,7 @@ export function Stockroom({
         providerFeeBps: 0,
         legs: henarRoute.legs,
         henar: true,
+        via: henarRoute.via,
       });
     return rows.sort((a, b) => new Decimal(b.output).comparedTo(new Decimal(a.output)));
   }, [estimate, henarRoute]);
@@ -608,17 +614,31 @@ export function Stockroom({
                   }
                 : null,
             );
-            const built = quote.henarRoute;
-            if (!built || built.legs.length < 2 || !built.executable) {
+            /* Two constructions can exist: a split across pools of the pair,
+               and a path through an intermediate. The better executable one
+               is the Henar row; the server has already ranked both. */
+            const split = quote.henarRoute;
+            const path = quote.henarPath;
+            const splitOk = split && split.legs.length >= 2 && split.executable;
+            const pathOk = path && path.executable && path.legs.length >= 2;
+            const usePath = pathOk && (!splitOk || BigInt(path.netOutput) > BigInt(split.netOutput));
+            const built = usePath ? path : splitOk ? split : null;
+            if (!built) {
               setHenarRoute(null);
               return;
             }
             setHenarRoute({
               output: formatUnits(BigInt(built.netOutput), receive.decimals),
               minimumOutput: built.minNetUserOutput ? formatUnits(BigInt(built.minNetUserOutput), receive.decimals) : null,
-              priceImpactBps: built.priceImpactBps ?? null,
+              priceImpactBps: usePath ? (quote.priceImpactBps ?? null) : (built.priceImpactBps ?? null),
               feeBps: quote.fees?.henarBps ?? tradeFeeBps,
               legs: built.legs.map((leg: { venue: string; poolAddress: string | null; percentBps: number }) => ({ venue: leg.venue, pool: leg.poolAddress, percent: leg.percentBps / 100 })),
+              via: usePath
+                ? {
+                    symbol: path.intermediate?.symbol ?? "an intermediate",
+                    residual: path.residual && path.intermediate ? `${formatUnits(BigInt(path.residual.expected), path.intermediate.decimals)} ${path.intermediate.symbol ?? ""}`.trim() : null,
+                  }
+                : null,
             });
           } catch {
             if (!controller.signal.aborted) {
@@ -1087,6 +1107,7 @@ export function Stockroom({
     setRouterReview(null);
     try {
       const authorization = await quoteAuthorization(owner, wallet.signMessage);
+      routerAuthorization.current = authorization;
       if (token !== generation.current) return;
       /* The route with the best net output is the route that gets built. */
       if (executeVia === "router" && routerSide) {
@@ -1163,8 +1184,24 @@ export function Stockroom({
         const routerSig = utils.bytes.bs58.encode(signedRouterTx.signatures[0]);
         setSignature(routerSig);
         setRouterReview(null);
-        await connection.sendRawTransaction(signedRouterTx.serialize(), { skipPreflight: false, maxRetries: 2 });
-        setStatus("Submitted · awaiting confirmation");
+        /* Protected submission when the server has a transport for it (Jito
+           bundle, then RPC fallback under one policy); otherwise the wallet's
+           own RPC broadcast. A 503 means "not configured", not "refused". */
+        const protectedSubmit = await fetch("/api/router/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: routerAuthorization.current ?? "" },
+          body: JSON.stringify({ transaction: Buffer.from(signedRouterTx.serialize()).toString("base64"), owner, lastValidBlockHeight: routerReview.lastValidBlockHeight ?? 0 }),
+        }).catch(() => null);
+        if (protectedSubmit?.ok) {
+          const outcome = (await protectedSubmit.json()) as { submitter: string | null };
+          setStatus(outcome.submitter === "jito" ? "Submitted privately · awaiting confirmation" : "Submitted · awaiting confirmation");
+        } else if (protectedSubmit && protectedSubmit.status !== 503 && protectedSubmit.status !== 404) {
+          const failure = (await protectedSubmit.json().catch(() => ({}))) as { detail?: string; error?: string };
+          throw new Error(failure.detail ?? failure.error ?? "Submission failed. Check Solscan before retrying.");
+        } else {
+          await connection.sendRawTransaction(signedRouterTx.serialize(), { skipPreflight: false, maxRetries: 2 });
+          setStatus("Submitted · awaiting confirmation");
+        }
         const routerDeadline = Date.now() + 60_000;
         while (Date.now() < routerDeadline) {
           const result = await connection.getSignatureStatuses([routerSig]);
@@ -1935,9 +1972,13 @@ export function Stockroom({
                            every other row. The allocation, pool count and
                            impact belong in the route detail, not in a list a
                            user scans for a number. */
-                        const allocation = candidate.henar
+                        const venuesUsed = candidate.henar
                           ? Array.from(new Set(candidate.legs.map((leg) => getExecutionSourceBrand(leg.venue).label))).join(" + ")
                           : Array.from(new Set(candidate.legs.map((step) => step.venue))).slice(0, 2).join(" · ");
+                        /* A path names the asset it passes through: the user
+                           should know their trade touches SOL before they see
+                           SOL dust in their wallet. */
+                        const allocation = candidate.via ? `${venuesUsed} via ${candidate.via.symbol}` : venuesUsed;
                         return (
                           <div
                             className={index === 0 ? "quote-row best" : "quote-row"}

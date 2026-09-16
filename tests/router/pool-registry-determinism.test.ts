@@ -93,6 +93,14 @@ test("every enabled pool is a USDC route or a routing leg, above the floor", () 
       assert.ok(mints.includes(USDC_MINT), `${pool.id} is not USDC-paired`);
       continue;
     }
+    /* The third kind: an approved intermediate's own USDC pool, the USDC-side
+       hop of a path. Its mint is the intermediate, and it belongs to no equity. */
+    if (pool.eligibility === "INTERMEDIATE_ROUTE") {
+      assert.ok(mints.includes(USDC_MINT), `${pool.id} intermediate route is not USDC-paired`);
+      assert.ok(isQualifiedIntermediate(pool.mint), `${pool.id} intermediate ${pool.mint} is not approved`);
+      assert.equal(pool.representationId, `intermediate:${pool.mint}`);
+      continue;
+    }
     assert.equal(pool.eligibility, "ROUTING_LEG", `${pool.id} eligibility`);
     assert.ok(!mints.includes(USDC_MINT), `${pool.id} is a USDC route, not a leg`);
     const counter = mints.find((m) => m !== pool.mint)!;

@@ -31,6 +31,7 @@ import {
   flagEnabled,
   inspectionFromAccount,
   loadPoolRegistry,
+  poolByAddress,
   poolsForRepresentation,
   rankQuote,
   routerRepresentation,
@@ -39,19 +40,32 @@ import {
   type PlannedLeg,
   type QuoteRequest,
   type RouterRepresentation,
+  type Venue,
 } from "@henar/router-core";
 import { DEFAULT_EXECUTION_POLICY, guardQuote } from "@henar/execution-guard";
 import { capabilityOf } from "@henar/router-app";
 import { buildTransaction, normalizeSimulation, planExecution, RpcSimulator } from "@henar/tx-builder";
 import { RateLimitError, retryAfterMs } from "@/lib/execution/shared";
 import { createLimiter } from "./rate-limit";
-import { raydiumAdapter } from "@henar/venue-raydium";
+import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
 import { orcaAdapter } from "@henar/venue-orca";
 
 type Stage = "QUOTE" | "GUARD" | "SELECT" | "REPRESENTATION" | "PLAN" | "BUILD" | "SIMULATE" | "PASS";
 type Outcome = { venue: string; symbol: string; side: "buy" | "sell"; pool: string; stage: Stage; detail: string };
 
-const adapters = [raydiumAdapter, orcaAdapter];
+const adapters = [raydiumAdapter, raydiumCpmmAdapter, orcaAdapter];
+
+/**
+ * A venue can have several adapters (Raydium CLMM and CPMM share `raydium`);
+ * prefer the one whose capabilities cover the registry pool's type.
+ */
+function adapterForPool(venue: Venue, poolAddress: string) {
+  const poolType = poolByAddress(poolAddress)?.poolType;
+  return (
+    adapters.find((a) => a.venue === venue && poolType !== undefined && a.capabilities().poolTypes.includes(poolType)) ??
+    adapters.find((a) => a.venue === venue)
+  );
+}
 
 async function main() {
   const rpc = process.env.SOLANA_RPC_URL;
@@ -89,7 +103,7 @@ async function main() {
   const simulator = new RpcSimulator(connection);
 
   const legBuilder = async (leg: PlannedLeg, options: BuildOptions) => {
-    const adapter = adapters.find((a) => a.venue === leg.venue);
+    const adapter = adapterForPool(leg.venue, leg.poolAddress);
     if (!adapter) return { instructions: [], lookupTables: [], reason: "VENUE_NOT_CONFIGURED" as const, detail: `no adapter for ${leg.venue}` };
     const rep = routerRepresentationForMint(leg.inputMint) ?? routerRepresentationForMint(leg.outputMint);
     const pools = rep ? poolsForRepresentation(rep.id, { venue: leg.venue }).filter((p) => p.address === leg.poolAddress) : [];
@@ -193,7 +207,7 @@ async function main() {
          venues, and on a paced RPC queue the first quote ages past the
          guard's 15s freshness window before the build runs: every route then
          fails as QUOTE_EXPIRED, which measures the harness, not the route. */
-      const adapter = adapters.find((a) => a.venue === pool.venue)!;
+      const adapter = adapterForPool(pool.venue, pool.address)!;
       const feeBps = 15;
       const venueInput = side === "buy" ? amount - (amount * BigInt(feeBps)) / 10_000n : amount;
       const venueRequest: QuoteRequest = { ...request, amount: venueInput.toString() };

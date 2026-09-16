@@ -11,7 +11,7 @@
  */
 import pools from "@/data/router/pools.json";
 import { isQualifiedIntermediate } from "./intermediates";
-import { USDC_MINT, type VerifiedPool, type Venue } from "./types";
+import { USDC_MINT, intermediateRepresentationId, type VerifiedPool, type Venue } from "./types";
 
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
@@ -36,6 +36,17 @@ export function validatePool(pool: VerifiedPool) {
   const routingAsset = [...pair].find((m) => m !== pool.mint && isQualifiedIntermediate(m)) ?? null;
   if (pool.eligibility === "ROUTER_ELIGIBLE" && !usdcPair)
     problems.push("ROUTER_ELIGIBLE pool does not pair with USDC");
+  /* An intermediate's own USDC pool. Its mint is the intermediate, which must
+     be qualified by measurement, and it belongs to no equity: the synthetic
+     representation id keeps it out of every per-representation lookup. */
+  if (pool.eligibility === "INTERMEDIATE_ROUTE") {
+    if (!usdcPair) problems.push("INTERMEDIATE_ROUTE pool does not pair with USDC");
+    if (!isQualifiedIntermediate(pool.mint)) problems.push("INTERMEDIATE_ROUTE mint is not a qualified intermediate");
+    if (pool.representationId !== intermediateRepresentationId(pool.mint))
+      problems.push("INTERMEDIATE_ROUTE pool must use the intermediate representation id");
+  } else if (pool.representationId === intermediateRepresentationId(pool.mint)) {
+    problems.push("only INTERMEDIATE_ROUTE pools may use the intermediate representation id");
+  }
   /* A routing leg pairs the representation with an approved intermediate and
      nothing else. Anything paired with USDC is a direct route, and anything
      paired with an asset outside the intermediate universe is infrastructure:
@@ -141,6 +152,27 @@ export function poolsForRepresentation(
     (pool) =>
       (options?.includeDisabled || pool.enabled) &&
       (!options?.venue || pool.venue === options.venue),
+  );
+}
+
+/**
+ * The enabled USDC pools of one qualified intermediate, for the USDC-side hop
+ * of a path. Empty when the intermediate has no INTERMEDIATE_ROUTE record.
+ */
+export function intermediateRoutePools(intermediateMint: string, options?: { includeDisabled?: boolean; registry?: PoolRegistry }) {
+  const own = poolsForRepresentation(intermediateRepresentationId(intermediateMint), { includeDisabled: options?.includeDisabled, registry: options?.registry }).filter(
+    (pool) => pool.eligibility === "INTERMEDIATE_ROUTE",
+  );
+  if (own.length) return own;
+  // A representation that qualified as an intermediate bridges through its
+  // own direct USDC pools; they are already registered under its equity.
+  const registry = options?.registry ?? loadPoolRegistry();
+  return registry.pools.filter(
+    (pool) =>
+      pool.mint === intermediateMint &&
+      pool.eligibility === "ROUTER_ELIGIBLE" &&
+      (options?.includeDisabled || pool.enabled) &&
+      (pool.baseMint === USDC_MINT || pool.quoteMint === USDC_MINT),
   );
 }
 

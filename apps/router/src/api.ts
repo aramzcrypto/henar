@@ -16,7 +16,9 @@ import { createHash } from "node:crypto";
 import type { Connection } from "@solana/web3.js";
 import {
   USDC_MINT,
+  bpsOf,
   flagEnabled,
+  intermediateRecord,
   fromRaw,
   inspectMint,
   poolByAddress,
@@ -25,12 +27,13 @@ import {
   type EngineResult,
   type QuoteRequest,
   type RankedQuote,
+  type RankedRoute,
   type ReferencePrice,
   type TelemetrySink,
   type VenueAdapter,
 } from "@henar/router-core";
-import { DEFAULT_EXECUTION_POLICY, guardQuote, guardResult, type GuardVerdict } from "@henar/execution-guard";
-import { buildTransaction, planExecution, type BlockhashProvider, type LegInstructionBuilder } from "@henar/tx-builder";
+import { DEFAULT_EXECUTION_POLICY, effectiveSlippageBps, guardQuote, guardResult, type GuardVerdict } from "@henar/execution-guard";
+import { buildTransaction, normalizeSimulation, planExecution, type BlockhashProvider, type LegInstructionBuilder, type Simulator } from "@henar/tx-builder";
 import type { RouterHealth } from "./health";
 
 export type ApiDeps = {
@@ -44,6 +47,14 @@ export type ApiDeps = {
   treasuryOwner?: string | null;
   blockhash?: BlockhashProvider;
   legBuilder?: LegInstructionBuilder;
+  /**
+   * Pre-send simulation gate. When configured, every built transaction is
+   * simulated as the owner before it is returned, and a route whose
+   * simulated output lands below the plan floor (or that errors) is refused
+   * rather than handed to the wallet. Quoting a good price proves nothing
+   * about being able to execute it.
+   */
+  simulator?: Simulator | null;
   now?: () => number;
   quoteTtlMs?: number;
 };
@@ -75,7 +86,9 @@ export type QuoteApiResponse = {
   fees: { henarBps: number; henarAmount: string; henarMint: string; venueFeeAmount: string | null } | null;
   priceImpactBps: number | null;
   expiresAt: string;
-  route: { venue: string; poolAddress: string | null; percentBps: number }[] | null;
+  route: { venue: string; poolAddress: string | null; percentBps: number; inputMint?: string; outputMint?: string }[] | null;
+  /** How `route` executes: legs in parallel over one pair, or in sequence through an intermediate. */
+  routeKind: "single" | "split" | "path" | null;
   /**
    * The route Henar's own optimizer built, when it built one that is safe and
    * worth an extra leg — whether or not it won. Null when the optimizer
@@ -93,6 +106,24 @@ export type QuoteApiResponse = {
   } | null;
   /** Why there is, or is not, a Henar-constructed route. */
   henarRouteReason: string | null;
+  /**
+   * The best two-leg path through a qualified intermediate, when one could
+   * be built, whether or not it won. `executable` is true only when every
+   * leg passed the guard and the guard's floor on the first hop is exactly
+   * the amount the second hop was sized on.
+   */
+  henarPath: {
+    legs: { venue: string; poolAddress: string | null; inputMint: string; outputMint: string; amountIn: string; expectedAmountOut: string; percentBps: number }[];
+    intermediate: { mint: string; symbol: string | null; decimals: number } | null;
+    /** Expected intermediate left in the wallet above the first hop's floor. */
+    residual: { mint: string; expected: string } | null;
+    netOutput: string;
+    minNetUserOutput: string | null;
+    improvementBps: number | null;
+    executable: boolean;
+    reason: string | null;
+  } | null;
+  henarPathReason: string | null;
   /** Per-venue quote latency, so a timeout can be attributed to a cause. */
   latencyMs: Record<string, number>;
   alternatives: { venue: string; netOutput: string; priceImpactBps: number | null; approved: boolean; reason: string | null; failedChecks: string[]; routePlan?: unknown }[];
@@ -126,7 +157,7 @@ export type QuoteApiResponse = {
   liveValidation: "LIVE_VALIDATION_PENDING";
 };
 
-type CachedQuote = { response: QuoteApiResponse; verdict: GuardVerdict | null; legVerdicts: GuardVerdict[] | null; result: EngineResult; expiresAt: number };
+type CachedQuote = { response: QuoteApiResponse; verdict: GuardVerdict | null; legVerdicts: GuardVerdict[] | null; routeKind: "single" | "split" | "path"; path: RankedRoute | null; result: EngineResult; expiresAt: number };
 
 /**
  * What a route can actually be executed through.
@@ -211,7 +242,20 @@ export class RouterApi {
       maxSlippageBps: body.maxSlippageBps ?? null,
     };
     const started = this.now();
-    const result = await quoteRepresentation(request, { adapters: this.deps.adapters, connection: this.deps.connection, telemetry: this.deps.telemetry ?? null, now: () => this.now(), deadlineMs: body.deadlineMs });
+    const policy = this.deps.policy ?? DEFAULT_EXECUTION_POLICY;
+    const result = await quoteRepresentation(request, {
+      adapters: this.deps.adapters,
+      connection: this.deps.connection,
+      telemetry: this.deps.telemetry ?? null,
+      now: () => this.now(),
+      deadlineMs: body.deadlineMs,
+      // The path is sized on the floors the guard will set, so both must
+      // come from the same policy; the guard's verdict is re-checked below.
+      pathFloors: {
+        intermediateHopBps: policy.intermediateHopSlippageBps,
+        representationHopBps: (impact) => effectiveSlippageBps(policy, impact, body.maxSlippageBps ?? null).slippageBps,
+      },
+    });
     for (const q of [result.best, ...result.alternatives]) if (q) this.deps.health?.recordQuote(q.venue, true, result.latencyMs[q.venue] ?? this.now() - started);
     for (const x of result.exclusions) this.deps.health?.recordQuote(x.venue, false, result.latencyMs[x.venue] ?? 0);
 
@@ -273,9 +317,67 @@ export class RouterApi {
         chosen = result.route.legs[0];
       }
     }
+    /* The path is guarded leg by leg with its hop role, then checked for the
+       one property the engine assumed: the guard's floor on the USDC-side hop
+       is exactly what the other hop was sized on. It is selected only when it
+       beats whatever is selected so far, split included. */
+    let henarPath: QuoteApiResponse["henarPath"] = null;
+    let pathVerdicts: GuardVerdict[] | null = null;
+    let routeKind: "single" | "split" | "path" = legVerdicts ? "split" : "single";
+    if (result.path?.kind === "path" && result.path.intermediate) {
+      const path = result.path;
+      const intermediateAsset = result.path.intermediate;
+      const intermediate = intermediateAsset.mint;
+      const verdicts = path.legs.map((leg) =>
+        guardQuote(leg, policy, {
+          now: this.now(),
+          currentSlot,
+          reference,
+          representationDecimals: rep.decimals,
+          userMaxSlippageBps: body.maxSlippageBps ?? null,
+          allowLegacyExecution: false,
+          pathLeg: { intermediate, hop: leg.inputMint === USDC_MINT || leg.outputMint === USDC_MINT ? "intermediate" : "representation" },
+        }),
+      );
+      const allApproved = verdicts.every((v) => v.approved && v.mode === "execute");
+      const floorsAgree = (() => {
+        if (body.side === "buy") return verdicts[0].minimumAmountOut === path.legs[1]?.amountIn && path.legs.slice(1).every((l) => l.amountIn === path.legs[1].amountIn || path.legs.length > 2);
+        const repLegs = verdicts.slice(0, -1);
+        const floor = repLegs.reduce((s, v) => s + fromRaw(v.minimumAmountOut ?? "0"), 0n);
+        return floor.toString() === path.legs[path.legs.length - 1].amountIn;
+      })();
+      const executable = allApproved && floorsAgree;
+      const minNet = executable
+        ? body.side === "buy"
+          ? verdicts.slice(1).reduce((s, v) => s + fromRaw(v.minimumAmountOut!), 0n)
+          : (() => { const m = fromRaw(verdicts[verdicts.length - 1].minimumAmountOut!); return m - bpsOf(m, path.fees.henarFeeBps); })()
+        : null;
+      const total = fromRaw(path.fees.venueInput);
+      henarPath = {
+        legs: path.legs.map((leg) => ({ venue: leg.venue, poolAddress: leg.poolAddress, inputMint: leg.inputMint, outputMint: leg.outputMint, amountIn: leg.amountIn, expectedAmountOut: leg.expectedAmountOut, percentBps: leg.inputMint === path.fees.inputMint && total > 0n ? Number((fromRaw(leg.amountIn) * 10_000n) / total) : 10_000 })),
+        intermediate: { mint: intermediateAsset.mint, symbol: intermediateAsset.symbol, decimals: intermediateAsset.decimals },
+        residual: path.residual ? { mint: path.residual.mint, expected: path.residual.expected } : null,
+        netOutput: path.netOutput,
+        minNetUserOutput: minNet === null ? null : minNet.toString(),
+        improvementBps: path.improvementBps,
+        executable,
+        reason: executable ? null : !allApproved ? (verdicts.find((v) => !v.approved)?.reason ?? "leg is quote-only") : "guard floor on the first hop differs from the amount the path was sized on",
+      };
+      const incumbent = legVerdicts ? fromRaw(result.route!.netOutput) : selected && selected.mode === "execute" ? fromRaw(selected.quote.netOutput) : null;
+      if (executable && (incumbent === null || fromRaw(path.netOutput) > incumbent)) {
+        pathVerdicts = verdicts;
+        legVerdicts = null;
+        routeKind = "path";
+        routeLegs = henarPath.legs.map((l) => ({ venue: l.venue, poolAddress: l.poolAddress, percentBps: l.percentBps, inputMint: l.inputMint, outputMint: l.outputMint }));
+        selected = verdicts[0];
+        chosen = path.legs[0];
+      }
+    }
     const route = result.route && legVerdicts ? result.route : null;
+    const pathRoute = routeKind === "path" ? result.path : null;
     const quoteId = createHash("sha256").update(JSON.stringify({ request, at: result.quotedAt, venue: chosen?.venue ?? null, out: chosen?.netOutput ?? null })).digest("hex").slice(0, 32);
-    const expiresAt = new Date(Math.min(this.now() + (this.deps.quoteTtlMs ?? 10_000), chosen ? Date.parse(chosen.expiresAt) : Infinity)).toISOString();
+    const legExpiry = (pathRoute ?? route)?.legs.reduce((min, l) => Math.min(min, Date.parse(l.expiresAt)), Infinity) ?? Infinity;
+    const expiresAt = new Date(Math.min(this.now() + (this.deps.quoteTtlMs ?? 10_000), chosen ? Date.parse(chosen.expiresAt) : Infinity, legExpiry)).toISOString();
     const response: QuoteApiResponse = {
       quoteId,
       company: rep.equityId,
@@ -283,17 +385,22 @@ export class RouterApi {
       issuer: rep.provider,
       side: body.side,
       amountIn: body.amount,
-      expectedOutput: route ? route.fees.grossVenueOutput : (chosen?.fees.grossVenueOutput ?? null),
-      minOutput: route ? legVerdicts!.reduce((s, v) => s + fromRaw(v.minimumAmountOut!), 0n).toString() : (selected?.minimumAmountOut ?? null),
-      netUserOutput: route ? route.netOutput : (chosen?.netOutput ?? null),
-      minNetUserOutput: route ? (() => { const m = legVerdicts!.reduce((s, v) => s + fromRaw(v.minimumAmountOut!), 0n); return (body.side === "sell" ? m - (m * BigInt(route.fees.henarFeeBps)) / 10_000n : m).toString(); })() : (selected?.minimumNetUserOutput ?? null),
-      effectivePrice: effectivePrice(chosen, body.side, rep.decimals),
-      fees: chosen ? { henarBps: chosen.henarFeeBps, henarAmount: chosen.henarFeeAmount, henarMint: chosen.henarFeeMint, venueFeeAmount: chosen.venueFeeAmount } : null,
-      priceImpactBps: chosen?.priceImpactBps ?? null,
+      expectedOutput: pathRoute ? pathRoute.fees.grossVenueOutput : route ? route.fees.grossVenueOutput : (chosen?.fees.grossVenueOutput ?? null),
+      minOutput: pathRoute ? (body.side === "buy" ? henarPath!.minNetUserOutput : pathVerdicts![pathVerdicts!.length - 1].minimumAmountOut) : route ? legVerdicts!.reduce((s, v) => s + fromRaw(v.minimumAmountOut!), 0n).toString() : (selected?.minimumAmountOut ?? null),
+      netUserOutput: pathRoute ? pathRoute.netOutput : route ? route.netOutput : (chosen?.netOutput ?? null),
+      minNetUserOutput: pathRoute ? henarPath!.minNetUserOutput : route ? (() => { const m = legVerdicts!.reduce((s, v) => s + fromRaw(v.minimumAmountOut!), 0n); return (body.side === "sell" ? m - (m * BigInt(route.fees.henarFeeBps)) / 10_000n : m).toString(); })() : (selected?.minimumNetUserOutput ?? null),
+      effectivePrice: pathRoute ? pathEffectivePrice(pathRoute, body.side, rep.decimals) : effectivePrice(chosen, body.side, rep.decimals),
+      fees: pathRoute
+        ? { henarBps: pathRoute.fees.henarFeeBps, henarAmount: body.side === "buy" ? pathRoute.fees.henarInputFee : pathRoute.fees.henarOutputFee, henarMint: USDC_MINT, venueFeeAmount: null }
+        : chosen ? { henarBps: chosen.henarFeeBps, henarAmount: chosen.henarFeeAmount, henarMint: chosen.henarFeeMint, venueFeeAmount: chosen.venueFeeAmount } : null,
+      priceImpactBps: pathRoute ? pathRoute.legs.reduce<number | null>((worst, leg) => (leg.priceImpactBps === null ? worst : worst === null ? leg.priceImpactBps : Math.max(worst, leg.priceImpactBps)), null) : (chosen?.priceImpactBps ?? null),
       expiresAt,
       route: routeLegs ?? (chosen ? [{ venue: chosen.venue, poolAddress: chosen.poolAddress, percentBps: 10_000 }] : null),
+      routeKind: routeLegs || chosen ? routeKind : null,
       henarRoute,
       henarRouteReason: result.splitReason,
+      henarPath,
+      henarPathReason: result.pathReason,
       latencyMs: result.latencyMs as Record<string, number>,
       alternatives: guarded.verdicts.filter((v) => v !== selected).map((v) => ({ venue: v.quote.venue, netOutput: v.quote.netOutput, priceImpactBps: v.quote.priceImpactBps, approved: v.approved, reason: v.reason, failedChecks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })),
       benchmarkRoutePlan: (guarded.verdicts.find((v) => v.quote.venue === "jupiter")?.quote.rawRouteMetadata as { route?: unknown } | null)?.route ?? null,
@@ -325,7 +432,7 @@ export class RouterApi {
         : null,
       liveValidation: "LIVE_VALIDATION_PENDING",
     };
-    this.cache.set(quoteId, { response, verdict: selected, legVerdicts, result, expiresAt: Date.parse(expiresAt) });
+    this.cache.set(quoteId, { response, verdict: selected, legVerdicts: pathVerdicts ?? legVerdicts, routeKind, path: pathRoute, result, expiresAt: Date.parse(expiresAt) });
     return { status: 200, body: response };
   }
 
@@ -346,7 +453,8 @@ export class RouterApi {
         owner: body.owner,
         treasuryOwner: this.deps.treasuryOwner,
         userInput: fromRaw(cached.response.amountIn),
-        legs: [{ verdict: cached.verdict }],
+        legs: (cached.legVerdicts ?? [cached.verdict]).map((verdict) => ({ verdict })),
+        ...pathPlanInput(cached),
         policy: this.deps.policy ?? DEFAULT_EXECUTION_POLICY,
         now: this.now(),
       });
@@ -392,21 +500,38 @@ export class RouterApi {
         treasuryOwner: this.deps.treasuryOwner,
         userInput: fromRaw(body.amount),
         legs: (cached.legVerdicts ?? [cached.verdict]).map((verdict) => ({ verdict })),
+        ...pathPlanInput(cached),
         policy: this.deps.policy ?? DEFAULT_EXECUTION_POLICY,
         now: this.now(),
       });
       const built = await buildTransaction(plan, { blockhash: this.deps.blockhash, legBuilder: this.deps.legBuilder, now: this.now() });
       if (!built.ok) return { status: 409, body: { error: built.detail, reason: built.reason, quote: q } };
+      /* Simulation gate. The floor inside the venue instruction protects the
+         user on chain; this protects them from being asked to sign something
+         that cannot land, and it is the only place the whole transaction is
+         exercised before a signature. A refusal carries the simulation so the
+         caller can see which stage failed, never a bare "no". */
+      let simulation: SimulationSummary | null = null;
+      if (this.deps.simulator) {
+        const gate = await gateSimulation(this.deps.simulator, built.built.transaction, plan, this.now());
+        this.deps.health?.recordSimulation(gate.ok);
+        simulation = gate.simulation;
+        if (!gate.ok) return { status: 409, body: { error: gate.error, reason: "SIMULATION_FAILED", quote: q, simulation } };
+      }
       this.deps.health?.recordExecution(true);
       return {
         status: 200,
         body: {
           quote: q,
+          simulation,
           plan: {
             planId: plan.planId,
             side: plan.side,
             owner: plan.owner,
-            legs: plan.legs.map((l) => ({ venue: l.venue, poolAddress: l.poolAddress, programId: l.programId, amountIn: l.amountIn, expectedAmountOut: l.expectedAmountOut, minimumAmountOut: l.minimumAmountOut })),
+            kind: plan.kind,
+            intermediate: plan.intermediate,
+            residual: cached.path?.residual ?? null,
+            legs: plan.legs.map((l) => ({ venue: l.venue, poolAddress: l.poolAddress, programId: l.programId, inputMint: l.inputMint, outputMint: l.outputMint, amountIn: l.amountIn, expectedAmountOut: l.expectedAmountOut, minimumAmountOut: l.minimumAmountOut })),
             totals: plan.totals,
             henarFee: plan.henarFee,
             requiredAtas: plan.requiredAtas,
@@ -433,6 +558,71 @@ export class RouterApi {
   cachedQuote(quoteId: string) {
     return this.cache.get(quoteId) ?? null;
   }
+}
+
+export type SimulationSummary = ReturnType<typeof summarizeSimulation>;
+
+/**
+ * Plan inputs that only a path carries. The intermediate's decimals and
+ * token program come from the measured intermediate artifact, which was read
+ * from chain when the asset qualified; a path through an asset that is not in
+ * it cannot be planned.
+ */
+function pathPlanInput(cached: CachedQuote): { kind: "parallel" | "path"; intermediate: { mint: string; decimals: number; tokenProgram: string } | null } {
+  if (cached.routeKind !== "path" || !cached.path?.intermediate) return { kind: "parallel", intermediate: null };
+  const record = intermediateRecord(cached.path.intermediate.mint);
+  if (!record?.qualified) throw new Error("path intermediate is not a qualified asset");
+  return { kind: "path", intermediate: { mint: record.mint, decimals: record.decimals, tokenProgram: record.tokenProgram } };
+}
+
+/**
+ * Simulate a built transaction and decide whether it may be handed to a
+ * wallet. Passes only when the simulation ran without error AND verified the
+ * user's output against the plan floor; an unverified output (post state not
+ * returned) is a refusal, not a pass.
+ */
+export async function gateSimulation(
+  simulator: Simulator,
+  transaction: Parameters<Simulator["simulate"]>[0],
+  plan: Parameters<Simulator["simulate"]>[1],
+  now: number,
+): Promise<{ ok: boolean; error: string | null; simulation: SimulationSummary | null }> {
+  let normalized: ReturnType<typeof normalizeSimulation>;
+  try {
+    normalized = normalizeSimulation(await simulator.simulate(transaction, plan), plan, now);
+  } catch (error) {
+    return { ok: false, error: `simulation failed: ${(error as Error).message}`, simulation: null };
+  }
+  const simulation = summarizeSimulation(normalized);
+  if (!normalized.ok) return { ok: false, error: normalized.error ?? "simulation failed", simulation };
+  if (normalized.outputWithinPlan !== true)
+    return { ok: false, error: "simulation did not verify the user's output against the plan floor", simulation };
+  return { ok: true, error: null, simulation };
+}
+
+function summarizeSimulation(s: ReturnType<typeof normalizeSimulation>) {
+  return {
+    ok: s.ok,
+    error: s.error,
+    simulatedOutput: s.simulatedOutput,
+    expectedOutput: s.expectedOutput,
+    minimumOutput: s.minimumOutput,
+    outputWithinPlan: s.outputWithinPlan,
+    computeUnitsConsumed: s.computeUnitsConsumed,
+    slot: s.slot,
+    live: s.live,
+    simulatedAt: s.simulatedAt,
+  };
+}
+
+function pathEffectivePrice(path: RankedRoute, side: "buy" | "sell", decimals: number | null): string | null {
+  if (decimals === null) return null;
+  const usdc = side === "buy" ? fromRaw(path.fees.userInput) : fromRaw(path.fees.netUserOutput);
+  const shares = side === "buy" ? fromRaw(path.fees.grossVenueOutput) : fromRaw(path.fees.userInput);
+  if (shares === 0n) return null;
+  const scaled = (usdc * 10n ** BigInt(decimals) * 1_000_000n) / (shares * 1_000_000n);
+  const s = scaled.toString().padStart(7, "0");
+  return `${s.slice(0, -6)}.${s.slice(-6)}`;
 }
 
 function effectivePrice(q: RankedQuote | null, side: "buy" | "sell", decimals: number | null): string | null {

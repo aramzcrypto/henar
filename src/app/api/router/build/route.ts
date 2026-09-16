@@ -10,23 +10,25 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { flagEnabled, poolsForRepresentation, routerRepresentationForMint, telemetrySinkFromEnv, type PlannedLeg, type BuildOptions } from "@henar/router-core";
+import { USDC_MINT, flagEnabled, poolByAddress, routerRepresentationForMint, telemetrySinkFromEnv, type PlannedLeg, type BuildOptions } from "@henar/router-core";
 import { RouterApi } from "@henar/router-app";
+import { RpcSimulator } from "@henar/tx-builder";
 import { rateLimitedConnection } from "@/lib/rpc-limiter";
 import { jupiterAdapter } from "@henar/venue-jupiter";
-import { raydiumAdapter } from "@henar/venue-raydium";
+import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
 import { meteoraDbcAdapter } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter } from "@henar/venue-meteora-damm-v2";
 import { openOceanAdapter } from "@henar/venue-openocean";
 import { orcaAdapter } from "@henar/venue-orca";
+import { rfqAdapter } from "@henar/venue-rfq";
 import { consumeQuoteBudget, verifyQuoteAccess } from "@/lib/wallet-access-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const adapters = [jupiterAdapter, raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter];
+const adapters = [jupiterAdapter, raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, rfqAdapter];
 let api: RouterApi | null = null;
 
 function routerApi(connection: Connection) {
@@ -44,20 +46,30 @@ function routerApi(connection: Connection) {
       },
     },
     legBuilder: async (leg: PlannedLeg, options: BuildOptions) => {
-      const adapter = adapters.find((a) => a.venue === leg.venue);
+      /* The leg names its pool; the registry record says which venue adapter
+         quotes it (Raydium CLMM and CPMM share a venue id) and which
+         representation it belongs to. A path leg through SOL has no equity
+         representation on either mint, so the lookup is by pool, never by
+         mint. */
+      const pool = poolByAddress(leg.poolAddress);
+      const adapter =
+        (pool && adapters.find((a) => a.venue === leg.venue && a.capabilities().poolTypes.includes(pool.poolType))) ??
+        adapters.find((a) => a.venue === leg.venue);
       if (!adapter) return { instructions: [], lookupTables: [], reason: "VENUE_NOT_CONFIGURED", detail: `no adapter for ${leg.venue}` };
-      const rep = routerRepresentationForMint(leg.inputMint) ?? routerRepresentationForMint(leg.outputMint);
-      const pools = rep ? poolsForRepresentation(rep.id, { venue: leg.venue }).filter((p) => p.address === leg.poolAddress) : [];
+      if (!pool || !pool.enabled) return { instructions: [], lookupTables: [], reason: "NO_VERIFIED_POOL", detail: `leg pool ${leg.poolAddress} is not an enabled registry pool` };
+      const pools = [pool];
       const now = Date.now();
       // Re-quote the exact leg through the adapter so the build uses live state.
       const quote = await adapter.getQuote(
-        { representationId: rep?.id ?? "", side: rep && leg.outputMint === rep.mint ? "buy" : "sell", amount: leg.amountIn, amountType: "input", inputMint: leg.inputMint, outputMint: leg.outputMint },
+        { representationId: pool.representationId, side: leg.outputMint === USDC_MINT ? "sell" : "buy", amount: leg.amountIn, amountType: "input", inputMint: leg.inputMint, outputMint: leg.outputMint },
         { connection, pools, now, deadlineMs: 8_000 },
       );
       if (quote.unavailableReason) return { instructions: [], lookupTables: [], reason: quote.unavailableReason, detail: quote.unavailableDetail };
       if (quote.poolAddress !== leg.poolAddress) return { instructions: [], lookupTables: [], reason: "QUOTE_TERMS_MISMATCH", detail: "pool changed between quote and build" };
       return adapter.buildSwapInstructions(quote, { connection, pools, now, deadlineMs: 8_000 }, options);
     },
+    // Every built transaction is simulated as the owner before it is returned.
+    simulator: new RpcSimulator(connection),
   });
   return api;
 }

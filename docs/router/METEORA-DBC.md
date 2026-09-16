@@ -157,3 +157,25 @@ record and flips `enabled` accordingly, never deleting a record.
    quotes are unaffected).
 5. The on-chain verification pass (`ONCHAIN_VERIFIED`) for any admitted
    DBC/DAMM v2 record, as for every other venue.
+
+## DBC Studio (DBC-18…23)
+
+- **Monitor** — `monitorDbcMarket` / `monitorRegistryDbcMarkets` in
+  `packages/dbc-studio/src/monitor.ts`; `GET /api/dbc/markets`. Reads through
+  the router's own state code; unverifiable fields are null.
+- **Configure** — `StudioMarketConfig` → `buildStudioConfig` (SDK
+  `buildCurveWithMarketCap`, `validateConfigParameters`); presets are data,
+  not recommendations. Deprecated modes (RateLimiter, DAMM v1) refused.
+- **Model** — `recommendGraduation`: post-graduation pool modeled as
+  constant-product full-range; Q = T / I; threshold = Q / (1 − fee);
+  verified against the SDK's threshold for the derived caps and labelled
+  MODELED / ESTIMATED with explicit caveats. `recommendFeeProfile` maps
+  volatility/liquidity/maturity to a fee scheduler, validated by the SDK.
+- **Review** — `reviewHash(config, pool, cluster)` over canonical JSON.
+- **Deploy** — `prepareDeployment` builds the SDK's create-config-and-pool
+  transaction with the wallet as payer; config and base-mint keypairs are
+  generated in the browser and sign there; `validateStudioDeployment` checks
+  payer, signers and programs before the wallet is asked. `/studio` UI.
+- **Mainnet guard** — `HENAR_DBC_MAINNET_DEPLOY=1`, matching review hash,
+  explicit acknowledgement, wallet signature. No server wallet, no auto-fund,
+  no auto-deploy. Flag is unset in production.

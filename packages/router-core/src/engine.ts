@@ -19,6 +19,7 @@ import { poolsForRepresentation } from "./pool-registry";
 import { flagEnabled } from "./flags";
 import { requestScopedConnection } from "./request-cache";
 import { DEFAULT_SPLIT_OPTIONS, optimizeSplit, type SplitOptions } from "./split";
+import { adapterForPool, composePath, type PathFloors } from "./path";
 import { routerRepresentation } from "./representations";
 import { benchmarkRecord, type TelemetrySink } from "./telemetry";
 import {
@@ -77,6 +78,16 @@ export type EngineOptions = {
   splitOptions?: SplitOptions;
   /** Test hook: replaces the registry lookup for this call. */
   poolsOverride?: VerifiedPool[];
+  /**
+   * Overrides HENAR_PATH_ROUTING. When on, a two-leg path through a qualified
+   * intermediate is built from the representation's routing-leg pools and
+   * reported next to the split. Off only when split routing is off.
+   */
+  pathRouting?: boolean;
+  /** The floors the path is sized on; the API passes the execution policy's. */
+  pathFloors?: PathFloors;
+  /** Test hook: replaces the registry lookup of INTERMEDIATE_ROUTE pools. */
+  intermediatePoolsOverride?: VerifiedPool[];
 };
 
 export function routerQuotesEnabled() {
@@ -226,7 +237,9 @@ async function quoteRepresentationUnrecorded(
     best: null,
     alternatives: [],
     route: null,
-      splitReason: null,
+    splitReason: null,
+    path: null,
+    pathReason: null,
     exclusions: [],
     quotedAt,
     slot: null,
@@ -378,12 +391,43 @@ async function quoteRepresentationUnrecorded(
     }
   }
 
+  /* A two-leg path is built from the routing-leg pools the pair filter above
+     set aside. It is reported whether or not it wins; the caller ranks it
+     against every direct quote and the split. */
+  let path: RankedRoute | null = null;
+  let pathReason: string | null = null;
+  const pathRouting = options.pathRouting ?? (splitRouting && process.env.HENAR_PATH_ROUTING !== "0" && process.env.HENAR_PATH_ROUTING !== "false");
+  if (!pathRouting) pathReason = splitRouting ? "path routing is off" : "split routing is off";
+  else {
+    try {
+      const outcome = await composePath(input, venueAmount, allPools, {
+        adapters: options.adapters,
+        ctx,
+        deadlineMs,
+        henarFeeBps,
+        floors: options.pathFloors,
+        splitOptions: options.splitOptions,
+        intermediatePoolsOverride: options.intermediatePoolsOverride,
+      });
+      path = outcome.route;
+      pathReason = outcome.reason;
+      if (path && ranked[0]) {
+        const direct = fromRaw(ranked[0].netOutput);
+        path.improvementBps = direct > 0n ? Number(((fromRaw(path.netOutput) - direct) * 10_000n) / direct) : null;
+      }
+    } catch (error) {
+      pathReason = `path routing failed: ${(error as Error).message}`;
+    }
+  }
+
   return {
     ...base,
     best: ranked[0] ?? null,
     alternatives: ranked.slice(1),
     route,
     splitReason,
+    path,
+    pathReason,
     exclusions,
     slot,
     latencyMs,
@@ -408,8 +452,10 @@ async function splitAcrossPools(
   const curves: VenueCurve[] = [];
   await Promise.all(
     ranked.map(async (q) => {
-      const adapter = options.adapters.find((a) => a.venue === q.venue);
       const pool = q.poolAddress ? ctx.pools.find((p) => p.address === q.poolAddress) : null;
+      // Same venue, and an adapter that declares this pool type: Raydium
+      // CLMM and CPMM share a venue id but not a curve.
+      const adapter = pool ? adapterForPool(options.adapters, pool) : null;
       if (!adapter?.curve || !pool) return;
       const curve = await new Promise<VenueCurve | null>((resolve) => {
         const timer = setTimeout(() => resolve(null), deadlineMs);

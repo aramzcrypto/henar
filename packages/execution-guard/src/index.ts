@@ -20,6 +20,7 @@
  */
 import {
   AGGREGATOR_VENUES,
+  isQualifiedIntermediate,
   bpsOf,
   fromRaw,
   isOnchainVerified,
@@ -55,6 +56,7 @@ export const DEFAULT_EXECUTION_POLICY: ExecutionPolicy = {
   dbcMaxGraduationProgressBps: 9_800,
   maxLegs: 2,
   minSplitImprovementBps: 5,
+  intermediateHopSlippageBps: 10,
 };
 
 export type GuardCheck = {
@@ -95,6 +97,17 @@ export type GuardContext = {
   allowLegacyExecution?: boolean;
   /** The user's own slippage ceiling from the request; may only tighten policy. */
   userMaxSlippageBps?: number | null;
+  /**
+   * Set when the quote is one leg of a two-leg path through a qualified
+   * intermediate. The leg's pair is then {USDC, intermediate} (hop
+   * "intermediate") or {intermediate, representation} (hop "representation")
+   * instead of the direct USDC ↔ representation pair, and its registry pool
+   * must be INTERMEDIATE_ROUTE or ROUTING_LEG respectively. The reference
+   * price check is skipped for the leg: a stock reference says nothing about
+   * a SOL/USDC hop, and the representation hop's price is in intermediate,
+   * not USDC. The path as a whole is compared against the direct quotes.
+   */
+  pathLeg?: { intermediate: string; hop: "intermediate" | "representation" } | null;
 };
 
 const USDC_DECIMALS = 6n;
@@ -115,6 +128,13 @@ export function effectiveSlippageBps(
 ): { slippageBps: number | null; required: number } {
   const impact = Math.max(0, priceImpactBps ?? 0);
   const required = Math.ceil(policy.baseSlippageBps + impact * policy.slippagePerImpactBps);
+  const ceiling = Math.min(policy.maxSlippageBps, userMaxSlippageBps ?? policy.maxSlippageBps);
+  return { slippageBps: required <= ceiling ? required : null, required };
+}
+
+/** The fixed slippage of a USDC ↔ intermediate hop, still bounded by every ceiling. */
+export function intermediateHopSlippage(policy: ExecutionPolicy, userMaxSlippageBps: number | null | undefined) {
+  const required = Math.ceil(policy.intermediateHopSlippageBps);
   const ceiling = Math.min(policy.maxSlippageBps, userMaxSlippageBps ?? policy.maxSlippageBps);
   return { slippageBps: required <= ceiling ? required : null, required };
 }
@@ -203,6 +223,7 @@ function venueChecks(quote: RankedQuote, policy: ExecutionPolicy): GuardCheck[] 
     case "titan":
     case "openocean":
     case "okx":
+    case "rfq":
       // Aggregator quotes are firm only for their TTL; the adapter states the path.
       checks.push(check(`${quote.venue}.quoted`, quote.expectedAmountOut !== "0", "INSUFFICIENT_LIQUIDITY", "aggregator returned a quote"));
       break;
@@ -224,8 +245,17 @@ export function guardQuote(quote: RankedQuote, policy: ExecutionPolicy, ctx: Gua
   checks.push(check("quote.available", quote.unavailableReason === null, quote.unavailableReason ?? "INVALID_REQUEST", quote.unavailableDetail ?? "available"));
   const rep = routerRepresentation(quote.representationId);
   checks.push(check("representation.active", rep?.status === "ACTIVE", "REPRESENTATION_RESTRICTED", rep ? `representation ${rep.status}` : "unknown representation"));
-  const pairOk = rep !== null && new Set([quote.inputMint, quote.outputMint]).has(USDC_MINT) && new Set([quote.inputMint, quote.outputMint]).has(rep.mint);
-  checks.push(check("scope.usdcEquity", pairOk, "INVALID_REQUEST", pairOk ? "USDC ↔ verified representation" : "pair is outside router scope"));
+  const pair = new Set([quote.inputMint, quote.outputMint]);
+  const pathLeg = ctx.pathLeg ?? null;
+  if (!pathLeg) {
+    const pairOk = rep !== null && pair.has(USDC_MINT) && pair.has(rep.mint);
+    checks.push(check("scope.usdcEquity", pairOk, "INVALID_REQUEST", pairOk ? "USDC ↔ verified representation" : "pair is outside router scope"));
+  } else {
+    const qualified = isQualifiedIntermediate(pathLeg.intermediate);
+    const expected = pathLeg.hop === "intermediate" ? [USDC_MINT, pathLeg.intermediate] : [pathLeg.intermediate, rep?.mint ?? ""];
+    const pairOk = qualified && rep !== null && pair.size === 2 && expected.every((m) => pair.has(m));
+    checks.push(check("scope.pathLeg", pairOk, "INVALID_REQUEST", !qualified ? "intermediate is not qualified" : pairOk ? `${pathLeg.hop} hop through a qualified intermediate` : "leg pair does not match its hop"));
+  }
 
   // 2. Freshness.
   const ageMs = ctx.now - Date.parse(quote.quotedAt);
@@ -240,7 +270,16 @@ export function guardQuote(quote: RankedQuote, policy: ExecutionPolicy, ctx: Gua
     const pool = quote.poolAddress ? poolByAddress(quote.poolAddress, ctx.registry) : null;
     checks.push(check("pool.registered", pool !== null && pool.enabled, "NO_VERIFIED_POOL", pool ? (pool.enabled ? "enabled registry pool" : `pool disabled: ${pool.disabledReason}`) : "pool not in registry"));
     if (pool) {
-      checks.push(check("pool.eligibility", pool.eligibility === "ROUTER_ELIGIBLE", "NOT_ROUTER_ELIGIBLE", pool.eligibility));
+      /* The USDC hop of a path runs through an INTERMEDIATE_ROUTE record, or,
+         when the intermediate is itself a representation (a stock token that
+         qualified as a bridge), through that representation's own direct
+         USDC pool. */
+      const eligibilityOk = !pathLeg
+        ? pool.eligibility === "ROUTER_ELIGIBLE"
+        : pathLeg.hop === "intermediate"
+          ? pool.eligibility === "INTERMEDIATE_ROUTE" || (pool.eligibility === "ROUTER_ELIGIBLE" && pool.mint === pathLeg.intermediate)
+          : pool.eligibility === "ROUTING_LEG";
+      checks.push(check("pool.eligibility", eligibilityOk, "NOT_ROUTER_ELIGIBLE", pool.eligibility));
       checks.push(check("pool.venue", pool.venue === quote.venue, "QUOTE_TERMS_MISMATCH", `registry venue ${pool.venue}`));
       if (policy.requireOnchainVerifiedPool)
         checks.push(check("pool.onchainVerified", isOnchainVerified(pool), "ROUTE_STATE_STALE", `verification ${pool.verification}`));
@@ -251,12 +290,16 @@ export function guardQuote(quote: RankedQuote, policy: ExecutionPolicy, ctx: Gua
 
   // 4. Price impact and slippage.
   checks.push(check("price.impact", quote.priceImpactBps !== null && quote.priceImpactBps <= policy.maxPriceImpactBps, "PRICE_IMPACT_TOO_HIGH", quote.priceImpactBps === null ? "impact unknown" : `impact ${quote.priceImpactBps} bps`));
-  const slip = effectiveSlippageBps(policy, quote.priceImpactBps, ctx.userMaxSlippageBps);
+  const slip = pathLeg?.hop === "intermediate"
+    ? intermediateHopSlippage(policy, ctx.userMaxSlippageBps)
+    : effectiveSlippageBps(policy, quote.priceImpactBps, ctx.userMaxSlippageBps);
   checks.push(check("slippage.withinLimits", slip.slippageBps !== null, "SLIPPAGE_LIMIT_EXCEEDED", `required ${slip.required} bps, ceiling ${policy.maxSlippageBps} bps`));
 
   // 5. Reference price and session.
   const ref = ctx.reference;
-  if (policy.requireReferencePrice || ref) {
+  if (pathLeg) {
+    checks.push(check("reference.skippedForPathLeg", true, "REFERENCE_PRICE_STALE", "reference compared on the path as a whole, not on this leg"));
+  } else if (policy.requireReferencePrice || ref) {
     if (!ref) checks.push(check("reference.present", false, "REFERENCE_PRICE_STALE", "no reference price"));
     else {
       const refAge = ctx.now - Date.parse(ref.asOf);

@@ -32,10 +32,18 @@ export const representation = { id: rep.id, provider: rep.provider, mint: rep.mi
 export const buy = (amount = "100000000"): QuoteRequest => ({ representationId: rep.id, side: "buy", amount, amountType: "input", inputMint: USDC_MINT, outputMint: rep.mint });
 export const sell = (amount = "1000000000"): QuoteRequest => ({ representationId: rep.id, side: "sell", amount, amountType: "input", inputMint: rep.mint, outputMint: USDC_MINT });
 
+/** Real program ids per default pool type: the planner stamps legs from the registry record. */
+const PROGRAM_IDS = {
+  clmm: "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+  dlmm: "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
+  dbc: "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN",
+  damm_v2: "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG",
+} as const;
+
 export function pool(venue: Venue, address: string, overrides: Partial<VerifiedPool> = {}): VerifiedPool {
   const poolType = venue === "raydium" ? "clmm" : venue === "meteora" ? "dlmm" : venue === "meteora-dbc" ? "dbc" : "damm_v2";
   return {
-    id: `${venue}:${address}`, representationId: rep.id, mint: rep.mint, provider: rep.provider, tokenSymbol: rep.tokenSymbol, venue, address, programId: key(50), poolType,
+    id: `${venue}:${address}`, representationId: rep.id, mint: rep.mint, provider: rep.provider, tokenSymbol: rep.tokenSymbol, venue, address, programId: PROGRAM_IDS[poolType], poolType,
     baseMint: rep.mint, quoteMint: USDC_MINT, feeBps: 10, feeConfig: null, observedTokenPrograms: null, tvlUsd: 50_000, discoveredFrom: "fixture", discoveredAt: "2026-09-15T00:00:00.000Z",
     verifiedAt: "2026-09-15T00:00:00.000Z", verification: "ONCHAIN_VERIFIED", onchainVerifiedAt: "2026-09-15T00:00:00.000Z", verificationDetail: null, eligibility: "ROUTER_ELIGIBLE",
     dbc: null, enabled: true, disabledReason: null, ...overrides,

@@ -57,7 +57,8 @@
     "router:benchmark:matrix": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark-matrix.ts",
     "router:benchmark": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark.ts",
     "router:forensics": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-forensics.ts",
-    "router:discover:orca": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-orca-pools.ts"
+    "router:discover:orca": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-orca-pools.ts",
+    "router:discover:intermediates": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-intermediate-routes.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",

@@ -3,11 +3,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { USDC_MINT, buildPoolRegistry } from "@henar/router-core";
-import { DEFAULT_EXECUTION_POLICY } from "@henar/execution-guard";
+import { USDC_MINT, buildPoolRegistry, intermediateRepresentationId, unavailableQuote, type QuoteRequest, type RankedQuote } from "@henar/router-core";
+import { DEFAULT_EXECUTION_POLICY, guardQuote } from "@henar/execution-guard";
 import { assertPlanFloors, planExecution } from "@henar/tx-builder";
-import { DEC, NOW, OWNER, SHARES, TREASURY, approve, buy, key, pool, quoteFor, rep, representation, sell, singleBuyPlan, splitSellPlan } from "./fixtures/plan";
-import { tradeFee } from "@/lib/trade-fee";
+import { DEC, NOW, OWNER, SHARES, SLOT, TREASURY, approve, buy, key, pool, quoteFor, rep, representation, sell, singleBuyPlan, splitSellPlan } from "./fixtures/plan";
+import { MARKET_FEE_BPS, tradeFee } from "@/lib/trade-fee";
 
 test("single-leg buy plan: fee on input, venue input = user input − fee, floor from the guard, ATAs and programs listed", () => {
   const plan = singleBuyPlan();
@@ -93,3 +93,93 @@ test("planner refuses mismatched legs: wrong pair, different fee, unregistered p
   assert.throws(() => planExecution({ ...base, side: "sell", legs: [{ verdict: sellVerdict }] }), /do not sum/);
   void DEC;
 });
+
+/**
+ * Path plans: two hops through a qualified intermediate. The planner must
+ * accept the hop pairs, size the aggregate floor on the output-side legs
+ * only, chain the first hop's floor into the second hop's input, and add the
+ * intermediate's own account to the plan.
+ */
+{
+  const registryOf = buildPoolRegistry;
+  const SOL = "So11111111111111111111111111111111111111112";
+  const SOL_FACTS = { mint: SOL, decimals: 9, tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" };
+  const solPool = pool("raydium", key(31), { representationId: intermediateRepresentationId(SOL), mint: SOL, baseMint: USDC_MINT, quoteMint: SOL, eligibility: "INTERMEDIATE_ROUTE", tvlUsd: 5_000_000 });
+  const legPool = pool("raydium", key(32), { baseMint: SOL, quoteMint: rep.mint, eligibility: "ROUTING_LEG", tvlUsd: 2_000_000 });
+  const pools = [solPool, legPool];
+  const registry = registryOf(pools);
+  const approvePath = (q: RankedQuote, hop: "intermediate" | "representation") => {
+    const v = guardQuote(q, DEFAULT_EXECUTION_POLICY, { now: NOW, currentSlot: SLOT + 1, reference: null, representationDecimals: DEC, registry, pathLeg: { intermediate: SOL, hop } });
+    if (!v.approved) throw new Error(`path leg not approved: ${v.reason} ${JSON.stringify(v.checks.filter((c) => !c.ok))}`);
+    return v;
+  };
+  /** A path leg quote: fee accounting mirrors the engine (fee on the USDC hop only). */
+  const pathLeg = (request: QuoteRequest, amountIn: bigint, out: bigint, poolAddress: string, fee: { inputFee: bigint; outputFee: bigint }): RankedQuote => {
+    const base = unavailableQuote("raydium", request, "SDK_ERROR", null, poolAddress, NOW);
+    return {
+      ...base,
+      amountIn: amountIn.toString(), expectedAmountOut: out.toString(), unavailableReason: null, unavailableDetail: null, priceImpactBps: 10, slot: SLOT,
+      onchainCheckedAtQuote: true, executionPath: "henar-native", expiresAt: new Date(NOW + 10_000).toISOString(), source: "raydium:fixture",
+      fees: { inputMint: request.inputMint, outputMint: request.outputMint, userInput: (amountIn + fee.inputFee).toString(), henarInputFee: fee.inputFee.toString(), venueInput: amountIn.toString(), grossVenueOutput: out.toString(), venueFee: null, venueFeeMint: null, henarOutputFee: fee.outputFee.toString(), netUserOutput: (out - fee.outputFee).toString(), henarFeeBps: MARKET_FEE_BPS },
+      henarFeeBps: MARKET_FEE_BPS,
+      henarFeeAmount: (fee.inputFee > 0n ? fee.inputFee : fee.outputFee).toString(),
+      henarFeeMint: USDC_MINT,
+      swapInput: amountIn.toString(),
+      netOutput: (out - fee.outputFee).toString(),
+    };
+  };
+
+  test("buy path plan: USDC → SOL → representation, second hop fed the first hop's floor, intermediate ATA planned", () => {
+    const userInput = 100_000_000n;
+    const fee = (userInput * BigInt(MARKET_FEE_BPS)) / 10_000n;
+    const venueInput = userInput - fee;
+    const solOut = 500_000_000n; // 0.5 SOL
+    const solFloor = solOut - (solOut * BigInt(DEFAULT_EXECUTION_POLICY.intermediateHopSlippageBps)) / 10_000n;
+    const legA = approvePath(pathLeg({ ...buy(userInput.toString()), inputMint: USDC_MINT, outputMint: SOL }, venueInput, solOut, key(31), { inputFee: fee, outputFee: 0n }), "intermediate");
+    assert.equal(legA.minimumAmountOut, solFloor.toString());
+    const legB = approvePath(pathLeg({ ...buy(solFloor.toString()), inputMint: SOL, outputMint: rep.mint }, solFloor, SHARES(20n), key(32), { inputFee: 0n, outputFee: 0n }), "representation");
+    const plan = planExecution({ representation, side: "buy", kind: "path", intermediate: SOL_FACTS, owner: OWNER, treasuryOwner: TREASURY, userInput, legs: [{ verdict: legA }, { verdict: legB }], policy: DEFAULT_EXECUTION_POLICY, registry, now: NOW });
+    assert.equal(plan.kind, "path");
+    assert.equal(plan.intermediate?.mint, SOL);
+    assert.equal(plan.legs[0].inputMint, USDC_MINT);
+    assert.equal(plan.legs[0].outputMint, SOL);
+    assert.equal(plan.legs[1].inputMint, SOL);
+    assert.equal(plan.legs[1].amountIn, solFloor.toString());
+    assert.equal(plan.totals.expectedAmountOut, SHARES(20n).toString());
+    assert.equal(plan.totals.minimumAmountOut, legB.minimumAmountOut);
+    assert.equal(plan.totals.minimumNetUserOutput, legB.minimumAmountOut);
+    assert.equal(plan.henarFee.amount, fee.toString());
+    assert.equal(plan.henarFee.on, "input");
+    assert.ok(plan.requiredAtas.some((a) => a.purpose === "intermediate" && a.mint === SOL));
+    assert.equal(plan.requiredAtas.find((a) => a.purpose === "user-output")?.mint, rep.mint);
+    assert.doesNotThrow(() => assertPlanFloors(plan));
+  });
+
+  test("a path that feeds the expected output forward instead of the floor is refused", () => {
+    const userInput = 100_000_000n;
+    const fee = (userInput * BigInt(MARKET_FEE_BPS)) / 10_000n;
+    const solOut = 500_000_000n;
+    const legA = approvePath(pathLeg({ ...buy(userInput.toString()), inputMint: USDC_MINT, outputMint: SOL }, userInput - fee, solOut, key(31), { inputFee: fee, outputFee: 0n }), "intermediate");
+    const legB = approvePath(pathLeg({ ...buy(solOut.toString()), inputMint: SOL, outputMint: rep.mint }, solOut, SHARES(20n), key(32), { inputFee: 0n, outputFee: 0n }), "representation");
+    assert.throws(() => planExecution({ representation, side: "buy", kind: "path", intermediate: SOL_FACTS, owner: OWNER, treasuryOwner: TREASURY, userInput, legs: [{ verdict: legA }, { verdict: legB }], policy: DEFAULT_EXECUTION_POLICY, registry, now: NOW }), /feeds .* forward but the first hop floor/);
+    assert.throws(() => planExecution({ representation, side: "buy", kind: "path", owner: OWNER, treasuryOwner: TREASURY, userInput, legs: [{ verdict: legA }, { verdict: legB }], policy: DEFAULT_EXECUTION_POLICY, registry, now: NOW }), /intermediate/);
+  });
+
+  test("sell path plan: representation → SOL → USDC with the fee on the USDC output and the floor chained", () => {
+    const userInput = SHARES(10n);
+    const solOut = 900_000_000n;
+    const legB = approvePath(pathLeg({ ...sell(userInput.toString()), inputMint: rep.mint, outputMint: SOL }, userInput, solOut, key(32), { inputFee: 0n, outputFee: 0n }), "representation");
+    const solFloor = BigInt(legB.minimumAmountOut!);
+    const usdcOut = 90_000_000n;
+    const feeOut = (usdcOut * BigInt(MARKET_FEE_BPS)) / 10_000n;
+    const legA = approvePath(pathLeg({ ...sell(solFloor.toString()), inputMint: SOL, outputMint: USDC_MINT }, solFloor, usdcOut, key(31), { inputFee: 0n, outputFee: feeOut }), "intermediate");
+    const plan = planExecution({ representation, side: "sell", kind: "path", intermediate: SOL_FACTS, owner: OWNER, treasuryOwner: TREASURY, userInput, legs: [{ verdict: legB }, { verdict: legA }], policy: DEFAULT_EXECUTION_POLICY, registry, now: NOW });
+    assert.equal(plan.legs[1].amountIn, solFloor.toString());
+    assert.equal(plan.henarFee.on, "output");
+    assert.equal(plan.henarFee.mint, USDC_MINT);
+    assert.equal(plan.totals.minimumAmountOut, legA.minimumAmountOut);
+    const min = BigInt(legA.minimumAmountOut!);
+    assert.equal(plan.totals.minimumNetUserOutput, (min - (min * BigInt(MARKET_FEE_BPS)) / 10_000n).toString());
+    assert.doesNotThrow(() => assertPlanFloors(plan));
+  });
+}

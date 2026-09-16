@@ -1194,7 +1194,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 2.803e-05,
+    "tvlUsd": 0.00002803,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -8068,7 +8068,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 3.7199999999999996e-05,
+    "tvlUsd": 0.000037199999999999996,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -9497,7 +9497,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 5.1284999999999994e-05,
+    "tvlUsd": 0.000051284999999999994,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -13730,6 +13730,402 @@
     "disabledReason": "TVL $0 below $1000 floor"
   },
   {
+    "id": "raydium:4nFbdT7DeXATvaRZfR3WqALGJnogMjqe9vf2H6C1WXBr",
+    "representationId": "intermediate:3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+    "mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+    "provider": "xstocks",
+    "tokenSymbol": "3NZ9JM",
+    "venue": "raydium",
+    "address": "4nFbdT7DeXATvaRZfR3WqALGJnogMjqe9vf2H6C1WXBr",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 5,
+    "feeConfig": {
+      "configId": "HfERMT5DRA6C1TAqecrJQFpmkf3wsWTMncqnj3RDg5aw",
+      "tickSpacing": 10
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 10080.29,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": false,
+    "disabledReason": "TVL $10080 below $100000 floor"
+  },
+  {
+    "id": "raydium:8meJ5VWWiPDjrqTu1dARzKwpc7D82o9G7FBVBhV6t8WY",
+    "representationId": "intermediate:5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ",
+    "mint": "5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ",
+    "provider": "xstocks",
+    "tokenSymbol": "5XZw2L",
+    "venue": "raydium",
+    "address": "8meJ5VWWiPDjrqTu1dARzKwpc7D82o9G7FBVBhV6t8WY",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 5,
+    "feeConfig": {
+      "configId": "3XCQJQryqpDvvZBfGxR7CLAw5dpGJ9aa7kt1jRLdyxuZ",
+      "tickSpacing": 1
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 406449.46,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": true,
+    "disabledReason": null
+  },
+  {
+    "id": "raydium:7j4Bq7SkbKEDJ9LjoDVFLbjpDaDxQNZKs8x2CvgcZRAY",
+    "representationId": "intermediate:bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1",
+    "mint": "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1",
+    "provider": "xstocks",
+    "tokenSymbol": "bSo13r",
+    "venue": "raydium",
+    "address": "7j4Bq7SkbKEDJ9LjoDVFLbjpDaDxQNZKs8x2CvgcZRAY",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 25,
+    "feeConfig": {
+      "configId": "E64NGkDLLCdQ2yFNPcavaKptrEgmiQaNykUuLC1Qgwyp",
+      "tickSpacing": 60
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 16517.12,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": false,
+    "disabledReason": "TVL $16517 below $100000 floor"
+  },
+  {
+    "id": "raydium:BZtgQEyS6eXUXicYPHecYQ7PybqodXQMvkjUbP4R8mUU",
+    "representationId": "intermediate:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "provider": "xstocks",
+    "tokenSymbol": "Es9vMF",
+    "venue": "raydium",
+    "address": "BZtgQEyS6eXUXicYPHecYQ7PybqodXQMvkjUbP4R8mUU",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "quoteMint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "feeBps": 1,
+    "feeConfig": {
+      "configId": "9iFER3bpjf1PTTCQCfTRu17EJgvsxo9pVyA9QWwEuX4x",
+      "tickSpacing": 1
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 1549144.5,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": true,
+    "disabledReason": null
+  },
+  {
+    "id": "raydium:3NeUgARDmFgnKtkJLqUcEUNCfknFCcGsFfMJCtx6bAgx",
+    "representationId": "intermediate:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "provider": "xstocks",
+    "tokenSymbol": "Es9vMF",
+    "venue": "raydium",
+    "address": "3NeUgARDmFgnKtkJLqUcEUNCfknFCcGsFfMJCtx6bAgx",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "quoteMint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "feeBps": 1,
+    "feeConfig": {
+      "configId": "4BLNHtVe942GSs4teSZqGX24xwKNkqU7bGgNn3iUiUpw",
+      "tickSpacing": 10
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 36702.44,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": false,
+    "disabledReason": "TVL $36702 below $100000 floor"
+  },
+  {
+    "id": "raydium:D1EHUSD2kHye9hhbhZeNw1XiYaVZFSZAkFrwmQ4MvDEj",
+    "representationId": "intermediate:GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A",
+    "mint": "GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A",
+    "provider": "xstocks",
+    "tokenSymbol": "GoLDpp",
+    "venue": "raydium",
+    "address": "D1EHUSD2kHye9hhbhZeNw1XiYaVZFSZAkFrwmQ4MvDEj",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "quoteMint": "GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A",
+    "feeBps": 10,
+    "feeConfig": {
+      "configId": "DrdecJVzkaRsf1TQu1g7iFncaokikVTHqpzPjenjRySY",
+      "tickSpacing": 10
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 10088.03,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": false,
+    "disabledReason": "TVL $10088 below $100000 floor"
+  },
+  {
+    "id": "raydium:EUGzX8kKvbLB55idiETEdXm6NZzB3Dz7c1ui6wGhcviR",
+    "representationId": "intermediate:JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD",
+    "mint": "JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD",
+    "provider": "xstocks",
+    "tokenSymbol": "Juprjz",
+    "venue": "raydium",
+    "address": "EUGzX8kKvbLB55idiETEdXm6NZzB3Dz7c1ui6wGhcviR",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "JuprjznTrTSp2UFa3ZBUFgwdAmtZCq4MQCwysN55USD",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 1,
+    "feeConfig": {
+      "configId": "9iFER3bpjf1PTTCQCfTRu17EJgvsxo9pVyA9QWwEuX4x",
+      "tickSpacing": 1
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 3895482.92,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": true,
+    "disabledReason": null
+  },
+  {
+    "id": "raydium:3ucNos4NbumPLZNWztqGHNFFgkHeRMBQAVemeeomsUxv",
+    "representationId": "intermediate:So11111111111111111111111111111111111111112",
+    "mint": "So11111111111111111111111111111111111111112",
+    "provider": "xstocks",
+    "tokenSymbol": "So1111",
+    "venue": "raydium",
+    "address": "3ucNos4NbumPLZNWztqGHNFFgkHeRMBQAVemeeomsUxv",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "So11111111111111111111111111111111111111112",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 4,
+    "feeConfig": {
+      "configId": "3h2e43PunVA5K34vwKCLHWhZF4aZpyaC9RmxvshGAQpL",
+      "tickSpacing": 1
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 6662940.74,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": true,
+    "disabledReason": null
+  },
+  {
+    "id": "raydium:8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj",
+    "representationId": "intermediate:So11111111111111111111111111111111111111112",
+    "mint": "So11111111111111111111111111111111111111112",
+    "provider": "xstocks",
+    "tokenSymbol": "So1111",
+    "venue": "raydium",
+    "address": "8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "So11111111111111111111111111111111111111112",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 1,
+    "feeConfig": {
+      "configId": "9iFER3bpjf1PTTCQCfTRu17EJgvsxo9pVyA9QWwEuX4x",
+      "tickSpacing": 1
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 456768.95,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": true,
+    "disabledReason": null
+  },
+  {
+    "id": "raydium:2QdhepnKRTLjjSqPL1PtKNwqrUkoLee5Gqs8bvZhRdMv",
+    "representationId": "intermediate:So11111111111111111111111111111111111111112",
+    "mint": "So11111111111111111111111111111111111111112",
+    "provider": "xstocks",
+    "tokenSymbol": "So1111",
+    "venue": "raydium",
+    "address": "2QdhepnKRTLjjSqPL1PtKNwqrUkoLee5Gqs8bvZhRdMv",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "So11111111111111111111111111111111111111112",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 5,
+    "feeConfig": {
+      "configId": "HfERMT5DRA6C1TAqecrJQFpmkf3wsWTMncqnj3RDg5aw",
+      "tickSpacing": 10
+    },
+    "observedTokenPrograms": {
+      "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 406732.78,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": true,
+    "disabledReason": null
+  },
+  {
+    "id": "raydium:7Mt2zB4JUV5VNPXzYaW6kG3xkaq7zKsBuZKZhNq6AVV4",
+    "representationId": "intermediate:XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc",
+    "mint": "XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc",
+    "provider": "xstocks",
+    "tokenSymbol": "XsjQP3",
+    "venue": "raydium",
+    "address": "7Mt2zB4JUV5VNPXzYaW6kG3xkaq7zKsBuZKZhNq6AVV4",
+    "programId": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+    "poolType": "clmm",
+    "baseMint": "XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc",
+    "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "feeBps": 400,
+    "feeConfig": {
+      "configId": "6tBc3ABLaYTTWu94DiRD5PWi92HML34UpAQ8pPTYgudw",
+      "tickSpacing": 120
+    },
+    "observedTokenPrograms": {
+      "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    },
+    "tvlUsd": 12774.27,
+    "discoveredFrom": "RAYDIUM_API:intermediate-routes",
+    "discoverySources": [
+      "RAYDIUM_API"
+    ],
+    "discoveredAt": "2026-09-16T06:25:38.824Z",
+    "verifiedAt": "2026-09-16T06:25:38.824Z",
+    "verification": "DISCOVERED",
+    "onchainVerifiedAt": null,
+    "verificationDetail": null,
+    "eligibility": "INTERMEDIATE_ROUTE",
+    "dbc": null,
+    "enabled": false,
+    "disabledReason": "TVL $12774 below $100000 floor"
+  },
+  {
     "id": "orca:5wgzVkiru4BRytFwLaCjMEmarJtGx2YX68NwvAq4vWrX",
     "representationId": "ondo:14diAn5z8kjrKwSC8WLqvBqqe5YmihJhjxRxd8Z6ondo",
     "mint": "14diAn5z8kjrKwSC8WLqvBqqe5YmihJhjxRxd8Z6ondo",
@@ -13784,7 +14180,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1e-06,
+    "tvlUsd": 0.000001,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -13924,7 +14320,7 @@
       "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       "quote": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
     },
-    "tvlUsd": 1.11756447e-07,
+    "tvlUsd": 1.11756447e-7,
     "discoveredFrom": "ORCA_ONCHAIN",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -14169,7 +14565,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1.924779303461278e-06,
+    "tvlUsd": 0.000001924779303461278,
     "discoveredFrom": "ORCA_ONCHAIN",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -16086,7 +16482,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 3.493957e-06,
+    "tvlUsd": 0.000003493957,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -16121,7 +16517,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 3.493957e-06,
+    "tvlUsd": 0.000003493957,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -16754,7 +17150,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 5.8825e-06,
+    "tvlUsd": 0.0000058825,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -16789,7 +17185,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1.44125e-06,
+    "tvlUsd": 0.00000144125,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -18434,7 +18830,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1.3783070196015264e-05,
+    "tvlUsd": 0.000013783070196015264,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -18469,7 +18865,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1e-06,
+    "tvlUsd": 0.000001,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -19094,7 +19490,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1.514078641433309e-05,
+    "tvlUsd": 0.00001514078641433309,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -20035,7 +20431,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1e-06,
+    "tvlUsd": 0.000001,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -22586,7 +22982,7 @@
       "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       "quote": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
     },
-    "tvlUsd": 6.665942654276468e-06,
+    "tvlUsd": 0.000006665942654276468,
     "discoveredFrom": "ORCA_ONCHAIN",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -24811,7 +25207,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 4.60965e-06,
+    "tvlUsd": 0.00000460965,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -25795,7 +26191,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1e-06,
+    "tvlUsd": 0.000001,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -26278,7 +26674,7 @@
       "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       "quote": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
     },
-    "tvlUsd": 8.0415523817e-05,
+    "tvlUsd": 0.000080415523817,
     "discoveredFrom": "ORCA_ONCHAIN",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -26931,7 +27327,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 9.7077104e-05,
+    "tvlUsd": 0.000097077104,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -27840,7 +28236,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 2.747e-06,
+    "tvlUsd": 0.000002747,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -28757,7 +29153,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1.82134414049862e-05,
+    "tvlUsd": 0.0000182134414049862,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -28792,7 +29188,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 8.6067207024931e-06,
+    "tvlUsd": 0.0000086067207024931,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -28827,7 +29223,7 @@
       "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       "quote": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
     },
-    "tvlUsd": 7.718740756487852e-06,
+    "tvlUsd": 0.000007718740756487852,
     "discoveredFrom": "ORCA_ONCHAIN",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -30708,7 +31104,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 3.5833338647301044e-06,
+    "tvlUsd": 0.0000035833338647301044,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -30743,7 +31139,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 3.5833338647301044e-06,
+    "tvlUsd": 0.0000035833338647301044,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -30778,7 +31174,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 3.5833338647301044e-06,
+    "tvlUsd": 0.0000035833338647301044,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -30813,7 +31209,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 3.5833338647301044e-06,
+    "tvlUsd": 0.0000035833338647301044,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -32353,7 +32749,7 @@
       "base": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       "quote": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
     },
-    "tvlUsd": 6.894613289399999e-05,
+    "tvlUsd": 0.00006894613289399999,
     "discoveredFrom": "ORCA_ONCHAIN",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -32602,7 +32998,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1.090807224894176e-05,
+    "tvlUsd": 0.00001090807224894176,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -33829,7 +34225,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 5.321064975075845e-06,
+    "tvlUsd": 0.000005321064975075845,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -33864,7 +34260,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1e-06,
+    "tvlUsd": 0.000001,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -33899,7 +34295,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1e-06,
+    "tvlUsd": 0.000001,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -33934,7 +34330,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 2.642129950151692e-07,
+    "tvlUsd": 2.642129950151692e-7,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -34696,7 +35092,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 1e-06,
+    "tvlUsd": 0.000001,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"
@@ -34979,7 +35375,7 @@
       "base": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
       "quote": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     },
-    "tvlUsd": 4.854124977292219e-06,
+    "tvlUsd": 0.000004854124977292219,
     "discoveredFrom": "orca:getProgramAccounts(whirlpool)",
     "discoverySources": [
       "ORCA_ONCHAIN"

@@ -1,0 +1,113 @@
+.steps {
+  display: flex;
+  gap: 8px;
+  padding: 18px 36px 0;
+  flex-wrap: wrap;
+}
+.step {
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.step[aria-current="step"] {
+  color: var(--text);
+  background: var(--selected-bg);
+  border-color: transparent;
+}
+.step:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px 22px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.field input,
+.field select {
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+.field input:focus-visible,
+.field select:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.kv {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 2fr;
+  gap: 8px 18px;
+  font-size: 13px;
+}
+.kv dt {
+  color: var(--muted);
+}
+.kv dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.warn {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+}
+.check input {
+  margin-top: 3px;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.ok {
+  color: var(--accent-text);
+}

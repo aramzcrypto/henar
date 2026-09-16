@@ -121,13 +121,14 @@ test("malformed DBC records are rejected: missing dbc block, dbc block on a non-
 });
 
 test("the committed registry carries a known eligibility on every pool and no DBC records yet", () => {
-  /* Two eligibilities are in the file: USDC routes and routing legs. The
+  /* Three eligibilities are in the file: USDC routes, routing legs, and the
+     intermediates' own USDC pools (the USDC-side hop of a path). The
      assertion is that every pool declares one of them, not that they are all
      the same one, which stopped being true when SOL and USDT legs were
      admitted. Infrastructure pairs remain outside the registry entirely. */
   for (const p of loadPoolRegistry().pools) {
     assert.ok(
-      p.eligibility === "ROUTER_ELIGIBLE" || p.eligibility === "ROUTING_LEG",
+      p.eligibility === "ROUTER_ELIGIBLE" || p.eligibility === "ROUTING_LEG" || p.eligibility === "INTERMEDIATE_ROUTE",
       `${p.address} eligibility ${p.eligibility}`,
     );
     assert.equal(p.dbc, null, p.address);

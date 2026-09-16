@@ -309,7 +309,7 @@ test("guardResult picks the best passing quote in engine order and reports every
   const second = ranked("raydium");
   const third = ranked("jupiter", buy(), (19n * 10n ** BigInt(DEC)).toString());
   const result: EngineResult = { enabled: true, request: buy(), best, alternatives: [second, third], route: null,
-      splitReason: null, exclusions: [], quotedAt: new Date(NOW).toISOString(), slot: SLOT, latencyMs: {} };
+      splitReason: null, path: null, pathReason: null, exclusions: [], quotedAt: new Date(NOW).toISOString(), slot: SLOT, latencyMs: {} };
   const registry = buildPoolRegistry([pool("raydium"), pool("meteora-dbc", { address: key(43), id: "x" })]);
   const g = guardResult(result, DEFAULT_EXECUTION_POLICY, { now: NOW, currentSlot: SLOT + 1, reference: null, representationDecimals: DEC, registry });
   assert.equal(g.selected?.quote.venue, "raydium");

@@ -36,14 +36,16 @@ export type Venue =
   | "orca"
   | "titan"
   | "openocean"
-  | "okx";
+  | "okx"
+  /** A request-for-quote maker: firm quotes, settled by the maker's own transaction. */
+  | "rfq";
 
 /**
  * Venues that are aggregators / RFQ networks rather than pools Henar holds
  * state for. They have no registry pool, no on-chain re-check at quote time,
  * and are benchmarked and routed to only when they beat Henar's own venues.
  */
-export const AGGREGATOR_VENUES: ReadonlySet<Venue> = new Set<Venue>(["jupiter", "titan", "openocean", "okx"]);
+export const AGGREGATOR_VENUES: ReadonlySet<Venue> = new Set<Venue>(["jupiter", "titan", "openocean", "okx", "rfq"]);
 export type Provider = "xstocks" | "backpack" | "ondo";
 
 export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -234,6 +236,9 @@ export type VerifiedPool = {
    * such as SOL or USDT. Real liquidity, and usable only as one leg of a
    * multi-leg route: it is never a direct USDC route, so the guard refuses it
    * for a direct quote.
+   * INTERMEDIATE_ROUTE: the pair is {a qualified intermediate, USDC}; the
+   * pool's `mint` is the intermediate and it belongs to no equity. Used only
+   * as the USDC-side hop of a two-leg path, never as a direct route.
    * STOCK_PAIRED_INFRASTRUCTURE: a registry mint is one side but the market
    * is not a USDC↔equity route (e.g. NEW_TOKEN/NVDAx). Indexed, monitored,
    * lifecycle-tracked — never quoted by the equity engine. `enabled` must be
@@ -246,7 +251,17 @@ export type VerifiedPool = {
   disabledReason: string | null;
 };
 
-export type PoolEligibility = "ROUTER_ELIGIBLE" | "ROUTING_LEG" | "STOCK_PAIRED_INFRASTRUCTURE";
+export type PoolEligibility = "ROUTER_ELIGIBLE" | "ROUTING_LEG" | "INTERMEDIATE_ROUTE" | "STOCK_PAIRED_INFRASTRUCTURE";
+
+/**
+ * Registry id for an intermediate asset's own USDC pools. These records carry
+ * no equity representation: `representationId` is this synthetic id and
+ * `mint` is the intermediate itself. They are the first hop of a buy path
+ * (USDC → intermediate → representation) and the last hop of a sell path.
+ */
+export function intermediateRepresentationId(mint: string) {
+  return `intermediate:${mint}`;
+}
 
 
 
@@ -504,10 +519,30 @@ export type VenueCurve = {
   quoteFor?: (amountIn: bigint) => VenueQuote;
 };
 
-/** A multi-leg route chosen by the split optimizer, ranked like a quote. */
+/**
+ * A multi-leg route, ranked like a quote.
+ *
+ *  "split"  legs run in parallel over the same pair and their inputs sum to
+ *           the venue input.
+ *  "path"   legs run in sequence through one qualified intermediate
+ *           (USDC → I → representation on a buy, the reverse on a sell). Each
+ *           leg carries its own pair. The second hop is quoted on the first
+ *           hop's *floor* output, not its expected output, because chained
+ *           exact-in swaps cannot read the first hop's real output on chain;
+ *           whatever the first hop returns above its floor stays in the
+ *           user's wallet as `residual`.
+ */
 export type RankedRoute = {
-  kind: "single" | "split";
+  kind: "single" | "split" | "path";
   legs: RankedQuote[];
+  /** Path routes only: the intermediate the route passes through. */
+  intermediate?: { mint: string; symbol: string | null; decimals: number; tokenProgram: string } | null;
+  /**
+   * Path routes only: the intermediate the user keeps when the first hop
+   * returns more than its floor. Expected, not guaranteed; it is not counted
+   * in `netOutput`.
+   */
+  residual?: { mint: string; expected: RawAmount; floorBps: number } | null;
   fees: FeeBreakdown;
   netOutput: RawAmount;
   improvementBps: number | null;
@@ -531,6 +566,13 @@ export type EngineResult = {
    * curve could be built" and "the gain was under a basis point".
    */
   splitReason: string | null;
+  /**
+   * The best two-leg path through a qualified intermediate, when one could
+   * be built. Reported whether or not it wins, for the same reason the split
+   * is: a caller ranking every source must see it.
+   */
+  path: RankedRoute | null;
+  pathReason: string | null;
   exclusions: QuoteExclusion[];
   quotedAt: string;
   slot: number | null;
@@ -631,6 +673,13 @@ export type ExecutionPolicy = {
   dbcMaxGraduationProgressBps: number;
   maxLegs: number;
   minSplitImprovementBps: number;
+  /**
+   * Slippage on the USDC ↔ intermediate hop of a path. Fixed rather than
+   * impact-scaled: the intermediates are the deepest markets on the chain,
+   * and every basis point here is intermediate the user keeps instead of
+   * stock, because the second hop is sized on this hop's floor.
+   */
+  intermediateHopSlippageBps: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -689,7 +738,7 @@ export type PlannedAta = {
   owner: string;
   address: string;
   tokenProgram: string;
-  purpose: "user-input" | "user-output" | "henar-fee";
+  purpose: "user-input" | "user-output" | "henar-fee" | "intermediate";
 };
 
 /**
@@ -704,6 +753,13 @@ export type ExecutionPlan = {
   provider: Provider;
   side: Side;
   owner: string;
+  /**
+   * "parallel": every leg trades the plan pair and their inputs sum to the
+   * venue input. "path": legs run in sequence through `intermediate`; the
+   * output-side legs are the ones whose output is the plan's output mint.
+   */
+  kind: "parallel" | "path";
+  intermediate: { mint: string; decimals: number; tokenProgram: string } | null;
   legs: PlannedLeg[];
   totals: {
     amountIn: RawAmount;
