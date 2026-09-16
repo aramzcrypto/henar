@@ -35,11 +35,23 @@ test("each admitted layout is read at its published offsets", () => {
 });
 
 test("an unknown layout or a short account decodes to null, never to a guess", () => {
-  assert.equal(canDecodePoolMints("dlmm"), false);
-  assert.equal(decodePoolMints("dlmm", account({ base: 73, quote: 105 }, A, B)), null);
+  /* DLMM gained a decoder when private-market markets were admitted (its
+     LbPair mint offsets were confirmed against a live pair), so the
+     undecodable cases here are the two that still have none. */
+  assert.equal(canDecodePoolMints("dbc"), false);
+  assert.equal(canDecodePoolMints("damm_v2"), false);
+  assert.equal(decodePoolMints("dbc", account({ base: 73, quote: 105 }, A, B)), null);
   assert.equal(decodePoolMints("clmm", Buffer.alloc(8)), null);
   assert.equal(decodePoolMints("clmm", Buffer.alloc(136)), null); // one byte short of quote+32
   assert.notEqual(decodePoolMints("clmm", Buffer.alloc(137)), null);
+});
+
+test("the DLMM layout decodes the pair at the LbPair mint offsets", () => {
+  assert.equal(canDecodePoolMints("dlmm"), true);
+  const data = account({ base: 88, quote: 120 }, A, B);
+  assert.deepEqual(decodePoolMints("dlmm", data), { base: A, quote: B });
+  // One byte short of the second mint is not a pair.
+  assert.equal(decodePoolMints("dlmm", data.subarray(0, 151)), null);
 });
 
 test("agreement is on the unordered pair", () => {

@@ -142,13 +142,32 @@ test("a pool trading a different pair than the registry records is refused", () 
   assert.equal(truncated.verification, "VERIFICATION_FAILED");
   assert.match(truncated.detail, /too short for the clmm layout/);
 
-  // A layout with no decoder cannot be called verified: it stays DISCOVERED,
-  // keeps its existing enablement, and carries no verification timestamp.
-  const undecodable = pool("meteora", key(2), { programId: program.toBase58(), verification: "DISCOVERED", onchainVerifiedAt: null, observedTokenPrograms: null, enabled: false, disabledReason: "no direct adapter" });
+  /* A layout with no decoder cannot be called verified: it stays DISCOVERED,
+     keeps its existing enablement, and carries no verification timestamp.
+     DBC and DAMM v2 are the two that still have none; DLMM gained one with
+     the private-market products and is exercised below. */
+  const undecodable = pool("meteora-dbc", key(2), { programId: program.toBase58(), verification: "DISCOVERED", onchainVerifiedAt: null, observedTokenPrograms: null, enabled: false, disabledReason: "no direct adapter" });
   const pending = classifyPoolVerification(undecodable, poolAccountFor(program, undecodable.baseMint, undecodable.quoteMint), ...mints, 123);
   assert.equal(pending.verification, "DISCOVERED");
-  assert.match(pending.detail, /no decoder for dlmm/);
+  assert.match(pending.detail, /no decoder for dbc/);
   const kept = applyVerification(undecodable, pending, "2026-09-15T01:00:00.000Z");
   assert.equal(kept.onchainVerifiedAt, null);
   assert.equal(kept.disabledReason, "no direct adapter");
+});
+
+test("a DLMM pool's pair is confirmed from its own account, so private-market markets verify rather than staying DISCOVERED", () => {
+  const program = new PublicKey("LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo");
+  const p = pool("meteora", key(3), { programId: program.toBase58(), poolType: "dlmm", verification: "DISCOVERED", onchainVerifiedAt: null, observedTokenPrograms: null });
+  const lbPair = (x: string, y: string) => {
+    const data = Buffer.alloc(904);
+    new PublicKey(x).toBuffer().copy(data, 88);
+    new PublicKey(y).toBuffer().copy(data, 120);
+    return { owner: program, data, executable: false, lamports: 1, rentEpoch: 0 };
+  };
+  const mints = [mintAccount(TOKEN_2022_PROGRAM_ID, 9), mintAccount(TOKEN_PROGRAM_ID, 6)] as const;
+  const ok = classifyPoolVerification(p, lbPair(p.baseMint, p.quoteMint), ...mints, 500);
+  assert.equal(ok.verification, "ONCHAIN_VERIFIED");
+  const wrong = classifyPoolVerification(p, lbPair(key(77), p.quoteMint), ...mints, 500);
+  assert.equal(wrong.verification, "VERIFICATION_FAILED");
+  assert.match(wrong.detail, /pool trades .*, registry says/);
 });

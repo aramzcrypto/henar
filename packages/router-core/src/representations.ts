@@ -14,6 +14,7 @@
  * a default.
  */
 import { equityRegistry } from "@/lib/equities/registry";
+import { routerPrivateProducts } from "@/lib/private-markets/router-artifact";
 import { verifiedMint } from "./verified-mints";
 import type { RouterRepresentation } from "./types";
 
@@ -46,10 +47,42 @@ for (const equity of equityRegistry) {
           }
         : null,
       status,
+      assetClass: "PUBLIC_EQUITY",
     };
     byId.set(view.id, view);
     byMint.set(view.mint, view);
   }
+}
+
+/* Private-market exposure products (PreStocks, Tessera) enter the same
+   registry from their own committed artifact, under their own provider and
+   asset class. Two products that reference the same company are two
+   representations with nothing in common but a name: the engine quotes
+   exactly the mint it was asked for, and the guard's pair check keeps it
+   there. Whether they may be quoted at all is decided at request time by
+   HENAR_PRIVATE_MARKETS_ROUTING (see `privateMarketsRoutingEnabled`). */
+for (const product of routerPrivateProducts()) {
+  if (byMint.has(product.mint)) continue;
+  const verified = verifiedMint(product.mint);
+  const view: RouterRepresentation = {
+    id: `${product.provider}:${product.mint}`,
+    equityId: `private:${product.companySlug}`,
+    provider: product.provider,
+    tokenSymbol: product.symbol,
+    mint: product.mint,
+    decimals: verified?.decimals ?? null,
+    tokenProgram: verified?.tokenProgram ?? null,
+    tokenExtensions: verified ? { scaledUiMultiplier: verified.scaledUiMultiplier, transferFeeBps: verified.transferFeeBps, readAt: verified.verifiedAt } : null,
+    status: verified && !verified.supported ? "RESTRICTED" : "ACTIVE",
+    assetClass: "PRIVATE_MARKET_EXPOSURE",
+  };
+  byId.set(view.id, view);
+  byMint.set(view.mint, view);
+}
+
+export function privateMarketsRoutingEnabled(env: Record<string, string | undefined> = process.env) {
+  const value = env.HENAR_PRIVATE_MARKETS_ROUTING;
+  return value === "1" || value === "true";
 }
 
 export function routerRepresentation(id: string) {

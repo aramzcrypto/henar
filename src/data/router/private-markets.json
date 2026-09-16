@@ -1,0 +1,130 @@
+{
+  "generatedAt": "2026-09-16T11:49:12.884Z",
+  "sources": {
+    "prestocks": "https://prestocks.com/api/prestocks (available)",
+    "tessera": "https://rest-api.tessera.pe/v1/public/token-details (available)"
+  },
+  "products": [
+    {
+      "provider": "prestocks",
+      "providerProductId": "ANDURIL",
+      "symbol": "ANDURIL",
+      "name": "Anduril PreStocks",
+      "mint": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+      "companySlug": "anduril",
+      "companyName": "Anduril",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "prestocks",
+      "providerProductId": "ANTHROPIC",
+      "symbol": "ANTHROPIC",
+      "name": "Anthropic PreStocks",
+      "mint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+      "companySlug": "anthropic",
+      "companyName": "Anthropic",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "prestocks",
+      "providerProductId": "FIGUREAI",
+      "symbol": "FIGUREAI",
+      "name": "Figure AI PreStocks",
+      "mint": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+      "companySlug": "figure-ai",
+      "companyName": "Figure AI",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "prestocks",
+      "providerProductId": "KALSHI",
+      "symbol": "KALSHI",
+      "name": "Kalshi PreStocks",
+      "mint": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+      "companySlug": "kalshi",
+      "companyName": "Kalshi",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "prestocks",
+      "providerProductId": "NEURALINK",
+      "symbol": "NEURALINK",
+      "name": "Neuralink PreStocks",
+      "mint": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+      "companySlug": "neuralink",
+      "companyName": "Neuralink",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "prestocks",
+      "providerProductId": "OPENAI",
+      "symbol": "OPENAI",
+      "name": "OpenAI PreStocks",
+      "mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+      "companySlug": "openai",
+      "companyName": "OpenAI",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "prestocks",
+      "providerProductId": "POLYMARKET",
+      "symbol": "POLYMARKET",
+      "name": "Polymarket PreStocks",
+      "mint": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
+      "companySlug": "polymarket",
+      "companyName": "Polymarket",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "prestocks",
+      "providerProductId": "SPACEX",
+      "symbol": "SPACEX",
+      "name": "SpaceX PreStocks",
+      "mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+      "companySlug": "spacex",
+      "companyName": "SpaceX",
+      "sourceUrl": "https://prestocks.com/api/prestocks",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "tessera",
+      "providerProductId": "T-Kalshi",
+      "symbol": "T-Kalshi",
+      "name": "T-Kalshi",
+      "mint": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ",
+      "companySlug": "kalshi",
+      "companyName": "Kalshi",
+      "sourceUrl": "https://rest-api.tessera.pe/v1/public/token-details",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "tessera",
+      "providerProductId": "T-OpenAI",
+      "symbol": "T-OpenAI",
+      "name": "T-OpenAI",
+      "mint": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
+      "companySlug": "openai",
+      "companyName": "OpenAI",
+      "sourceUrl": "https://rest-api.tessera.pe/v1/public/token-details",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    },
+    {
+      "provider": "tessera",
+      "providerProductId": "T-SpaceX",
+      "symbol": "T-SpaceX",
+      "name": "T-SpaceX",
+      "mint": "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v",
+      "companySlug": "spacex",
+      "companyName": "SpaceX",
+      "sourceUrl": "https://rest-api.tessera.pe/v1/public/token-details",
+      "discoveredAt": "2026-09-16T11:49:12.884Z"
+    }
+  ]
+}

@@ -46,7 +46,10 @@ export type Venue =
  * and are benchmarked and routed to only when they beat Henar's own venues.
  */
 export const AGGREGATOR_VENUES: ReadonlySet<Venue> = new Set<Venue>(["jupiter", "titan", "openocean", "okx", "rfq"]);
-export type Provider = "xstocks" | "backpack" | "ondo";
+/** Issuers of public tokenized equities plus providers of private-market exposure products. */
+export type Provider = "xstocks" | "backpack" | "ondo" | "prestocks" | "tessera";
+/** What a router representation is a claim on. Private-market products are never equities. */
+export type RouterAssetClass = "PUBLIC_EQUITY" | "PRIVATE_MARKET_EXPOSURE";
 
 export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 export const U64_MAX = (1n << 64n) - 1n;
@@ -105,6 +108,9 @@ export type UnavailableReason =
   | "STALE_STATE"
   | "UNSUPPORTED_TOKEN_EXTENSION"
   | "NOT_ROUTER_ELIGIBLE"
+  // Pyth fair-value checks (enforce mode only)
+  | "PRICE_DEVIATION_TOO_HIGH"
+  | "REFERENCE_LOW_QUALITY"
   // engine
   | "ROUTER_DISABLED"
   | "INVALID_REQUEST"
@@ -147,6 +153,7 @@ export type RouterRepresentation = {
   tokenProgram: string | null;
   tokenExtensions: TokenExtensions | null;
   status: RepresentationStatus;
+  assetClass: RouterAssetClass;
 };
 
 /**
@@ -167,6 +174,8 @@ export type DiscoverySource =
   | "ORCA_ONCHAIN"
   | "METEORA_API"
   | "METEORA_ONCHAIN"
+  /** Meteora's own DLMM data API (`dlmm.datapi.meteora.ag`), read by pool address. */
+  | "METEORA_DATAPI"
   | "JUPITER_FORENSICS";
 
 /** Every source except forensics is authoritative for registry membership. */
@@ -177,6 +186,7 @@ export const VENUE_NATIVE_SOURCES: readonly DiscoverySource[] = [
   "ORCA_ONCHAIN",
   "METEORA_API",
   "METEORA_ONCHAIN",
+  "METEORA_DATAPI",
 ];
 
 export function venueNativeDiscovery(sources: DiscoverySource[] | undefined) {
@@ -680,6 +690,13 @@ export type ExecutionPolicy = {
    * stock, because the second hop is sized on this hop's floor.
    */
   intermediateHopSlippageBps: number;
+  /**
+   * Venues whose quoted output is already net of a Token-2022 transfer fee on
+   * the representation mint. A fee-bearing mint may only be routed through
+   * one of these; anywhere else the quote would overstate what the wallet
+   * receives and the floor would be set on the wrong number.
+   */
+  transferFeeNetVenues: Venue[];
 };
 
 // ---------------------------------------------------------------------------

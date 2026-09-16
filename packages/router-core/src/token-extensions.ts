@@ -10,8 +10,10 @@
  *  - legacy Token program: supported;
  *  - Token-2022 with no extensions, or only the ones listed in
  *    SUPPORTED_EXTENSIONS: supported;
- *  - TransferFeeConfig with a non-zero fee: unsupported until the guard
- *    (Task 9) accounts for fee-on-transfer in min-out;
+ *  - TransferFeeConfig: supported. The fee in basis points is recorded and
+ *    the Execution Guard (`transferFee.accounted`) admits a fee-bearing mint
+ *    only through venues whose quotes are net of the fee, so every floor is
+ *    a net figure. Tessera T-Tokens (20 bps) and PreStocks (50 bps) carry it;
  *  - TransferHook: unsupported (hook programs are arbitrary code);
  *  - PermanentDelegate: supported and recorded. Tokenized equities carry it
  *    as an issuer compliance control (xStocks, Backpack both do); it does
@@ -53,11 +55,28 @@ export const SUPPORTED_EXTENSIONS = new Set<string>([
   "PausableConfig",
   "PermanentDelegate",
   "ConfidentialTransferMint",
-  // TransferFeeConfig is supported only at a zero fee; see below.
+  // Confidential-transfer fee accounting only touches confidential transfers,
+  // which Henar never makes; the extension is inert for a plain swap.
+  "ConfidentialTransferFeeConfig",
   "TransferFeeConfig",
 ]);
 
-const extensionName = (type: ExtensionType) => ExtensionType[type] ?? `Unknown(${type})`;
+/**
+ * Extension ids the installed `@solana/spl-token` does not name yet.
+ *
+ * 16 is the mint-level confidential-transfer fee config: the RPC's own
+ * jsonParsed decode of the PreStocks mints names it `confidentialTransferFeeConfig`
+ * at the same TLV position this decoder reports as `Unknown(16)`, and 17 is
+ * its account-level counterpart, which never appears on a mint. Naming them
+ * here is what lets the support policy judge them by name rather than
+ * refusing every mint that carries one.
+ */
+const UNNAMED_EXTENSIONS: Record<number, string> = {
+  16: "ConfidentialTransferFeeConfig",
+  17: "ConfidentialTransferFeeAmount",
+};
+
+const extensionName = (type: ExtensionType) => ExtensionType[type] ?? UNNAMED_EXTENSIONS[type as number] ?? `Unknown(${type})`;
 
 function u16le(buffer: Buffer, offset: number) {
   return buffer.readUInt16LE(offset);
@@ -139,8 +158,8 @@ export function inspectionFromAccount(
         if (data && data.length >= 108) {
           const olderBps = u16le(data, 88);
           const newerBps = u16le(data, 106);
+          // The higher of the two schedules is the conservative fee to assume.
           transferFeeBps = Math.max(olderBps, newerBps);
-          if (transferFeeBps > 0) problems.push(`transfer fee ${transferFeeBps} bps`);
         } else problems.push("transfer fee config unreadable");
         break;
       }

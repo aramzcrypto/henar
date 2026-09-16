@@ -14,6 +14,7 @@ import { USDC_MINT, flagEnabled, poolByAddress, routerRepresentationForMint, tel
 import { RouterApi } from "@henar/router-app";
 import { RpcSimulator } from "@henar/tx-builder";
 import { rateLimitedConnection } from "@/lib/rpc-limiter";
+import { pythGuardInputFor } from "@/lib/pyth/guard-input";
 import { jupiterAdapter } from "@henar/venue-jupiter";
 import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
@@ -38,6 +39,7 @@ function routerApi(connection: Connection) {
     connection,
     health: null,
     telemetry: telemetrySinkFromEnv(),
+    pyth: pythGuardInputFor,
     treasuryOwner: process.env.STOCKROOM_TREASURY_OWNER ?? null,
     blockhash: {
       async latest() {

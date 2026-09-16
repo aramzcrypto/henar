@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { flagEnabled, routerRepresentationForMint, telemetrySinkFromEnv } from "@henar/router-core";
 import { RouterApi } from "@henar/router-app";
 import { rateLimitedConnection } from "@/lib/rpc-limiter";
+import { pythGuardInputFor } from "@/lib/pyth/guard-input";
 import { jupiterAdapter } from "@henar/venue-jupiter";
 import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
@@ -30,6 +31,7 @@ function routerApi() {
       connection: rpc ? rateLimitedConnection(rpc) : null,
       health: null,
       telemetry: telemetrySinkFromEnv(),
+      pyth: pythGuardInputFor,
     });
   }
   return api;

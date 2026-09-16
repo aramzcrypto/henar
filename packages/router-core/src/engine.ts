@@ -20,7 +20,7 @@ import { flagEnabled } from "./flags";
 import { requestScopedConnection } from "./request-cache";
 import { DEFAULT_SPLIT_OPTIONS, optimizeSplit, type SplitOptions } from "./split";
 import { adapterForPool, composePath, type PathFloors } from "./path";
-import { routerRepresentation } from "./representations";
+import { privateMarketsRoutingEnabled, routerRepresentation } from "./representations";
 import { benchmarkRecord, type TelemetrySink } from "./telemetry";
 import {
   bpsOf,
@@ -107,6 +107,8 @@ export function validateQuoteRequest(request: QuoteRequest): Validated {
   if (!rep) return { ok: false, reason: "INVALID_REQUEST", detail: "unknown representation" };
   if (rep.status !== "ACTIVE")
     return { ok: false, reason: "REPRESENTATION_RESTRICTED", detail: `representation is ${rep.status}` };
+  if (rep.assetClass === "PRIVATE_MARKET_EXPOSURE" && !privateMarketsRoutingEnabled())
+    return { ok: false, reason: "REPRESENTATION_RESTRICTED", detail: "private-market routing is off (HENAR_PRIVATE_MARKETS_ROUTING)" };
   if (request.amountType !== "input")
     return { ok: false, reason: "NOT_IMPLEMENTED", detail: "exact-out quotes are not supported yet" };
   let amount: bigint;

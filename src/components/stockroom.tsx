@@ -15,7 +15,7 @@ import Image from "next/image";
 import DecimalBase from "decimal.js";
 const Decimal = DecimalBase.clone({ precision: 80 });
 import dynamic from "next/dynamic";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { Buffer } from "buffer";
@@ -65,8 +65,11 @@ import {
   paymentForMode,
   paymentLabel,
   pinnedPayments,
+  isPrivateMarket,
+  isPublicEquity,
   type PaymentToken,
 } from "@/lib/payment-tokens";
+import type { SelectorPrivateProduct } from "@/app/api/private-markets/products/route";
 import type { MarketReview } from "@/lib/market";
 import { quoteAuthorization } from "@/lib/wallet-access-client";
 import { validateMarketTransaction } from "@/lib/market-transaction";
@@ -75,6 +78,8 @@ import { inspectRouteWallet } from "@/lib/wallet-route-state";
 import { PublicKey } from "@solana/web3.js";
 import { unpackMint } from "@solana/spl-token";
 import { MARKET_FEE_BPS } from "@/lib/trade-fee";
+import { FAIR_VALUE_LABELS, formatBps } from "@/lib/pyth/fair-value";
+import type { FairValueAssessment } from "@/lib/pyth/types";
 /** Idle long enough that refreshing quotes is spending quota on nobody. */
 const IDLE_PAUSE_MS = 3 * 60_000;
 
@@ -207,6 +212,40 @@ function Row({
   );
 }
 
+/**
+ * Pyth Fair Value inside the route details: the references the guard saw,
+ * the deviation of the quoted route from the tokenized reference, and the
+ * protection state. Compact by design — the ticket is not a data dashboard.
+ */
+function PythFairValueRows({ assessment, now }: { assessment: FairValueAssessment; now: number }) {
+  const ageOf = (at: string | null) => {
+    if (!at) return "age unknown";
+    const ms = Math.max(0, (now || Date.now()) - Date.parse(at));
+    return ms < 60_000 ? `${Math.round(ms / 1000)}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : `${(ms / 3_600_000).toFixed(1)}h`;
+  };
+  const price = (p: string | null | undefined) => (p ? `$${Number(p).toLocaleString("en-US", { maximumFractionDigits: Number(p) < 10 ? 4 : 2 })}` : "Unavailable");
+  const session: Record<string, string> = { regular: "Regular", preMarket: "Pre-market", postMarket: "Post-market", overNight: "Overnight", closed: "Closed" };
+  const reference = assessment.tokenReference ?? assessment.underlyingReference;
+  return (
+    <div className="pyth-trade-rows">
+      <div className="pyth-trade-head">
+        <span>Pyth fair value</span>
+        <small>Powered by Pyth Pro</small>
+      </div>
+      <Row label="Token reference">
+        {assessment.tokenReference ? `${price(assessment.tokenReference.price)} · ${assessment.tokenReference.freshness === "live" ? "live" : assessment.tokenReference.freshness}` : "No Pyth reference"}
+      </Row>
+      <Row label="Underlying reference">
+        {assessment.underlyingReference ? `${price(assessment.underlyingReference.price)} · ${session[assessment.underlyingReference.marketSession ?? ""] ?? "session unknown"}` : "No Pyth reference"}
+      </Row>
+      <Row label="Execution deviation">{assessment.routeVsTokenBps === null ? "Not comparable" : formatBps(assessment.routeVsTokenBps)}</Row>
+      <Row label="Token basis">{assessment.tokenVsUnderlyingBps === null ? (assessment.comparability === "unverified" && assessment.tokenReference && assessment.underlyingReference ? "Comparability unverified" : "—") : formatBps(assessment.tokenVsUnderlyingBps)}</Row>
+      <Row label="Market session">{assessment.underlyingMarketSession ? (session[assessment.underlyingMarketSession] ?? assessment.underlyingMarketSession) : "—"}</Row>
+      <Row label="Data age">{reference ? `${ageOf(reference.feedUpdatedAt)} · ${reference.publisherCount ?? "?"} publishers` : "—"}</Row>
+      <Row label="Protection status">{FAIR_VALUE_LABELS[assessment.status]}</Row>
+    </div>
+  );
+}
 function usdEstimate(amount: string, unitPrice: number | null) {
   if (!amount || unitPrice === null || !Number.isFinite(unitPrice)) return null;
   try {
@@ -327,7 +366,7 @@ export function Stockroom({
     return () => c.abort();
   }, [stock.mint]);
   const funding = paymentForMode(mode, marketPayment);
-  const stockToken = {
+  const stockToken: PaymentToken = {
     mint: stock.mint,
     symbol: stock.ticker,
     name: stock.name,
@@ -386,6 +425,8 @@ export function Stockroom({
     quotedAt?: string;
     expiresAt?: string | null;
     feeBps?: number;
+    /** Pyth Fair Value Engine finding for a USDC ↔ representation pair; null when Pyth has nothing. */
+    pyth?: FairValueAssessment | null;
   } | null>(null);
   /* The route that was actually selected, not a fixed provider name. This row
      read "Jupiter" regardless of which source won, which is both wrong and the
@@ -706,11 +747,11 @@ export function Stockroom({
   const [assetPickerSide, setAssetPickerSide] = useState<"input" | "output">(
     "input",
   );
-  const [assetClass, setAssetClass] = useState<"all" | "crypto" | "stocks">(
+  const [assetClass, setAssetClass] = useState<"all" | "crypto" | "stocks" | "preipo">(
     "all",
   );
   const [assetIssuer, setAssetIssuer] = useState<
-    "all" | "xStocks" | "Backpack" | "Ondo"
+    "all" | "xStocks" | "Backpack" | "Ondo" | "PreStocks" | "Tessera"
   >("all");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentError, setPaymentError] = useState("");
@@ -894,6 +935,33 @@ export function Stockroom({
       .catch(() => {});
     return () => controller.abort();
   }, [metadataMints]);
+  /* Private-market exposure products come from the live provider catalogs
+     (PreStocks, Tessera) through Henar's own route, never hard-coded. Each
+     is a specific provider, product and mint; the selector groups them by
+     company for reading but never merges them. */
+  const [privateProducts, setPrivateProducts] = useState<SelectorPrivateProduct[]>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/private-markets/products", { signal: controller.signal })
+      .then(async (r) => (r.ok ? r.json() : null))
+      .then((data: { products?: SelectorPrivateProduct[] } | null) => {
+        if (data?.products && !controller.signal.aborted) setPrivateProducts(data.products);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  const verifiedPrivateAssets: PaymentToken[] = privateProducts.map((entry) => ({
+    mint: entry.mint,
+    symbol: entry.symbol,
+    name: entry.name,
+    decimals: balances?.[entry.mint]?.decimals ?? entry.decimals ?? -1,
+    logo: entry.logo ?? undefined,
+    provider: entry.provider,
+    assetClass: "PRIVATE_MARKET_EXPOSURE",
+    company: entry.companyName,
+    companySlug: entry.companySlug,
+    transferFeeBps: entry.transferFeeBps,
+  }));
   const verifiedStockAssets: PaymentToken[] = stocks.map((entry) => ({
     mint: entry.mint,
     symbol: entry.ticker,
@@ -909,6 +977,7 @@ export function Stockroom({
       ([mint, entry]) =>
         !commonPayments.some((token) => token.mint === mint) &&
         !stocks.some((entry) => entry.mint === mint) &&
+        !privateProducts.some((product) => product.mint === mint) &&
         BigInt(entry.amount) > 0n,
     )
     .map(([mint, entry]) => ({
@@ -922,17 +991,21 @@ export function Stockroom({
     ...commonPayments,
     ...walletAssets,
     ...verifiedStockAssets,
+    ...verifiedPrivateAssets,
   ];
   const oppositeMint =
     assetPickerSide === "input" ? marketReceive.mint : marketPayment.mint;
   const searchedPaymentOptions = availablePayments
     .filter((token) => {
-      const isStock = !!token.provider;
+      const isStock = isPublicEquity(token);
+      const isPrivate = isPrivateMarket(token);
+      const inClass =
+        assetClass === "all" ||
+        (assetClass === "stocks" ? isStock : assetClass === "preipo" ? isPrivate : !isStock && !isPrivate);
       return (
         token.mint !== oppositeMint &&
-        (assetClass === "all" ||
-          (assetClass === "stocks" ? isStock : !isStock)) &&
-        `${token.symbol} ${token.name} ${token.provider ?? ""} ${token.mint}`
+        inClass &&
+        `${token.symbol} ${token.name} ${token.provider ?? ""} ${token.company ?? ""} ${token.mint}`
           .toLowerCase()
           .includes(paymentSearch.toLowerCase())
       );
@@ -954,7 +1027,11 @@ export function Stockroom({
         if (bPinned === -1) return -1;
         return aPinned - bPinned;
       }
-      return a.name.localeCompare(b.name);
+      // Private-market products sort by company so two providers' products
+      // for one company sit together; everything else by name.
+      const aKey = isPrivateMarket(a) ? `${a.company ?? a.name} ${a.provider ?? ""}` : a.name;
+      const bKey = isPrivateMarket(b) ? `${b.company ?? b.name} ${b.provider ?? ""}` : b.name;
+      return aKey.localeCompare(bKey);
     });
   const heldPaymentOptions = paymentOptions.filter(
     (token) => BigInt(balances?.[token.mint]?.amount ?? "0") > 0n,
@@ -1572,7 +1649,9 @@ export function Stockroom({
                     {mode === "limit" ? "Quantity to buy" : "Receive"}
                   </span>
                   <span className="issuer-label">
-                    {receive.provider ?? "Crypto"}
+                    {isPrivateMarket(receive)
+                      ? `${receive.provider} · Pre-IPO exposure`
+                      : (receive.provider ?? "Crypto")}
                   </span>
                 </div>
                 <div className="ticket-amount">
@@ -1753,6 +1832,16 @@ export function Stockroom({
                   <Row label="Price impact">
                     {review ? `${Number(review.priceImpactPct) * 100}%` : "—"}
                   </Row>
+                  {mode === "market" && (isPrivateMarket(receive) || isPrivateMarket(payment)) && (
+                    <Row label="Token transfer fee">
+                      {(() => {
+                        const fee = isPrivateMarket(receive) ? receive.transferFeeBps : payment.transferFeeBps;
+                        return fee === null || fee === undefined
+                          ? "Read from the mint at quote time"
+                          : `${(fee / 100).toFixed(2)}% (Token-2022) · quotes are net of it`;
+                      })()}
+                    </Row>
+                  )}
                   {review?.route.routePlan.length ? (
                     <Row label="Execution route">
                       {[
@@ -1792,6 +1881,9 @@ export function Stockroom({
                     </>
                   ) : (
                     <Row label="Network fee">Available with quote</Row>
+                  )}
+                  {mode === "market" && estimate?.pyth && (
+                    <PythFairValueRows assessment={estimate.pyth} now={now} />
                   )}
                   {mode === "limit" && (
                     <>
@@ -2182,6 +2274,49 @@ export function Stockroom({
                 )}
               </section>
             )}
+            {privateProducts.some((p) => BigInt(balances?.[p.mint]?.amount ?? "0") > 0n) && (
+              <section className="holdings" id="preipo-holdings">
+                <div className="section-heading">
+                  <h2>Pre-IPO exposure</h2>
+                  <small className="holdings-note">Provider products stay separate · valuation is the Henar executable reference, not the provider mark</small>
+                </div>
+                {privateProducts
+                  .filter((p) => BigInt(balances?.[p.mint]?.amount ?? "0") > 0n)
+                  .map((p) => {
+                    const balance = balances![p.mint];
+                    const units = balance.uiAmount ?? formatUnits(balance.amount, balance.decimals);
+                    const reference = p.executionReference?.price ?? null;
+                    const valued = reference ? usdEstimate(units, Number(reference)) : null;
+                    return (
+                      <div className="holding-row" key={p.mint}>
+                        <span className="asset">
+                          <TokenLogo token={{ symbol: p.symbol, logo: p.logo ?? undefined }} />
+                          <span>
+                            <strong>{p.companyName}</strong>
+                            <small>
+                              {p.symbol} · {p.provider} · Pre-IPO exposure
+                            </small>
+                          </span>
+                        </span>
+                        <strong>
+                          {units} units
+                          <small className="holding-value">
+                            {valued ? `≈ ${valued} · Henar executable reference` : "No executable reference"}
+                            {p.markPrice !== null ? ` · ${p.provider} mark $${p.markPrice.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : ""}
+                          </small>
+                        </strong>
+                        <a
+                          href={`https://solscan.io/account/${owner}?token_address=${p.mint}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <ArrowUpRight size={16} />
+                        </a>
+                      </div>
+                    );
+                  })}
+              </section>
+            )}
             <StockReceipts owner={owner} />
           </>
         )}
@@ -2417,7 +2552,7 @@ export function Stockroom({
               <input
                 autoFocus
                 aria-label="Search assets"
-                placeholder="Search crypto, stocks, or paste a mint"
+                placeholder="Search crypto, stocks, pre-IPO, or paste a mint"
                 value={paymentSearch}
                 onChange={(e) => {
                   setPaymentSearch(e.target.value);
@@ -2441,22 +2576,47 @@ export function Stockroom({
                 ["all", "All assets"],
                 ["crypto", "Crypto"],
                 ["stocks", "Stocks & ETFs"],
+                ["preipo", "Pre-IPO"],
               ].map(([value, label]) => (
                 <button
                   key={value}
                   aria-pressed={assetClass === value}
                   className={assetClass === value ? "active" : ""}
                   onClick={() => {
-                    const next = value as "all" | "crypto" | "stocks";
+                    const next = value as "all" | "crypto" | "stocks" | "preipo";
                     setAssetClass(next);
-                    if (next === "crypto") setAssetIssuer("all");
+                    // Provider filters belong to one category; leaving it resets them.
+                    if (next !== assetClass) setAssetIssuer("all");
                   }}
                 >
                   {label}
                 </button>
               ))}
             </div>
-            {assetClass !== "crypto" && (
+            {assetClass === "preipo" && (
+              <div className="asset-issuer-tabs" aria-label="Pre-IPO provider">
+                <button
+                  type="button"
+                  aria-pressed={assetIssuer === "all"}
+                  className={assetIssuer === "all" ? "active" : ""}
+                  onClick={() => setAssetIssuer("all")}
+                >
+                  All providers
+                </button>
+                {(["PreStocks", "Tessera"] as const).map((provider) => (
+                  <button
+                    type="button"
+                    key={provider}
+                    aria-pressed={assetIssuer === provider}
+                    className={assetIssuer === provider ? "active" : ""}
+                    onClick={() => setAssetIssuer(provider)}
+                  >
+                    {provider}
+                  </button>
+                ))}
+              </div>
+            )}
+            {assetClass === "stocks" && (
               <div className="asset-issuer-tabs" aria-label="Stock issuer">
                 <button
                   type="button"
@@ -2538,28 +2698,44 @@ export function Stockroom({
                   <span />
                 </div>
               )}
-              {catalogPaymentOptions.map((token) => (
-                <div key={token.mint} className="selector-row">
-                  <button
-                    className="asset-choice"
-                    disabled={resolvingPayment}
-                    onClick={() => choosePayment(token)}
-                  >
-                    <span className="asset">
-                      <TokenLogo token={token} />
-                      <span>
-                        <strong>{token.symbol}</strong>
-                        <small>
-                          {token.name}
-                          {token.provider ? ` · ${token.provider}` : ""} · {token.mint.slice(0, 4)}…
-                          {token.mint.slice(-4)}
-                        </small>
+              {catalogPaymentOptions.map((token, index) => {
+                /* Private-market products that reference the same company sit
+                   under one company label, so "OpenAI" reads as one entry with
+                   two distinct products — each its own provider and mint. */
+                const previous = catalogPaymentOptions[index - 1];
+                const groupLabel =
+                  isPrivateMarket(token) && token.company && previous?.company !== token.company ? token.company : null;
+                return (
+                  <Fragment key={token.mint}>
+                    {groupLabel && (
+                      <div className="selector-section-label selector-company-label">
+                        <span>{groupLabel}</span>
+                        <span>Pre-IPO exposure</span>
+                      </div>
+                    )}
+                    <div className="selector-row">
+                    <button
+                      className="asset-choice"
+                      disabled={resolvingPayment}
+                      onClick={() => choosePayment(token)}
+                    >
+                      <span className="asset">
+                        <TokenLogo token={token} />
+                        <span>
+                          <strong>{token.symbol}</strong>
+                          <small>
+                            {token.name}
+                            {token.provider ? ` · ${token.provider}` : ""} · {token.mint.slice(0, 4)}…
+                            {token.mint.slice(-4)}
+                          </small>
+                        </span>
                       </span>
-                    </span>
-                    <span className="selector-balance">—</span>
-                  </button>
-                </div>
-              ))}
+                      <span className="selector-balance">—</span>
+                    </button>
+                    </div>
+                  </Fragment>
+                );
+              })}
               {paymentOptions.length === 0 && (
                 <div className="selector-empty">
                   <strong>Use a token mint address</strong>

@@ -57,13 +57,28 @@ test("committed pools.json loads, and every entry pairs a registry mint with USD
     }
     assert.ok(known.has(p.representationId), `${p.address} names unknown representation`);
   }
+  /* Every enabled pool must have a direct adapter that quotes it from chain.
+     Meteora DLMM joined that set with the private-market products, whose
+     liquidity is DLMM; it quotes through the official SDK and builds nothing,
+     so those routes are compared and guarded, then executed through the
+     reviewed market path. */
+  const QUOTABLE = new Set(["clmm", "whirlpool", "dlmm"]);
   for (const p of registry.pools.filter((p) => p.enabled)) {
-    assert.ok(
-      p.poolType === "clmm" || p.poolType === "whirlpool",
-      `${p.address}: ${p.poolType} has no direct adapter`,
-    );
+    assert.ok(QUOTABLE.has(p.poolType), `${p.address}: ${p.poolType} has no direct adapter`);
     assert.ok((p.tvlUsd ?? 0) >= 1000, "enabled pools meet the TVL floor");
   }
+});
+
+test("public equity enablement is unchanged by private-market admission", () => {
+  /* Private-market products brought DLMM pools into the registry. No public
+     equity pool may have been enabled or re-typed by that pass: the public
+     routing surface is exactly the Raydium CLMM and Orca Whirlpool pools it
+     was before. */
+  const publicPools = loadPoolRegistry().pools.filter((p) => p.provider === "xstocks" || p.provider === "backpack" || p.provider === "ondo");
+  for (const p of publicPools.filter((p) => p.enabled))
+    assert.ok(p.poolType === "clmm" || p.poolType === "whirlpool", `${p.address}: public equity enabled on ${p.poolType}`);
+  const privatePools = loadPoolRegistry().pools.filter((p) => p.provider === "prestocks" || p.provider === "tessera");
+  for (const p of privatePools) assert.equal(p.poolType, "dlmm", `${p.address}: private-market pool is not DLMM`);
 });
 
 test("pools that do not pair with USDC are rejected", () => {

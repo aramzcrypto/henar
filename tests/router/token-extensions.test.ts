@@ -70,7 +70,7 @@ test("Token-2022 mint with no extensions is supported and reports decimals", () 
   assert.equal(r.supported, true);
 });
 
-test("transfer hook → unsupported; transfer fee at 0 bps → supported; non-zero → unsupported", () => {
+test("transfer hook → unsupported; transfer fee at 0 bps → supported; non-zero → supported with the fee recorded (the guard confines it to net-quoting venues)", () => {
   const hook = Buffer.alloc(64);
   new PublicKey(HOOK).toBuffer().copy(hook, 32);
   const hooked = inspectionFromAccount(MINT, account(TOKEN_2022_PROGRAM_ID, token2022Mint(8, [{ type: ExtensionType.TransferHook, payload: hook }])));
@@ -88,7 +88,7 @@ test("transfer hook → unsupported; transfer fee at 0 bps → supported; non-ze
   assert.equal(zero.supported, true);
   assert.equal(zero.transferFeeBps, 0);
   const fifty = inspectionFromAccount(MINT, account(TOKEN_2022_PROGRAM_ID, token2022Mint(8, [{ type: ExtensionType.TransferFeeConfig, payload: fee(50) }])));
-  assert.equal(fifty.supported, false);
+  assert.equal(fifty.supported, true);
   assert.equal(fifty.transferFeeBps, 50);
 });
 

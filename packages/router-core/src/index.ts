@@ -42,6 +42,7 @@ export {
 } from "./token-extensions";
 export {
   listRouterRepresentations,
+  privateMarketsRoutingEnabled,
   routerRepresentation,
   routerRepresentationForMint,
 } from "./representations";

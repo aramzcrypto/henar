@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 
-export type MarketsView = "overview" | "all" | "calendar";
+export type MarketsView = "overview" | "all" | "pre-ipo" | "calendar";
 
 const items: { value: MarketsView; label: string; href: string }[] = [
   { value: "overview", label: "Overview", href: "/markets" },
   { value: "all", label: "All markets", href: "/markets?view=all" },
+  { value: "pre-ipo", label: "Pre-IPO", href: "/markets/pre-ipo" },
   { value: "calendar", label: "Calendar", href: "/markets/calendar" },
 ];
 

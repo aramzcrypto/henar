@@ -22,6 +22,7 @@ import {
   fromRaw,
   inspectMint,
   poolByAddress,
+  privateMarketsRoutingEnabled,
   quoteRepresentation,
   routerRepresentation,
   type EngineResult,
@@ -32,7 +33,7 @@ import {
   type TelemetrySink,
   type VenueAdapter,
 } from "@henar/router-core";
-import { DEFAULT_EXECUTION_POLICY, effectiveSlippageBps, guardQuote, guardResult, type GuardVerdict } from "@henar/execution-guard";
+import { DEFAULT_EXECUTION_POLICY, effectiveSlippageBps, guardQuote, guardResult, type GuardVerdict, type PythGuardInput, type PythGuardVerdict } from "@henar/execution-guard";
 import { buildTransaction, normalizeSimulation, planExecution, type BlockhashProvider, type LegInstructionBuilder, type Simulator } from "@henar/tx-builder";
 import type { RouterHealth } from "./health";
 
@@ -43,6 +44,8 @@ export type ApiDeps = {
   telemetry?: TelemetrySink | null;
   policy?: typeof DEFAULT_EXECUTION_POLICY;
   reference?: (representationId: string) => Promise<ReferencePrice | null>;
+  /** Pyth references for the representation; the guard assesses each quote against them. Null when Pyth is off or has nothing. */
+  pyth?: (representationId: string) => Promise<PythGuardInput | null>;
   currentSlot?: () => Promise<number | null>;
   treasuryOwner?: string | null;
   blockhash?: BlockhashProvider;
@@ -72,7 +75,7 @@ export type QuoteApiRequest = {
 export type QuoteApiResponse = {
   quoteId: string;
   company: string;
-  representation: { id: string; provider: string; symbol: string; mint: string; decimals: number | null };
+  representation: { id: string; provider: string; symbol: string; mint: string; decimals: number | null; assetClass: "PUBLIC_EQUITY" | "PRIVATE_MARKET_EXPOSURE" };
   issuer: string;
   side: "buy" | "sell";
   amountIn: string;
@@ -133,6 +136,8 @@ export type QuoteApiResponse = {
   benchmarkRoutePlan: unknown;
   exclusions: { venue: string; reason: string; detail: string | null }[];
   executionProtection: { mode: "execute" | "quote-only" | "refused"; slippageBps: number | null; checks: { name: string; ok: boolean; detail: string }[]; policy: string } | null;
+  /** Pyth Fair Value Engine finding for the selected quote. Null when Pyth was not consulted. */
+  pythFairValue: PythGuardVerdict | null;
   verification: { poolVerification: string | null; onchainCheckedAtQuote: boolean | null; calculatorStatus: string } | null;
   unavailableReason: string | null;
   /** Best approved quote regardless of executability (the meta-aggregator benchmark). */
@@ -225,6 +230,7 @@ export class RouterApi {
     if (!flagEnabled("routerQuotes")) return { status: 503, body: { error: "HENAR_ROUTER_QUOTES is off" } };
     const rep = routerRepresentation(body.representationId);
     if (!rep) return { status: 404, body: { error: "unknown representation" } };
+    if (rep.assetClass === "PRIVATE_MARKET_EXPOSURE" && !privateMarketsRoutingEnabled()) return { status: 403, body: { error: "private-market routing is off (HENAR_PRIVATE_MARKETS_ROUTING)" } };
     if (body.side !== "buy" && body.side !== "sell") return { status: 400, body: { error: "side must be buy or sell" } };
     let amount: bigint;
     try {
@@ -262,6 +268,8 @@ export class RouterApi {
     for (const x of result.exclusions) this.deps.health?.recordQuote(x.venue, false, result.latencyMs[x.venue] ?? 0);
 
     const reference = (await this.deps.reference?.(rep.id)) ?? null;
+    // Pyth must never take the quote down with it: a failure is "not consulted".
+    const pyth = await (this.deps.pyth?.(rep.id) ?? Promise.resolve(null)).catch(() => null);
     const currentSlot = (await this.deps.currentSlot?.()) ?? result.slot;
     const guarded = guardResult(result, this.deps.policy ?? DEFAULT_EXECUTION_POLICY, {
       now: this.now(),
@@ -270,6 +278,7 @@ export class RouterApi {
       representationDecimals: rep.decimals,
       userMaxSlippageBps: body.maxSlippageBps ?? null,
       allowLegacyExecution: false,
+      pyth,
     });
     const bestApproved = guarded.selected;
     let selected = selectRoute(guarded.verdicts) ?? bestApproved;
@@ -285,7 +294,7 @@ export class RouterApi {
        whichever venue won. */
     let henarRoute: QuoteApiResponse["henarRoute"] = null;
     if (result.route?.kind === "split") {
-      const verdicts = result.route.legs.map((leg) => guardQuote(leg, this.deps.policy ?? DEFAULT_EXECUTION_POLICY, { now: this.now(), currentSlot, reference, representationDecimals: rep.decimals, userMaxSlippageBps: body.maxSlippageBps ?? null, allowLegacyExecution: false }));
+      const verdicts = result.route.legs.map((leg) => guardQuote(leg, this.deps.policy ?? DEFAULT_EXECUTION_POLICY, { now: this.now(), currentSlot, reference, representationDecimals: rep.decimals, userMaxSlippageBps: body.maxSlippageBps ?? null, allowLegacyExecution: false, pyth }));
       const allApproved = verdicts.every((v) => v.approved);
       const splitNet = fromRaw(result.route.netOutput);
       const total = fromRaw(result.route.fees.venueInput);
@@ -385,7 +394,7 @@ export class RouterApi {
     const response: QuoteApiResponse = {
       quoteId,
       company: rep.equityId,
-      representation: { id: rep.id, provider: rep.provider, symbol: rep.tokenSymbol, mint: rep.mint, decimals: rep.decimals },
+      representation: { id: rep.id, provider: rep.provider, symbol: rep.tokenSymbol, mint: rep.mint, decimals: rep.decimals, assetClass: rep.assetClass },
       issuer: rep.provider,
       side: body.side,
       amountIn: body.amount,
@@ -414,6 +423,7 @@ export class RouterApi {
         : guarded.verdicts[0]
           ? { mode: "refused", slippageBps: null, checks: guarded.verdicts[0].checks.map((c) => ({ name: c.name, ok: c.ok, detail: c.detail })), policy: "DEFAULT_EXECUTION_POLICY" }
           : null,
+      pythFairValue: (selected ?? guarded.verdicts[0])?.pyth ?? null,
       verification: chosen ? { poolVerification: chosen.poolAddress ? (poolByAddress(chosen.poolAddress)?.verification ?? null) : null, onchainCheckedAtQuote: chosen.onchainCheckedAtQuote, calculatorStatus: chosen.venue === "meteora-dbc" || chosen.venue === "meteora-damm-v2" ? "SDK_BACKED" : "LIVE_VALIDATION_PENDING" } : null,
       unavailableReason: chosen ? (selected ? null : (guarded.verdicts[0]?.reason ?? null)) : (result.exclusions[0]?.reason ?? "NO_VERIFIED_POOL"),
       comparison: guarded.verdicts.length

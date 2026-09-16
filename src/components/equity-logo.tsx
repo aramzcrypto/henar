@@ -8,11 +8,14 @@ export function EquityLogo({
   ticker,
   size = 38,
   priority = false,
+  plate = false,
 }: {
   logo: string | null;
   ticker: string;
   size?: number;
   priority?: boolean;
+  /** Light backing for provider logos drawn dark on a transparent background. */
+  plate?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   // Catalog logos are same-origin bitmaps and benefit from Next's resizing: the
@@ -20,7 +23,7 @@ export function EquityLogo({
   // untouched because the optimizer rejects them by default.
   const unoptimized = !logo?.startsWith("/") || logo.endsWith(".svg");
   return (
-    <span className="equity-logo" style={{ width: size, height: size }}>
+    <span className={plate && logo ? "equity-logo equity-logo-plate" : "equity-logo"} style={{ width: size, height: size }}>
       {logo && !failed ? (
         <Image
           src={logo}

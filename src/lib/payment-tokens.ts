@@ -7,8 +7,23 @@ export type PaymentToken = {
   name: string;
   decimals: number;
   logo?: string;
+  /** Issuer label for public equities ("xStocks"), provider label for private-market products ("PreStocks"). */
   provider?: string;
+  /** Set for private-market exposure products; public equities and crypto leave it unset. */
+  assetClass?: "PRIVATE_MARKET_EXPOSURE";
+  /** Company the product references, for grouping in the selector. */
+  company?: string;
+  companySlug?: string;
+  transferFeeBps?: number | null;
 };
+
+/** A public tokenized equity: has an issuer and is not a private-market product. */
+export function isPublicEquity(token: PaymentToken) {
+  return !!token.provider && token.assetClass !== "PRIVATE_MARKET_EXPOSURE";
+}
+export function isPrivateMarket(token: PaymentToken) {
+  return token.assetClass === "PRIVATE_MARKET_EXPOSURE";
+}
 export const PAYMENT_USDC: PaymentToken = {
   mint: USDC,
   symbol: "USDC",

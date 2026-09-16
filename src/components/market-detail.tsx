@@ -13,6 +13,7 @@ import {
 import { routeLabel } from "@/lib/equities/route-label";
 import { CompanyFinancials } from "./company-financials";
 import { EquityLogo } from "./equity-logo";
+import { PythMarketData } from "./pyth-market-data";
 import type {
   DividendRecord,
   EarningsEvent,
@@ -1398,6 +1399,7 @@ export function MarketDetail({
       </nav>
       {tab === "Onchain" ? (
         <div className="company-onchain">
+          <PythMarketData equity={equity} comparison={comparison} />
           <PriceMovement equity={equity} data={comparison} error={error} />
           <OnchainTable
             equity={equity}

@@ -39,6 +39,10 @@ import {
   type UnavailableReason,
   type Venue,
 } from "@henar/router-core";
+import { assessFairValue, guardStateOf } from "@/lib/pyth/fair-value";
+import { formatRational } from "@/lib/pyth/decimal-math";
+import type { FairValueAssessment, PythGuardState, PythReference } from "@/lib/pyth/types";
+import { PYTH_QUALITY } from "@/lib/pyth/config";
 
 export const DEFAULT_EXECUTION_POLICY: ExecutionPolicy = {
   baseSlippageBps: 30,
@@ -57,7 +61,25 @@ export const DEFAULT_EXECUTION_POLICY: ExecutionPolicy = {
   maxLegs: 2,
   minSplitImprovementBps: 5,
   intermediateHopSlippageBps: 10,
+  /* Verified live (16 September 2026): Meteora DLMM's `swapQuote` and
+     Jupiter's quote both return transfer-fee-excluded output for a
+     fee-bearing Token-2022 mint, to the unit. Raydium and Orca SDKs net the
+     fee and expose it. DAMM v2 deliberately quotes without token info and
+     DBC has not been checked, so neither may route a fee-bearing mint. */
+  transferFeeNetVenues: ["meteora", "jupiter", "raydium", "orca"],
 };
+
+/**
+ * What the Pyth Fair Value Engine hands the guard for one representation:
+ * the references (never an executable price — that is the quote's own), and
+ * the rollout mode that decides whether a Pyth finding may refuse.
+ */
+export type PythGuardInput = {
+  references: { underlying: PythReference | null; token: PythReference | null; redemptionRate: PythReference | null };
+  mode: "observe" | "warn" | "enforce";
+};
+
+export type PythGuardVerdict = { state: PythGuardState; mode: PythGuardInput["mode"]; assessment: FairValueAssessment | null };
 
 export type GuardCheck = {
   name: string;
@@ -82,6 +104,8 @@ export type GuardVerdict = {
   checks: GuardCheck[];
   /** First failing reason, for callers that need one code. */
   reason: UnavailableReason | null;
+  /** Pyth fair-value finding for this quote; null when Pyth was not consulted. */
+  pyth: PythGuardVerdict | null;
   evaluatedAt: string;
 };
 
@@ -108,6 +132,8 @@ export type GuardContext = {
    * not USDC. The path as a whole is compared against the direct quotes.
    */
   pathLeg?: { intermediate: string; hop: "intermediate" | "representation" } | null;
+  /** Pyth references for the representation; absent or null means Pyth was not consulted. */
+  pyth?: PythGuardInput | null;
 };
 
 const USDC_DECIMALS = 6n;
@@ -313,6 +339,47 @@ export function guardQuote(quote: RankedQuote, policy: ExecutionPolicy, ctx: Gua
     }
   }
 
+  // 5b. Pyth fair value. Existing rules stay authoritative: a missing,
+  // stale or unverifiable Pyth reference never refuses, and in observe/warn
+  // mode nothing here refuses at all. It is never reported as a pass without
+  // a reference.
+  let pyth: PythGuardVerdict | null = null;
+  if (ctx.pyth && !pathLeg) {
+    const decimals = ctx.representationDecimals ?? rep?.decimals ?? null;
+    const venuePrice = decimals === null ? null : venueUsdcPerShare(quote, side, decimals);
+    const assessment = assessFairValue({
+      representationId: quote.representationId,
+      underlying: ctx.pyth.references.underlying,
+      token: ctx.pyth.references.token,
+      redemptionRate: ctx.pyth.references.redemptionRate,
+      executable: venuePrice ? { price: formatRational(venuePrice, 8), side, source: `${quote.venue} quote`, quotedAt: quote.quotedAt } : null,
+      now: ctx.now,
+    });
+    const state = guardStateOf(assessment);
+    const enforce = ctx.pyth.mode === "enforce";
+    pyth = { state, mode: ctx.pyth.mode, assessment };
+    const prefix = enforce ? "" : `${ctx.pyth.mode}: `;
+    const refDetail = assessment.tokenReference
+      ? `token ${assessment.tokenReference.symbol} ${assessment.tokenReference.price} (${assessment.tokenFreshness})`
+      : assessment.underlyingReference
+        ? `underlying ${assessment.underlyingReference.symbol} ${assessment.underlyingReference.price} (${assessment.underlyingFreshness}, ${assessment.underlyingMarketSession ?? "session unknown"})`
+        : "no Pyth reference";
+    checks.push(check("pyth.reference", true, "REFERENCE_PRICE_STALE", `${prefix}${state} · ${refDetail}`));
+    const lowQuality = state === "PYTH_LOW_DATA_QUALITY";
+    checks.push(check("pyth.dataQuality", !(enforce && lowQuality), "REFERENCE_LOW_QUALITY", `${prefix}${assessment.publisherCount ?? "?"} publishers, confidence ${assessment.confidenceBps ?? "?"} bps (limits ${PYTH_QUALITY.minPublisherCount} / ${PYTH_QUALITY.maxConfidenceBps} bps)`));
+    const deviation = state === "PYTH_EXECUTION_DEVIATION";
+    checks.push(check("pyth.executionDeviation", !(enforce && deviation), "PRICE_DEVIATION_TOO_HIGH", `${prefix}${assessment.routeVsTokenBps === null ? "not comparable" : `route vs token reference ${assessment.routeVsTokenBps} bps`}${assessment.tokenVsUnderlyingBps === null ? "" : `, token basis ${assessment.tokenVsUnderlyingBps} bps`}`));
+  }
+
+  // 5c. Token-2022 transfer fee. A fee-bearing representation is settled
+  // only through venues that quote net of the fee; the floor is then a net
+  // figure and what the wallet receives is what was quoted.
+  const feeBps = rep?.tokenExtensions?.transferFeeBps ?? null;
+  if (feeBps !== null && feeBps > 0) {
+    const nets = policy.transferFeeNetVenues.includes(quote.venue);
+    checks.push(check("transferFee.accounted", nets, "UNSUPPORTED_TOKEN_EXTENSION", nets ? `transfer fee ${feeBps} bps netted by ${quote.venue}` : `${quote.venue} does not quote net of the ${feeBps} bps transfer fee`));
+  }
+
   // 6. Venue-specific.
   checks.push(...venueChecks(quote, policy));
 
@@ -334,6 +401,7 @@ export function guardQuote(quote: RankedQuote, policy: ExecutionPolicy, ctx: Gua
     minimumNetUserOutput: minimumNet === null ? null : toRaw(minimumNet),
     checks,
     reason,
+    pyth,
     evaluatedAt: new Date(ctx.now).toISOString(),
   };
 }

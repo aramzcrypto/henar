@@ -49,11 +49,19 @@ function toBase58(bytes: Uint8Array): string {
  *  Raydium CPMM PoolState: discriminator 8, ammConfig 32, poolCreator 32,
  *  token0Vault 32, token1Vault 32, lpMint 32 -> token0Mint at 168,
  *  token1Mint at 200.
+ *
+ *  Meteora DLMM LbPair: discriminator 8, parameters (StaticParameters) 32,
+ *  vParameters (VariableParameters) 32, bumpSeed 1, binStepSeed 2,
+ *  pairType 1, activeId 4, binStep 2, status 1, requireBaseFactorSeed 1,
+ *  baseFactorSeed 2, activationType 1, creatorPoolOnOffControl 1
+ *  -> tokenXMint at 88, tokenYMint at 120. Confirmed against the live
+ *  tOpenAI-USDC pair (2ZWxT3ni…) on 16 September 2026.
  */
 const LAYOUTS: Partial<Record<PoolType, { base: number; quote: number }>> = {
   whirlpool: { base: 101, quote: 181 },
   clmm: { base: 73, quote: 105 },
   cpmm: { base: 168, quote: 200 },
+  dlmm: { base: 88, quote: 120 },
 };
 
 export type DecodedPoolMints = { base: string; quote: string };

@@ -10,6 +10,11 @@ import { aggregateIndicativeQuotes } from "@/lib/execution/aggregate";
 import { consumePublicQuoteBudget } from "@/lib/equities/rate-limit";
 import { MARKET_FEE_BPS, grossForNet, tradeFee } from "@/lib/trade-fee";
 import { feeOnInput } from "@/lib/payment-tokens";
+import { fairValueForMint } from "@/lib/pyth/company";
+import { routerEngineQuote } from "@/lib/private-markets/liquidity";
+import { routerRepresentationForMint } from "@henar/router-core";
+import { executablePriceFrom } from "@/lib/pyth/fair-value";
+import { henarFlag } from "@/lib/feature-flags";
 export async function POST(request: Request) {
   try {
     if (!consumePublicQuoteBudget(request))
@@ -57,16 +62,48 @@ export async function POST(request: Request) {
         amount,
         slippageBps: 50,
       });
-      const q = aggregate.selected;
+      let q = aggregate.selected;
+      /* Private-market products trade on venues the HTTP aggregators may not
+         index. Henar's own engine quotes their verified pools from chain, so
+         it is the backstop for exactly those pairs — never a substitute for a
+         public equity's aggregator comparison, which is unchanged. */
+      if (!q) {
+        const privateMint = [p.inputMint, p.outputMint].find((m) => routerRepresentationForMint(m)?.assetClass === "PRIVATE_MARKET_EXPOSURE");
+        const side = p.inputMint === USDC ? ("buy" as const) : p.outputMint === USDC ? ("sell" as const) : null;
+        if (privateMint && side) {
+          const engine = await routerEngineQuote(privateMint, side, amount).catch(() => null);
+          if (engine)
+            q = {
+              source: "henar-router" as never,
+              quoteProvider: "henar-router" as never,
+              quoteId: null,
+              inputMint: p.inputMint,
+              outputMint: p.outputMint,
+              inputAmount: engine.inputAmount,
+              grossOutputAmount: engine.grossOutputAmount,
+              outputAmount: engine.outputAmount,
+              minimumOutputAmount: engine.minimumOutputAmount,
+              providerFeeBps: 0,
+              providerFeeAmount: "0",
+              priceImpactPct: engine.priceImpactPct,
+              route: engine.route,
+              contextSlot: null,
+              quotedAt: engine.quotedAt,
+              expiresAt: engine.expiresAt,
+              transactionAvailable: false,
+            };
+        }
+      }
       if (!q) throw new Error("No route available. Try another amount.");
+      const candidates = aggregate.candidates.length ? aggregate.candidates : [q];
       return {
         inAmount: q.inputAmount,
         outAmount: q.outputAmount,
         executionSource: q.source,
         quoteProvider: q.quoteProvider,
         route: q.route,
-        alternatives: aggregate.candidates.length,
-        candidates: aggregate.candidates,
+        alternatives: candidates.length,
+        candidates,
         quotedAt: aggregate.quotedAt,
         expiresAt: aggregate.expiresAt,
       };
@@ -75,24 +112,41 @@ export async function POST(request: Request) {
     const q = p.exactOutput
       ? await estimateInput(amount, 10n ** BigInt(input.decimals), quote)
       : await quote(amount);
+    const inputDisplay = formatUnits(
+      p.exactOutput
+        ? inputFee
+          ? grossForNet(BigInt(q.inAmount))
+          : BigInt(q.inAmount)
+        : raw,
+      input.decimals,
+    );
+    const outputDisplay = formatUnits(
+      p.exactOutput
+        ? raw
+        : inputFee
+          ? BigInt(q.outAmount)
+          : BigInt(q.outAmount) - tradeFee(BigInt(q.outAmount)),
+      output.decimals,
+    );
+    /* Pyth fair value for a USDC ↔ representation pair: the venue price
+       (before the Henar fee, USDC per display unit) against the Pyth
+       tokenized and underlying references. Never delays or fails the quote. */
+    const pyth = henarFlag("pythPro")
+      ? await (async () => {
+          const side = p.inputMint === USDC ? ("buy" as const) : p.outputMint === USDC ? ("sell" as const) : null;
+          if (!side) return null;
+          const usdc = formatUnits(BigInt(side === "buy" ? q.inAmount : q.outAmount), 6);
+          const token = formatUnits(BigInt(side === "buy" ? q.outAmount : q.inAmount), side === "buy" ? output.decimals : input.decimals);
+          const price = executablePriceFrom(usdc, token);
+          if (!price) return null;
+          return fairValueForMint(side === "buy" ? p.outputMint : p.inputMint, { price, side, source: `${q.executionSource} quote`, quotedAt: q.quotedAt }).catch(() => null);
+        })()
+      : null;
     return NextResponse.json(
       {
-        input: formatUnits(
-          p.exactOutput
-            ? inputFee
-              ? grossForNet(BigInt(q.inAmount))
-              : BigInt(q.inAmount)
-            : raw,
-          input.decimals,
-        ),
-        output: formatUnits(
-          p.exactOutput
-            ? raw
-            : inputFee
-              ? BigInt(q.outAmount)
-              : BigInt(q.outAmount) - tradeFee(BigInt(q.outAmount)),
-          output.decimals,
-        ),
+        input: inputDisplay,
+        output: outputDisplay,
+        pyth,
         executionSource: q.executionSource,
         quoteProvider: q.quoteProvider,
         route: q.route,
