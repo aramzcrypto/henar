@@ -122,6 +122,8 @@ export type QuoteApiResponse = {
     improvementBps: number | null;
     executable: boolean;
     reason: string | null;
+    /** Guard checks that failed, per leg, so a refused path can be diagnosed from the response. */
+    failedChecks: { leg: number; venue: string; checks: string[] }[];
   } | null;
   henarPathReason: string | null;
   /** Per-venue quote latency, so a timeout can be attributed to a cause. */
@@ -341,7 +343,8 @@ export class RouterApi {
       );
       const allApproved = verdicts.every((v) => v.approved && v.mode === "execute");
       const floorsAgree = (() => {
-        if (body.side === "buy") return verdicts[0].minimumAmountOut === path.legs[1]?.amountIn && path.legs.slice(1).every((l) => l.amountIn === path.legs[1].amountIn || path.legs.length > 2);
+        // Buy: the USDC hop's floor is what the representation-side legs (one or a split) were sized on, in total.
+        if (body.side === "buy") return verdicts[0].minimumAmountOut === path.legs.slice(1).reduce((s, l) => s + fromRaw(l.amountIn), 0n).toString();
         const repLegs = verdicts.slice(0, -1);
         const floor = repLegs.reduce((s, v) => s + fromRaw(v.minimumAmountOut ?? "0"), 0n);
         return floor.toString() === path.legs[path.legs.length - 1].amountIn;
@@ -362,6 +365,7 @@ export class RouterApi {
         improvementBps: path.improvementBps,
         executable,
         reason: executable ? null : !allApproved ? (verdicts.find((v) => !v.approved)?.reason ?? "leg is quote-only") : "guard floor on the first hop differs from the amount the path was sized on",
+        failedChecks: verdicts.map((v, leg) => ({ leg, venue: v.quote.venue, checks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })).filter((f) => f.checks.length),
       };
       const incumbent = legVerdicts ? fromRaw(result.route!.netOutput) : selected && selected.mode === "execute" ? fromRaw(selected.quote.netOutput) : null;
       if (executable && (incumbent === null || fromRaw(path.netOutput) > incumbent)) {
