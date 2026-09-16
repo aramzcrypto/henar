@@ -1221,8 +1221,13 @@ export function MarketDetail({
     const controller = new AbortController();
     let hasData = false;
     let inFlight = false;
-    const load = () => {
-      if (document.hidden || inFlight) return;
+    /* The first read always happens; only the polling pauses on a hidden tab.
+       Gating the first one too leaves the whole Onchain tab — comparison,
+       routes, earn, price movement — on skeletons for anyone who opens a
+       market page in a background tab, and background intervals are
+       throttled, so it can stay there far longer than one poll period. */
+    const load = (force = false) => {
+      if ((document.hidden && !force) || inFlight) return;
       inFlight = true;
       fetch(`/api/equities/${equity.ticker}/onchain`, {
         signal: controller.signal,
@@ -1244,10 +1249,15 @@ export function MarketDetail({
           inFlight = false;
         });
     };
-    load();
-    const interval = window.setInterval(load, 30_000);
+    load(true);
+    const interval = window.setInterval(() => load(), 30_000);
+    const onVisible = () => {
+      if (!document.hidden) load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
       controller.abort();
     };
   }, [equity.ticker]);
