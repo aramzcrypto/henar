@@ -1,24 +1,37 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
-import { EarnPoolsPage } from "@/components/earn-pools-page";
+import { EarnPage } from "@/components/earn-page";
+import { henarFlag } from "@/lib/feature-flags";
 import { FEATURED_POOL, loadEarnPools } from "@/lib/equities/earn/pools";
+import { STRATEGY_DEFINITIONS } from "@/lib/strategies/definitions";
+import { loadStrategyInstances } from "@/lib/strategies/engine";
+import { rateLimitedConnection } from "@/lib/rpc-limiter";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Earn · Henar",
-  description: "Yield strategies that turn idle capital into stock exposure.",
+  description: "Henar strategies on Kamino and Meteora, plus verified opportunities elsewhere.",
 };
 
 export default async function Page() {
-  const { pools, notes } = await loadEarnPools().catch(() => ({
-    pools: [],
-    notes: [],
-  }));
+  const rpc = process.env.SOLANA_RPC_URL;
+  const [{ pools, notes }, instances] = await Promise.all([
+    loadEarnPools().catch(() => ({ pools: [], notes: [] })),
+    henarFlag("earnStrategies")
+      ? loadStrategyInstances({ connection: rpc ? rateLimitedConnection(rpc) : null }).catch(() => [])
+      : Promise.resolve([]),
+  ]);
   return (
     <div className="app page-earn">
       <AppHeader active="earn" />
       <main className="markets-main">
-        <EarnPoolsPage featured={FEATURED_POOL} pools={pools} notes={notes} />
+        <EarnPage
+          definitions={henarFlag("earnStrategies") ? STRATEGY_DEFINITIONS : []}
+          instances={instances}
+          featured={FEATURED_POOL}
+          pools={pools}
+          notes={notes}
+        />
       </main>
     </div>
   );

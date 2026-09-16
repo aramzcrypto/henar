@@ -19,11 +19,32 @@ export const HENAR_FLAGS = {
   preIpoMarkets: "HENAR_PREIPO_MARKETS",
   /** Register verified private-market products with the Henar Router. */
   privateMarketsRouting: "HENAR_PRIVATE_MARKETS_ROUTING",
+  /** The Earn strategy framework and its pages. */
+  earnStrategies: "HENAR_EARN_STRATEGIES",
+  earnStocks: "HENAR_EARN_STOCKS",
+  smartAccumulate: "HENAR_SMART_ACCUMULATE",
+  rangeYield: "HENAR_RANGE_YIELD",
+  /** Let the strategy runner evaluate and propose actions. */
+  strategyAutomation: "HENAR_STRATEGY_AUTOMATION",
+  /** Let an authorized action actually touch mainnet. Off, and audited by hand. */
+  strategyMainnetActions: "HENAR_STRATEGY_MAINNET_ACTIONS",
+  /** Public capital. Not implemented; the flag exists so its absence is explicit. */
+  publicStrategyDeposits: "HENAR_PUBLIC_STRATEGY_DEPOSITS",
 } as const;
 
 export type HenarFlag = keyof typeof HENAR_FLAGS;
 
-const DEFAULT_ON: ReadonlySet<HenarFlag> = new Set<HenarFlag>(["pythPro", "pythFairValueGuard", "preIpoMarkets"]);
+/* Read-only surfaces default on. Anything that moves capital, or that would
+   accept someone else's, defaults off and must be switched on deliberately. */
+const DEFAULT_ON: ReadonlySet<HenarFlag> = new Set<HenarFlag>([
+  "pythPro",
+  "pythFairValueGuard",
+  "preIpoMarkets",
+  "earnStrategies",
+  "earnStocks",
+  "smartAccumulate",
+  "rangeYield",
+]);
 
 export function henarFlag(flag: HenarFlag, env: Record<string, string | undefined> = process.env) {
   const value = env[HENAR_FLAGS[flag]];

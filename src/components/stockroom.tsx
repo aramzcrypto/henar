@@ -1,6 +1,7 @@
 "use client";
 import { productAvailable } from "@/lib/protocol/access";
 import { StockReceipts } from "./stock-receipts";
+import { PortfolioStrategies } from "./portfolio-strategies";
 import { HenarBrand } from "./henar-brand";
 import { RewardsMenu } from "./rewards-menu";
 import { AppSelect } from "./app-select";
@@ -2317,6 +2318,7 @@ export function Stockroom({
                   })}
               </section>
             )}
+            <PortfolioStrategies owner={owner} />
             <StockReceipts owner={owner} />
           </>
         )}
