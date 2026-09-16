@@ -5194,6 +5194,25 @@ footer a {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+/* A source Henar has no builder for. It keeps its place in the ranking,
+   because where the liquidity actually sits is worth showing, but it reads as
+   information rather than as an offer: muted, and never badged "Best". */
+.reference-badge {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #8b8f9c;
+  font-size: 9px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.quote-row.reference {
+  opacity: 0.62;
+}
+.quote-row.reference .quote-output strong {
+  font-weight: 500;
+}
 .quote-output {
   display: flex;
   flex: 0 0 auto;

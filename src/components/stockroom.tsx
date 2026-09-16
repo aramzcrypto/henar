@@ -422,6 +422,8 @@ export function Stockroom({
       priceImpactPct: string | null;
       route: { venue: string; pool: string | null; percent: number | null }[];
       transactionAvailable: boolean;
+      /** False for a comparison-only source Henar has no builder for. */
+      fillable?: boolean;
     }[];
     quotedAt?: string;
     expiresAt?: string | null;
@@ -515,6 +517,11 @@ export function Stockroom({
       providerFeeBps: candidate.providerFeeBps,
       legs: candidate.route.map((step) => ({ venue: step.venue, pool: step.pool, percent: step.percent })),
       henar: false,
+      /* A source Henar has no builder for. Shown, because where the
+         liquidity actually is worth knowing, but never badged as something
+         the user can take. Undefined from an older response means fillable,
+         which keeps the row visible rather than silently demoting it. */
+      fillable: candidate.fillable !== false,
       via: null as { symbol: string; residual: string | null } | null,
     }));
     if (henarRoute)
@@ -527,10 +534,17 @@ export function Stockroom({
         providerFeeBps: 0,
         legs: henarRoute.legs,
         henar: true,
+        fillable: true,
         via: henarRoute.via,
       });
     return rows.sort((a, b) => new Decimal(b.output).comparedTo(new Decimal(a.output)));
   }, [estimate, henarRoute]);
+
+  /** The best row the user can actually be given, which is what "Best" means. */
+  const bestFillableKey = useMemo(
+    () => rankedCandidates.find((row) => row.fillable)?.key ?? null,
+    [rankedCandidates],
+  );
 
 
   const [estimateError, setEstimateError] = useState("");
@@ -2061,6 +2075,11 @@ export function Stockroom({
                     >
                       {rankedCandidates.slice(0, 4).map((candidate, index) => {
                         const source = getExecutionSourceBrand(candidate.source).label;
+                        /* "Best" means best of what the user can actually
+                           have. A comparison-only source can top the list on
+                           price and still not be a route Henar can build, so
+                           it is labelled for what it is rather than badged. */
+                        const isBest = candidate.fillable && candidate.key === bestFillableKey;
                         /* The row names the liquidity it was built over, like
                            every other row. The allocation, pool count and
                            impact belong in the route detail, not in a list a
@@ -2074,7 +2093,7 @@ export function Stockroom({
                         const allocation = candidate.via ? `${venuesUsed} via ${candidate.via.symbol}` : venuesUsed;
                         return (
                           <div
-                            className={index === 0 ? "quote-row best" : "quote-row"}
+                            className={isBest ? "quote-row best" : candidate.fillable ? "quote-row" : "quote-row reference"}
                             key={candidate.key}
                           >
                             <ExecutionSourceLogo source={candidate.source} />
@@ -2087,7 +2106,13 @@ export function Stockroom({
                                   : ""}
                               </span>
                             </div>
-                            {index === 0 && <span className="best-badge">Best</span>}
+                            {isBest ? (
+                              <span className="best-badge">Best</span>
+                            ) : candidate.fillable ? null : (
+                              <span className="reference-badge" title="Henar cannot build this route; shown for comparison">
+                                Reference
+                              </span>
+                            )}
                             <div className="quote-output">
                               <strong>
                                 {new Decimal(candidate.output).toSignificantDigits(8).toFixed()} {receive.symbol}

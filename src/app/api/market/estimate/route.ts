@@ -178,6 +178,11 @@ export async function POST(request: Request) {
             priceImpactPct: candidate.priceImpactPct,
             route: candidate.route,
             transactionAvailable: candidate.transactionAvailable,
+            /* Surfaced so the ticket can say which rows are comparison only.
+               A benchmark row is worth showing — it tells the user where the
+               liquidity actually is — but it must not read like something
+               they can press. */
+            fillable: candidate.fillable,
           };
         }),
         quotedAt: q.quotedAt,
