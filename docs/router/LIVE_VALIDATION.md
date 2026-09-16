@@ -13,8 +13,9 @@ Every script reads `.env.local` (`SOLANA_RPC_URL`, `JUPITER_API_KEY`,
 |---|---|---|---|
 | Live Raydium CLMM quotes | 6/7 | **done** | production `/api/router/quote` (BA, AMC, NVDAx) and `BENCHMARK_MATRIX_V2.md` |
 | Live Orca Whirlpool quotes | 7 | **done** | production quotes; `check-orca-quotes.ts` |
-| Live Meteora DLMM / DBC / DAMM v2 quotes | 5, DBC-7/8 | pending (no enabled pool) | registry has no enabled DLMM/DBC/DAMM v2 pool for a listed equity |
-| Pool on-chain verification pass | 9 | **done, every deploy** | `prebuild` → `apps/router/src/verify-pools-cli.ts`; 587 pools verified incl. pair check (`Verify that a pool trades the pair the registry claims`) |
+| Live Meteora DLMM quotes | 5 | **done, private markets only** | 35 DLMM pools enabled and on-chain verified, all of them PreStocks or Tessera products; a production quote for T-OpenAI settles through DLMM with the 20 bps transfer fee netted. Still **no enabled DLMM pool for a listed public equity** — every public-equity pool that clears the floors is Raydium CLMM or Orca Whirlpool. |
+| Live Meteora DBC / DAMM v2 quotes | DBC-7/8 | pending (no enabled pool) | registry has no enabled DBC or DAMM v2 pool for any listed asset |
+| Pool on-chain verification pass | 9 | **done, every deploy** | `prebuild` → `apps/router/src/verify-pools-cli.ts`; 1,048 of 1,200 pools verified on chain, 321 enabled (188 CLMM, 98 Whirlpool, 35 DLMM), incl. pair check (`Verify that a pool trades the pair the registry claims`) |
 | Mint verification pass | 9 | **done** | `src/data/router/mints.json`, `router:verify:mints` |
 | Native-vs-SDK comparison | 11 | **done** | `router:validate` (`scripts/router/validate-native.ts`) |
 | Jupiter benchmark | 8 | **done** | `router:benchmark`, `router:forensics`; `MISSING_LIQUIDITY.md` (Jupiter routes 100% via JupiterZ) |
