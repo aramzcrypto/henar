@@ -1,54 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ArrowRight, Info } from "lucide-react";
-import { EquityLogo } from "./equity-logo";
-import { FeaturedStrategies, StrategyDisclosure } from "./earn-strategies";
-import { POOL_TYPE_LABELS, type EarnPool } from "@/lib/equities/earn/pools";
+import { ArrowRight } from "lucide-react";
+import { rateIsStrategyReturn, type DepositAvailability } from "@/lib/strategies/presentation";
+import type { PoolStats } from "@/lib/strategies/pool-stats";
 import type { StrategyDefinition, StrategyInstance } from "@/lib/strategies/types";
 
-type Filter = "all" | "lending" | "vault" | "liquidity_pool";
-const FILTERS: [Filter, string][] = [
-  ["all", "All"],
-  ["lending", "Lending"],
-  ["vault", "Vaults"],
-  ["liquidity_pool", "LPs"],
-];
-
-const PROVIDER_LABELS: Record<string, string> = { xstocks: "xStocks", backpack: "Backpack", ondo: "Ondo" };
-
-function percent(value: number | null) {
-  return value === null ? "—" : `${value.toFixed(2)}%`;
+export function usd(value: number | null | undefined, compact = true) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+  if (compact) {
+    if (Math.abs(value) >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  }
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
-function usd(value: number | null) {
-  if (value === null) return "—";
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return `$${value.toFixed(0)}`;
+
+export function ComingSoonTag({ label }: { label: string }) {
+  return <span className="earn-tag earn-tag-soon">{label}</span>;
+}
+
+/** The pair or asset the pool trades, for the row subtitle. */
+function poolLabel(instance: StrategyInstance, stats: PoolStats | null) {
+  const protocol = instance.market.protocol === "kamino" ? "Kamino" : "Meteora DLMM";
+  if (instance.market.protocol === "kamino") return `${protocol} · ${instance.market.quoteSymbol} reserve`;
+  return `${protocol} · ${stats?.pair ?? `${instance.market.assetSymbol}/${instance.market.quoteSymbol}`}`;
 }
 
 /**
- * Earn: Henar's own strategies first, then the directory of opportunities
- * that live on other protocols. The two are kept visibly apart — Henar
- * operates the first and merely indexes the second.
+ * The headline figure for a pool.
+ *
+ * A cash-yield pool has a supply rate and a market-making pool has a fee
+ * rate. An accumulation pool has neither — its return is the price it pays —
+ * so it shows the price rather than borrowing a yield number that would not
+ * mean anything.
+ */
+function headline(instance: StrategyInstance, stats: PoolStats | null) {
+  if (!rateIsStrategyReturn(instance.strategyType)) {
+    const price = instance.state.kind === "SMART_ACCUMULATE" ? instance.state.currentReference : null;
+    return { value: price ? `$${Number(price).toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—", label: `${instance.market.assetSymbol ?? "Stock"} price` };
+  }
+  if (!stats?.rate) return { value: "—", label: "Rate unavailable" };
+  return { value: `${stats.rate.value.toFixed(2)}%`, label: `${stats.rate.label} · ${stats.rate.window}` };
+}
+
+/**
+ * Earn: three strategy pools.
+ *
+ * Each pool is real and running on its protocol. What is not built is
+ * Henar's deposit path into it, which is what "coming soon" refers to.
  */
 export function EarnPage({
   definitions,
   instances,
-  featured,
-  pools,
-  notes,
+  poolStats,
+  deposits,
 }: {
   definitions: StrategyDefinition[];
   instances: StrategyInstance[];
-  featured: EarnPool;
-  pools: EarnPool[];
-  notes: { protocol: string; reason: string | null }[];
+  poolStats: Record<string, PoolStats | null>;
+  deposits: DepositAvailability;
 }) {
-  const [filter, setFilter] = useState<Filter>("all");
-  const rows = useMemo(() => (filter === "all" ? pools : pools.filter((p) => p.type === filter)), [filter, pools]);
+  const rows = definitions
+    .map((definition) => {
+      const instance = instances.find((i) => i.definitionId === definition.id) ?? null;
+      return instance ? { definition, instance, stats: poolStats[instance.id] ?? null } : null;
+    })
+    .filter((row): row is { definition: StrategyDefinition; instance: StrategyInstance; stats: PoolStats | null } => row !== null);
 
   return (
     <div className="earn-pools">
@@ -57,92 +75,51 @@ export function EarnPage({
         <p>Put your cash and stocks to work.</p>
       </div>
 
-      <div className="strategy-section-head">
-        <h2>Henar strategies</h2>
-        <StrategyDisclosure compact />
-      </div>
-      <FeaturedStrategies definitions={definitions} instances={instances} />
-
-      <div className="strategy-section-head secondary">
-        <h2>Explore opportunities</h2>
-        <p>
-          Verified markets on other protocols. Henar reads them; it does not operate them or route deposits into them.
-        </p>
-      </div>
-
-      <Link href={`/earn/${featured.slug}`} className="earn-banner">
-        <div className="earn-banner-main">
-          <span className="earn-banner-label">Henar protocol product</span>
-          <h2>{featured.name}</h2>
-          <p>{featured.summary}</p>
-          <span className="earn-banner-protocol">Powered by {featured.protocol}</span>
-        </div>
-        <div className="earn-banner-side">
-          <dl>
-            <div>
-              <dt>Deposit</dt>
-              <dd>{featured.depositAsset}</dd>
-            </div>
-            <div>
-              <dt>Yield goes to</dt>
-              <dd>Stocks or Packs</dd>
-            </div>
-          </dl>
-          <span className="earn-banner-cta">
-            Open <ArrowRight size={14} />
-          </span>
-        </div>
-      </Link>
-
-      <div className="earn-filters" role="group" aria-label="Opportunity type">
-        {FILTERS.map(([value, label]) => (
-          <button key={value} aria-pressed={filter === value} className={filter === value ? "active" : ""} onClick={() => setFilter(value)}>
-            {label}
-          </button>
-        ))}
-      </div>
-
       {rows.length === 0 ? (
-        <p className="fin-empty">No verified opportunities of this type right now.</p>
+        <p className="fin-empty">Strategy pools are unavailable right now.</p>
       ) : (
         <div className="earn-pool-list">
-          <div className="earn-pool-head">
-            <span>Market</span>
-            <span>Protocol</span>
-            <span>Type</span>
-            <span>Supply APY</span>
-            <span>TVL</span>
+          <div className="earn-pool-head strategy-pool-row">
+            <span>Pool</span>
+            <span>Deposit</span>
+            <span>Rate</span>
+            <span>Pool size</span>
+            <span>Status</span>
             <span />
           </div>
-          {rows.map((pool) => (
-            <Link className="earn-pool-row" key={pool.slug} href={`/earn/${pool.slug}`}>
-              <span className="earn-pool-market">
-                <EquityLogo logo={pool.companyLogo} ticker={pool.ticker ?? pool.name} size={32} />
-                <span>
-                  <strong>{pool.company ?? pool.name}</strong>
-                  <small>
-                    {pool.representation}
-                    {pool.provider ? ` · ${PROVIDER_LABELS[pool.provider] ?? pool.provider}` : ""}
-                  </small>
+          {rows.map(({ definition, instance, stats }) => {
+            const figure = headline(instance, stats);
+            return (
+              <Link className="earn-pool-row strategy-pool-row" key={definition.id} href={`/earn/strategies/${definition.slug}`}>
+                <span className="earn-pool-market">
+                  <span>
+                    <strong>{instance.name}</strong>
+                    <small>{poolLabel(instance, stats)}</small>
+                  </span>
                 </span>
-              </span>
-              <span>{pool.protocol}</span>
-              <span>{POOL_TYPE_LABELS[pool.type]}</span>
-              <span>{percent(pool.apy)}</span>
-              <span>{usd(pool.tvlUsd)}</span>
-              <span className="earn-pool-arrow">
-                <ArrowRight size={14} />
-              </span>
-            </Link>
-          ))}
+                <span className="strategy-pool-deposit">{definition.deposits}</span>
+                <span className="strategy-pool-rate">
+                  <b>{figure.value}</b>
+                  <small>{figure.label}</small>
+                </span>
+                <span>{usd(stats?.liquidityUsd)}</span>
+                <span>
+                  <ComingSoonTag label={deposits.label} />
+                </span>
+                <span className="earn-pool-arrow">
+                  <ArrowRight size={14} />
+                </span>
+              </Link>
+            );
+          })}
         </div>
       )}
 
-      {notes.length > 0 && (
-        <p className="onchain-method">
-          <Info size={12} /> {notes.map((n) => `${n.protocol}: ${n.reason ?? "unavailable"}`).join(" · ")}
-        </p>
-      )}
+      <p className="onchain-method earn-footnote">
+        Each pool is live on its own protocol; depositing into one through Henar is not built yet. Rates are read from{" "}
+        {[...new Set(rows.map(({ stats }) => stats?.rate?.source).filter(Boolean))].join(" and ") || "their protocols"} and carry the window they were measured over. Henar&apos;s existing USDC product is at{" "}
+        <Link href="/earn/usdc-stocks">Earn stocks</Link>.
+      </p>
     </div>
   );
 }

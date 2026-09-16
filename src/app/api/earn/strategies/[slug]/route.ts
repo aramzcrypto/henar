@@ -5,6 +5,8 @@ import { definitionBySlug } from "@/lib/strategies/definitions";
 import { strategyInstanceBySlug } from "@/lib/strategies/engine";
 import { marketRegistryReport } from "@/lib/strategies/markets";
 import { evaluateStrategy } from "@/lib/strategies/runner";
+import { depositAvailability, statsForStrategy } from "@/lib/strategies/pool-stats";
+import { KAMINO } from "@/lib/strategies/adapters/kamino";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,10 +24,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     /* The runner's verdict is diagnostic here: it says what the strategy
        would do and what is stopping it. It never executes from a request. */
     const evaluation = await evaluateStrategy(instance).catch(() => null);
+    const poolStats = await statsForStrategy({ protocol: instance.market.protocol, address: instance.market.address, market: KAMINO.mainMarket }).catch(() => null);
     return NextResponse.json(
       {
         definition,
         instance,
+        poolStats,
+        deposits: depositAvailability(),
         proposals: evaluation?.proposals ?? [],
         breakers: evaluation?.breakers ?? [],
         markets: marketRegistryReport({ requireLimitOrders: definition.strategyType === "SMART_ACCUMULATE" }),

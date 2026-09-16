@@ -47,6 +47,7 @@ import { evaluateAction, trippedBreakers } from "../src/lib/strategies/safety";
 import { DEMO_EARN_STOCKS, DEMO_RANGE_YIELD, DEMO_SMART_ACCUMULATE, STRATEGY_DEFINITIONS, definitionBySlug } from "../src/lib/strategies/definitions";
 import { strategyDeployment } from "../src/lib/strategies/deployment";
 import { supportsLimitOrders } from "../src/lib/strategies/adapters/meteora";
+import { depositAvailability, rateIsStrategyReturn } from "../src/lib/strategies/presentation";
 import { recordBasis } from "../src/lib/strategies/adapters/kamino";
 import type { StrategyInstance } from "../src/lib/strategies/types";
 
@@ -440,4 +441,64 @@ test("a strategy with no configured deployment reports that, rather than inventi
   });
   assert.equal(good.configured, true);
   assert.equal(good.configured === true ? good.deployment.positions.length : 0, 1);
+});
+
+// --- presentation ----------------------------------------------------------
+
+test("deposits are not available, and the reason separates the pool from Henar's path into it", () => {
+  const availability = depositAvailability();
+  assert.equal(availability.available, false);
+  assert.equal(availability.label, "Coming soon");
+  // The pool is live; it is Henar's deposit that is not built. Saying
+  // "coming soon" about the pool itself would be wrong.
+  assert.match(availability.note, /pool is live on its protocol/i);
+  assert.match(availability.note, /not built yet/i);
+  assert.match(availability.note, /holds no capital and accepts none/i);
+});
+
+test("a pool's fee rate is only shown where the strategy actually earns it", () => {
+  // Both Meteora strategies sit on the same pool, but only the LP one
+  // collects its fees. Crediting an accumulation strategy with them would
+  // claim income it never receives.
+  assert.equal(rateIsStrategyReturn("RANGE_YIELD"), true);
+  assert.equal(rateIsStrategyReturn("EARN_STOCKS"), true);
+  assert.equal(rateIsStrategyReturn("SMART_ACCUMULATE"), false);
+});
+
+test("pool statistics carry their measurement window and source, never a bare number", async () => {
+  const { meteoraPoolStats } = await import("../src/lib/strategies/pool-stats");
+  const payload = {
+    address: "F4inHs4RQARpASmvLpj45QjGLdkukeGQrtQ22pimVy2a",
+    name: "NVDAx-USDC",
+    token_x: { address: "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh", symbol: "NVDAx", decimals: 8, price: 215.83 },
+    token_y: { address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", symbol: "USDC", price: 1 },
+    tvl: 10998.18, current_price: 215.94, apr: 0.1458, apy: 70.2,
+    volume: { "24h": 7105.04 }, fees: { "24h": 16.03 },
+    pool_config: { bin_step: 25, base_fee_pct: 0.25 }, is_blacklisted: false,
+  };
+  const ok = await meteoraPoolStats("F4inHs4RQARpASmvLpj45QjGLdkukeGQrtQ22pimVy2a", {
+    fetch: (async () => new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch,
+  });
+  assert.equal(ok.status, "available");
+  assert.equal(ok.liquidityUsd, 10998.18);
+  assert.equal(ok.fees24hUsd, 16.03);
+  assert.equal(ok.rate?.value, 70.2);
+  assert.equal(ok.rate?.source, "Meteora");
+  // The window and the caveat are what keep a one-day number honest.
+  assert.match(ok.rate!.window, /24h/);
+  assert.match(ok.rate!.caveat!, /single day/i);
+
+  // A blacklisted pool is unavailable, not merely quiet.
+  const blocked = await meteoraPoolStats("F4inHs4RQARpASmvLpj45QjGLdkukeGQrtQ22pimVy2a2", {
+    fetch: (async () => new Response(JSON.stringify({ ...payload, is_blacklisted: true }), { status: 200 })) as typeof fetch,
+  });
+  assert.equal(blocked.status, "unavailable");
+  assert.match(blocked.reason!, /blacklisted/);
+
+  // An outage reports itself rather than inventing a rate.
+  const down = await meteoraPoolStats("F4inHs4RQARpASmvLpj45QjGLdkukeGQrtQ22pimVy2a3", {
+    fetch: (async () => new Response("", { status: 503 })) as typeof fetch,
+  });
+  assert.equal(down.status, "unavailable");
+  assert.equal(down.rate, null);
 });

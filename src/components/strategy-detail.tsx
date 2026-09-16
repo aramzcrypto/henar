@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import { StrategyDisclosure, StrategyStatusTag } from "./earn-strategies";
+import { StrategyDisclosure } from "./earn-strategies";
+import { ComingSoonTag, usd } from "./earn-page";
+import { StrategyTicket } from "./strategy-ticket";
+import { rateIsStrategyReturn, type DepositAvailability } from "@/lib/strategies/presentation";
+import type { PoolStats } from "@/lib/strategies/pool-stats";
 import type { ActionCheck, ProposedAction, StrategyDefinition, StrategyInstance } from "@/lib/strategies/types";
 import type { MarketCandidate, MarketAdmission } from "@/lib/strategies/markets";
 
@@ -189,19 +193,28 @@ export function StrategyDetail({
   instance,
   proposals,
   markets,
+  stats,
+  deposits,
 }: {
   definition: StrategyDefinition;
   instance: StrategyInstance;
   proposals: ProposedAction[];
   markets: MarketReport;
+  stats: PoolStats | null;
+  deposits: DepositAvailability;
 }) {
   const market = markets.find((m) => m.candidate.address === instance.market.address) ?? null;
+  const poolRate = stats?.rate ?? null;
+  /* The header states the strategy's own return. A pool statistic that the
+     strategy does not collect belongs in the Pool card, not beside its name. */
+  const rate = rateIsStrategyReturn(instance.strategyType) ? poolRate : null;
+  const headlinePrice = instance.state.kind === "SMART_ACCUMULATE" ? instance.state.currentReference : null;
   return (
     <section className="strategy-detail">
       <header className="strategy-header">
         <div>
           <span className="strategy-eyebrow">
-            HENAR STRATEGY · {definition.version.toUpperCase()} <StrategyStatusTag status={instance.status} />
+            {definition.protocols[0].toUpperCase()} POOL · {definition.version.toUpperCase()} <ComingSoonTag label={deposits.label} />
           </span>
           <h1>{instance.name}</h1>
           <p>{definition.summary}</p>
@@ -212,25 +225,45 @@ export function StrategyDetail({
             <dd>{definition.deposits}</dd>
           </div>
           <div>
-            <dt>Protocol</dt>
-            <dd>{definition.protocols.join(" · ")}</dd>
+            <dt>{rate ? rate.label : headlinePrice ? `${instance.market.assetSymbol} price` : "Rate"}</dt>
+            <dd>
+              {rate ? `${rate.value.toFixed(2)}%` : headlinePrice ? `$${Number(headlinePrice).toLocaleString("en-US", { maximumFractionDigits: 2 })}` : <span className="value-muted">Unavailable</span>}
+            </dd>
           </div>
           <div>
-            <dt>Capital</dt>
-            <dd>{instance.deployedCapital ? `${money(instance.deployedCapital)} · Henar` : "Not funded"}</dd>
+            <dt>Pool size</dt>
+            <dd>{usd(stats?.liquidityUsd)}</dd>
           </div>
           <div>
-            <dt>Public deposits</dt>
-            <dd className="value-muted">Not available</dd>
+            <dt>24h volume</dt>
+            <dd>{stats?.volume24hUsd === null || stats?.volume24hUsd === undefined ? <span className="value-muted">—</span> : usd(stats.volume24hUsd)}</dd>
           </div>
         </dl>
       </header>
 
       <StrategyDisclosure />
 
-      <div className="strategy-grid">
+      <div className="strategy-desk">
+        <div className="strategy-grid">
         <article>
-          <h2>Position</h2>
+          <h2>Pool</h2>
+          <Facts
+            rows={[
+              ["Protocol", definition.protocols[0]],
+              ["Market", stats?.pair ?? `${instance.market.assetSymbol ?? instance.market.quoteSymbol}`],
+              [poolRate ? `${poolRate.label} · ${poolRate.window}` : "Rate", poolRate ? `${poolRate.value.toFixed(2)}% · ${poolRate.source}` : <span className="value-muted">Unavailable</span>],
+              ["Pool size", usd(stats?.liquidityUsd)],
+              ...(stats?.fees24hUsd !== null && stats?.fees24hUsd !== undefined ? ([["Fees earned by the pool · 24h", usd(stats.fees24hUsd, false)]] as [string, React.ReactNode][]) : []),
+              ...(stats?.baseFeePct !== null && stats?.baseFeePct !== undefined ? ([["Pool swap fee", `${stats.baseFeePct}%`]] as [string, React.ReactNode][]) : []),
+              ...(stats?.utilization !== null && stats?.utilization !== undefined ? ([["Utilization", `${Math.round(stats.utilization * 100)}%`]] as [string, React.ReactNode][]) : []),
+              ["Henar deposits", <span key="d" className="value-muted">{deposits.label}</span>],
+            ]}
+          />
+          {poolRate?.caveat && <p className="onchain-method">{poolRate.caveat}</p>}
+        </article>
+
+        <article>
+          <h2>Strategy</h2>
           <StateSection instance={instance} />
         </article>
 
@@ -331,10 +364,12 @@ export function StrategyDetail({
             Actions are proposed by the strategy runner and require an authorized signer. Nothing executes automatically on mainnet.
           </p>
         </article>
+        </div>
+        <StrategyTicket definition={definition} instance={instance} stats={stats} deposits={deposits} />
       </div>
 
       <p className="onchain-method">
-        {instance.provenance.map((p) => p.source).join(" · ")} · Audit status: not audited ·{" "}
+        {[...new Set([...instance.provenance.map((p) => p.source), ...(stats?.provenance ? [stats.provenance.source] : [])])].join(" · ")} · Audit status: not audited ·{" "}
         <Link href="/earn">Back to Earn</Link>
       </p>
     </section>
