@@ -156,7 +156,7 @@
 .metric > span {
   display: block;
   font-size: 12px;
-  color: #a2a5ae;
+  color: var(--text-3);
 }
 .metric strong {
   display: block;
@@ -227,7 +227,7 @@
   font-weight: 500;
 }
 .tableWrap td {
-  color: #b5b8c0;
+  color: var(--text-3);
 }
 .tableWrap tr:last-child td,
 .tableWrap tr:last-child th {
@@ -277,7 +277,7 @@
   margin: 0;
 }
 .coverage li {
-  color: #b5b8c0;
+  color: var(--text-3);
   font-size: 12px;
   line-height: 1.8;
   margin-bottom: 14px;
