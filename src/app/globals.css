@@ -11311,13 +11311,22 @@ body {
      sliver below the navigation at every size, and lets the sphere grow with
      the screen instead of staying still. */
   --hero-height: calc(100svh - 118px);
-  width: min(150vw, calc(var(--hero-height) * 1.34), 1800px);
+  /* The sphere is anchored to the bottom and pushed down by --globe-sink, so
+     the visible cap is `(1 - sink) * diameter` tall and must fit the hero.
+     At a 30% sink the cap was 70% of the diameter, which capped the diameter
+     at about 1.4x the hero height — and at that limit the globe reads small,
+     because most of its width is spent on a cap too tall to be wide.
+     Sinking it further buys diameter: at 40% the cap is 60% of the diameter,
+     so the same hero height carries a sphere a third wider. That is also the
+     better picture — more horizon, less planet. */
+  --globe-sink: 40%;
+  width: min(calc(var(--hero-height) * 1.55), 92vw, 2200px);
   aspect-ratio: 1;
   /* Most of the sphere sits below the fold so the lit rim reads as a
      horizon rather than a planet parked behind the headline. --globe-scale
      and --globe-dim are driven by scroll position in <HeroGlobe />, so the
      sphere swells and dissolves as the hero leaves. */
-  transform: translate(-50%, 30%) scale(var(--globe-scale, 1));
+  transform: translate(-50%, var(--globe-sink)) scale(var(--globe-scale, 1));
   opacity: calc(0.82 * var(--globe-dim, 1));
   pointer-events: none;
   z-index: 0;
@@ -11350,13 +11359,17 @@ body {
      on a fade rather than on the clip. */
   --globe-fade: linear-gradient(
     180deg,
+    /* The top fade used to run to 15% of the box, which on a 1181px sphere
+       ate 177px of crown — so the globe measured large and read small, with
+       what looked like a gap under the navigation. A short fade still avoids
+       the hard edge without spending an eighth of the sphere on it. */
     transparent 0%,
-    rgba(0, 0, 0, 0.45) 6%,
-    #000 15%,
-    #000 38%,
-    rgba(0, 0, 0, 0.55) 50%,
-    rgba(0, 0, 0, 0.18) 60%,
-    transparent 67%
+    rgba(0, 0, 0, 0.5) 2.5%,
+    #000 7%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 54%,
+    rgba(0, 0, 0, 0.18) 63%,
+    transparent 70%
   );
   /* Two mask layers intersected: the vertical fade shapes the horizon, the
      horizontal one dissolves the left and right edges. Without it the sphere
