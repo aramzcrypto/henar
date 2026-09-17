@@ -79,6 +79,9 @@ export default function Home() {
           <Link href="/markets">Markets</Link>
           <Link href="/trade">Trade</Link>
           <Link href="/earn">Earn</Link>
+          {/* Behind the same public flag the route checks, so the link exists
+              exactly when the page does. */}
+          {process.env.NEXT_PUBLIC_HENAR_DBC_STUDIO === "1" ? <Link href="/studio">Studio</Link> : null}
           <Link href="/docs">Docs</Link>
         </nav>
         <div className={styles.headerRight}>

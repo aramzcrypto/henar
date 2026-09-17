@@ -217,8 +217,21 @@ export function DbcStudio() {
       {node}
     </label>
   );
+  /* The SDK's own identifiers, said in words. A form labelled
+     `creatorMigrationFeePercentage` is a struct dump; the label is where a
+     control explains itself, which is cheaper than a paragraph above the
+     form and does not push the form off the screen. */
+  const NUMBER_LABELS: Partial<Record<keyof StudioMarketConfig, string>> = {
+    totalTokenSupply: "Total supply",
+    leftover: "Unsold tokens kept back",
+    initialMarketCap: "Market cap at launch (USDC)",
+    migrationMarketCap: "Market cap that triggers migration (USDC)",
+    creatorTradingFeePercentage: "Creator share of trading fees (%)",
+    migrationFeePercentage: "Migration fee (% of raised quote)",
+    creatorMigrationFeePercentage: "Creator share of the migration fee (%)",
+  };
   const num = (key: keyof StudioMarketConfig, step = 1) =>
-    field(String(key), <input type="number" step={step} value={Number(config?.[key] ?? 0)} onChange={(e) => config && setConfig({ ...config, [key]: Number(e.target.value) })} />);
+    field(NUMBER_LABELS[key] ?? String(key), <input type="number" step={step} value={Number(config?.[key] ?? 0)} onChange={(e) => config && setConfig({ ...config, [key]: Number(e.target.value) })} />);
 
   return (
     <div className={admin.shell}>
@@ -248,38 +261,71 @@ export function DbcStudio() {
         {step === "configure" && config && (
           <section className={admin.section}>
             <div className={admin.sectionHeading}>
-              <h2>Market configuration</h2>
-              <span>Only settings the current Meteora DBC supports. Migration is DAMM v2.</span>
+              <h2>Launch a bonding-curve market</h2>
             </div>
-            <div className={styles.row}>
+
+            <div className={styles.startRow}>
+              <span className={styles.startLabel}>Start from</span>
               {presets && Object.entries(presets).map(([id, p]) => (
-                <button key={id} className={admin.refresh} onClick={() => setConfig(p.config)} title={p.description}>Preset · {p.label}</button>
+                <button key={id} className={admin.refresh} onClick={() => setConfig(p.config)} title={p.description}>{p.label}</button>
               ))}
             </div>
-            <div className={styles.grid}>
+
+            <fieldset className={styles.group}>
+              <legend>Token</legend>
+              <div className={styles.grid}>
               {field("Pool name", <input value={pool.name} maxLength={32} onChange={(e) => setPool({ ...pool, name: e.target.value })} placeholder="Acme Corp Equity Token" />)}
               {field("Symbol", <input value={pool.symbol} maxLength={10} onChange={(e) => setPool({ ...pool, symbol: e.target.value })} placeholder="ACMEx" />)}
-              {field("Metadata URI (https)", <input value={pool.uri} onChange={(e) => setPool({ ...pool, uri: e.target.value })} placeholder="https://…/metadata.json" />)}
-              {field("Base token type", <select value={config.baseTokenType} onChange={(e) => setConfig({ ...config, baseTokenType: e.target.value as StudioMarketConfig["baseTokenType"] })}><option>Token2022</option><option>SPL</option></select>)}
-              {field("Base decimals", <select value={config.baseDecimals} onChange={(e) => setConfig({ ...config, baseDecimals: Number(e.target.value) as StudioMarketConfig["baseDecimals"] })}>{[6, 7, 8, 9].map((d) => <option key={d} value={d}>{d}</option>)}</select>)}
-              {field("Token authority", <select value={config.tokenAuthority} onChange={(e) => setConfig({ ...config, tokenAuthority: e.target.value as StudioMarketConfig["tokenAuthority"] })}><option>Immutable</option><option>CreatorUpdateAuthority</option><option>PartnerUpdateAuthority</option></select>)}
+              {field("Metadata URL", <input value={pool.uri} onChange={(e) => setPool({ ...pool, uri: e.target.value })} placeholder="https://…/metadata.json" />)}
+              {field("Token program", <select value={config.baseTokenType} onChange={(e) => setConfig({ ...config, baseTokenType: e.target.value as StudioMarketConfig["baseTokenType"] })}><option>Token2022</option><option>SPL</option></select>)}
+              {field("Decimals", <select value={config.baseDecimals} onChange={(e) => setConfig({ ...config, baseDecimals: Number(e.target.value) as StudioMarketConfig["baseDecimals"] })}>{[6, 7, 8, 9].map((d) => <option key={d} value={d}>{d}</option>)}</select>)}
+              {field("Who can update the token", <select value={config.tokenAuthority} onChange={(e) => setConfig({ ...config, tokenAuthority: e.target.value as StudioMarketConfig["tokenAuthority"] })}><option>Immutable</option><option>CreatorUpdateAuthority</option><option>PartnerUpdateAuthority</option></select>)}
+              </div>
+            </fieldset>
+
+            <fieldset className={styles.group}>
+              <legend>Supply and pricing</legend>
+              <div className={styles.grid}>
               {num("totalTokenSupply")}
               {num("leftover")}
               {num("initialMarketCap")}
               {num("migrationMarketCap")}
-              {field("Base fee (bps, start → end)", <div className={styles.row}><input type="number" value={config.baseFee.startingFeeBps} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, startingFeeBps: Number(e.target.value) } })} /><input type="number" value={config.baseFee.endingFeeBps} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, endingFeeBps: Number(e.target.value) } })} /></div>)}
-              {field("Fee scheduler", <select value={config.baseFee.mode} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, mode: e.target.value as StudioMarketConfig["baseFee"]["mode"] } })}><option value="linear">linear</option><option value="exponential">exponential</option></select>)}
-              {field("Scheduler periods / duration (s)", <div className={styles.row}><input type="number" value={config.baseFee.numberOfPeriod} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, numberOfPeriod: Number(e.target.value) } })} /><input type="number" value={config.baseFee.totalDuration} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, totalDuration: Number(e.target.value) } })} /></div>)}
-              {field("Dynamic fee", <select value={config.dynamicFeeEnabled ? "on" : "off"} onChange={(e) => setConfig({ ...config, dynamicFeeEnabled: e.target.value === "on" })}><option value="on">enabled</option><option value="off">disabled</option></select>)}
-              {field("Collect fee mode", <select value={config.collectFeeMode} onChange={(e) => setConfig({ ...config, collectFeeMode: e.target.value as StudioMarketConfig["collectFeeMode"] })}><option>QuoteToken</option><option>OutputToken</option></select>)}
+              </div>
+            </fieldset>
+
+            {/* The three groups below have working defaults and a preset sets
+                them all; someone launching a first market should not have to
+                read a fee scheduler to get started. */}
+            <details className={styles.group}>
+              <summary>Trading fees</summary>
+              <div className={styles.grid}>
+              {field("Trading fee, start → end (bps)", <div className={styles.row}><input type="number" value={config.baseFee.startingFeeBps} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, startingFeeBps: Number(e.target.value) } })} /><input type="number" value={config.baseFee.endingFeeBps} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, endingFeeBps: Number(e.target.value) } })} /></div>)}
+              {field("How the fee decays", <select value={config.baseFee.mode} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, mode: e.target.value as StudioMarketConfig["baseFee"]["mode"] } })}><option value="linear">linear</option><option value="exponential">exponential</option></select>)}
+              {field("Decay steps / over (seconds)", <div className={styles.row}><input type="number" value={config.baseFee.numberOfPeriod} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, numberOfPeriod: Number(e.target.value) } })} /><input type="number" value={config.baseFee.totalDuration} onChange={(e) => setConfig({ ...config, baseFee: { ...config.baseFee, totalDuration: Number(e.target.value) } })} /></div>)}
+              {field("Extra fee when volatile", <select value={config.dynamicFeeEnabled ? "on" : "off"} onChange={(e) => setConfig({ ...config, dynamicFeeEnabled: e.target.value === "on" })}><option value="on">enabled</option><option value="off">disabled</option></select>)}
+              {field("Take fees in", <select value={config.collectFeeMode} onChange={(e) => setConfig({ ...config, collectFeeMode: e.target.value as StudioMarketConfig["collectFeeMode"] })}><option>QuoteToken</option><option>OutputToken</option></select>)}
               {num("creatorTradingFeePercentage")}
+              </div>
+            </details>
+
+            <details className={styles.group}>
+              <summary>Migration</summary>
+              <div className={styles.grid}>
               {num("migrationFeePercentage")}
               {num("creatorMigrationFeePercentage")}
-              {field("Migration fee option", <select value={typeof config.migrationFeeOption === "string" ? config.migrationFeeOption : "Customizable"} onChange={(e) => setConfig({ ...config, migrationFeeOption: e.target.value === "Customizable" ? { customizable: { poolFeeBps: 100, collectFeeMode: "QuoteToken", dynamicFee: false } } : (e.target.value as StudioMarketConfig["migrationFeeOption"]) })}>{["FixedBps25", "FixedBps30", "FixedBps100", "FixedBps200", "FixedBps400", "FixedBps600", "Customizable"].map((o) => <option key={o}>{o}</option>)}</select>)}
-              {field("Activation", <select value={config.activationType} onChange={(e) => setConfig({ ...config, activationType: e.target.value as StudioMarketConfig["activationType"] })}><option>Timestamp</option><option>Slot</option></select>)}
-              {field("Partner liquidity (locked % / unlocked %)", <div className={styles.row}><input type="number" value={config.liquidityDistribution.partnerPermanentLockedPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, partnerPermanentLockedPercentage: Number(e.target.value) } })} /><input type="number" value={config.liquidityDistribution.partnerPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, partnerPercentage: Number(e.target.value) } })} /></div>)}
-              {field("Creator liquidity (locked % / unlocked %)", <div className={styles.row}><input type="number" value={config.liquidityDistribution.creatorPermanentLockedPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, creatorPermanentLockedPercentage: Number(e.target.value) } })} /><input type="number" value={config.liquidityDistribution.creatorPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, creatorPercentage: Number(e.target.value) } })} /></div>)}
-            </div>
+              {field("Fee on the migrated pool", <select value={typeof config.migrationFeeOption === "string" ? config.migrationFeeOption : "Customizable"} onChange={(e) => setConfig({ ...config, migrationFeeOption: e.target.value === "Customizable" ? { customizable: { poolFeeBps: 100, collectFeeMode: "QuoteToken", dynamicFee: false } } : (e.target.value as StudioMarketConfig["migrationFeeOption"]) })}>{["FixedBps25", "FixedBps30", "FixedBps100", "FixedBps200", "FixedBps400", "FixedBps600", "Customizable"].map((o) => <option key={o}>{o}</option>)}</select>)}
+              {field("Trading opens by", <select value={config.activationType} onChange={(e) => setConfig({ ...config, activationType: e.target.value as StudioMarketConfig["activationType"] })}><option>Timestamp</option><option>Slot</option></select>)}
+              </div>
+            </details>
+
+            <details className={styles.group}>
+              <summary>Liquidity split at migration</summary>
+              <div className={styles.grid}>
+              {field("Partner liquidity, locked % / unlocked %", <div className={styles.row}><input type="number" value={config.liquidityDistribution.partnerPermanentLockedPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, partnerPermanentLockedPercentage: Number(e.target.value) } })} /><input type="number" value={config.liquidityDistribution.partnerPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, partnerPercentage: Number(e.target.value) } })} /></div>)}
+              {field("Creator liquidity, locked % / unlocked %", <div className={styles.row}><input type="number" value={config.liquidityDistribution.creatorPermanentLockedPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, creatorPermanentLockedPercentage: Number(e.target.value) } })} /><input type="number" value={config.liquidityDistribution.creatorPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, creatorPercentage: Number(e.target.value) } })} /></div>)}
+              </div>
+            </details>
+
             <div className={styles.row}>
               <button className={admin.primary} onClick={() => { setStep("model"); void runModel(); }}>Model this market</button>
             </div>

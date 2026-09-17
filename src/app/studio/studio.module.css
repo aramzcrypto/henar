@@ -111,3 +111,73 @@
 .ok {
   color: var(--accent-text);
 }
+
+/* The configure step used to be 21 controls in one flat grid with no
+   explanation, which reads as a settings panel rather than as a launchpad.
+   Grouping gives the page a shape, and the three groups that have working
+   defaults collapse so a first launch starts short. */
+.group {
+  margin: 0 0 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  background: var(--surface-1);
+}
+
+.group > legend,
+.group > summary {
+  padding: 0 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 620;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.group > summary {
+  padding: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.group > summary::before {
+  content: "+";
+  display: inline-block;
+  width: 14px;
+  color: var(--text-4);
+  font-size: 13px;
+}
+
+.group[open] > summary::before {
+  content: "−";
+}
+
+.group[open] > summary {
+  margin-bottom: 14px;
+}
+
+/* Presets read as the starting point rather than as two stray buttons. */
+.startRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 18px;
+}
+
+.startLabel {
+  color: var(--text-4);
+  font-size: 11px;
+  font-weight: 620;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.startNote {
+  color: var(--text-4);
+  font-size: 12px;
+}
