@@ -213,18 +213,6 @@
   height: 18px;
 }
 
-/* The Solana wordmark is white artwork, so on a light ground the lettering
-   disappears and only the gradient mark survives. Inverting the luminance
-   keeps the mark's own colours while turning the white type dark, which is
-   what the brand does in its own light lockup. */
-:root[data-theme="light"] .solanaLogo img {
-  filter: invert(1) hue-rotate(180deg);
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .solanaLogo img {
-    filter: invert(1) hue-rotate(180deg);
-  }
-}
 
 .live {
   display: inline-flex;

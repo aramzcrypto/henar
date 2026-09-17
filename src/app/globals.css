@@ -112,11 +112,16 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --bg: #fbfbfc;
+  /* The page has to be clearly darker than a card or nothing reads as
+     raised. #fbfbfc against a white surface is 1.02:1 — a card edge you can
+     only find by looking for it. Dark separates by making a surface lighter
+     than the page; light has to do the same in reverse, and lean on a
+     shadow. */
+  --bg: #f1f2f5;
   --surface-1: #ffffff;
-  --surface-2: #f4f4f6;
-  --surface-3: #eaeaee;
-  --surface-4: #dedee3;
+  --surface-2: #f7f8fa;
+  --surface-3: #eceef2;
+  --surface-4: #dee0e6;
   --surface-inverse: #17171a;
 
   --surface-cool-1: #f6f7fa;
@@ -180,11 +185,11 @@
   :root:not([data-theme="dark"]) {
     color-scheme: light;
 
-    --bg: #fbfbfc;
+    --bg: #f1f2f5;
     --surface-1: #ffffff;
-    --surface-2: #f4f4f6;
-    --surface-3: #eaeaee;
-    --surface-4: #dedee3;
+    --surface-2: #f7f8fa;
+    --surface-3: #eceef2;
+    --surface-4: #dee0e6;
     --surface-inverse: #17171a;
 
     --surface-cool-1: #f6f7fa;
@@ -11296,7 +11301,17 @@ body {
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: min(1180px, 150vw);
+  /* Sized against the hero's own height, not a fixed pixel cap.
+     The sphere is anchored to the bottom and pushed down by 30% of its
+     diameter, so its top sits at `heroHeight - 0.7 * diameter`. A flat
+     1180px cap meant that on a 14" laptop, where the hero is short, the top
+     was clipped, and on a 27" display the same 1180px was a small ball
+     stranded at the bottom with a gap under the navigation.
+     Tying the diameter to 1.34x the hero height keeps the top a consistent
+     sliver below the navigation at every size, and lets the sphere grow with
+     the screen instead of staying still. */
+  --hero-height: calc(100svh - 118px);
+  width: min(150vw, calc(var(--hero-height) * 1.34), 1800px);
   aspect-ratio: 1;
   /* Most of the sphere sits below the fold so the lit rim reads as a
      horizon rather than a planet parked behind the headline. --globe-scale
@@ -14245,4 +14260,33 @@ body {
 .theme-toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   White issuer artwork on a light ground
+   ---------------------------------------------------------------------------
+   Ondo's and Solana's marks are drawn in white, so on light they disappear
+   into the page. Inverting luminance turns the white lettering dark while the
+   gradient marks keep their own colour, which is what both brands do in their
+   own light lockups.
+
+   Matched on the file rather than a class because these logos appear in a
+   dozen places — the issuer row, market lists, the selector — and only these
+   two are white. xStocks and Backpack carry their own colour and must not be
+   touched. Both the raw path and Next's encoded one are matched, since the
+   image pipeline may rewrite either.
+--------------------------------------------------------------------------- */
+:root[data-theme="light"] img[src*="issuers/ondo.svg"],
+:root[data-theme="light"] img[src*="issuers%2Fondo.svg"],
+:root[data-theme="light"] img[src*="issuers/solana.svg"],
+:root[data-theme="light"] img[src*="issuers%2Fsolana.svg"] {
+  filter: invert(1) hue-rotate(180deg);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) img[src*="issuers/ondo.svg"],
+  :root:not([data-theme="dark"]) img[src*="issuers%2Fondo.svg"],
+  :root:not([data-theme="dark"]) img[src*="issuers/solana.svg"],
+  :root:not([data-theme="dark"]) img[src*="issuers%2Fsolana.svg"] {
+    filter: invert(1) hue-rotate(180deg);
+  }
 }

@@ -120,7 +120,7 @@ function MarketsWallet() {
 export function AppHeader({ active }: { active: string }) {
   return (
     <header className="app-header">
-      <Link href="/markets" className="brand" aria-label="Henar markets">
+      <Link href="/" className="brand" aria-label="Henar home">
         <HenarBrand />
       </Link>
       <nav aria-label="Main navigation">
