@@ -14,6 +14,8 @@ import { routeLabel } from "@/lib/equities/route-label";
 import { CompanyFinancials } from "./company-financials";
 import { EquityLogo } from "./equity-logo";
 import { PythMarketData } from "./pyth-market-data";
+import { OpenMarketCard } from "./open-market-card";
+import { proposeMarket } from "@/lib/dbc/open-market";
 import type {
   DividendRecord,
   EarningsEvent,
@@ -1157,9 +1159,12 @@ function OverviewNews({
 export function MarketDetail({
   equity,
   research,
+  hasMarket,
 }: {
   equity: Equity;
   research: ResearchPromise;
+  /** Whether any representation has an enabled pool. Registry data, from the server. */
+  hasMarket: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("Onchain");
   const [snapshot, setComparison] = useState<Comparison | null>(null);
@@ -1261,6 +1266,15 @@ export function MarketDetail({
       controller.abort();
     };
   }, [equity.ticker]);
+  /* Sized from the live reference price the comparison already carries, so a
+     proposal is never built on a guessed number. */
+  const marketProposal = useMemo(() => {
+    if (hasMarket) return null;
+    const priced = comparison?.representations.find((r) => r.referencePrice);
+    if (!priced?.referencePrice) return null;
+    return proposeMarket(equity, Number(priced.referencePrice), "Henar reference price");
+  }, [hasMarket, comparison, equity]);
+
   const recommended = useMemo(
     () =>
       comparison?.bestBuy
@@ -1409,6 +1423,9 @@ export function MarketDetail({
       </nav>
       {tab === "Onchain" ? (
         <div className="company-onchain">
+          {!hasMarket && marketProposal && (
+            <OpenMarketCard ticker={equity.ticker} proposal={marketProposal} />
+          )}
           <PythMarketData equity={equity} comparison={comparison} />
           <PriceMovement equity={equity} data={comparison} error={error} />
           <OnchainTable

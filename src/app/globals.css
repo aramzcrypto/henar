@@ -14585,3 +14585,95 @@ body {
   font-size: 12.5px;
   text-align: right;
 }
+
+/* The offer to open a market for a company Henar cannot trade. It sits where
+   the absence is felt — above a comparison with nothing to compare. */
+.open-market {
+  margin: 0 0 20px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--accent-border), var(--shadow-1);
+}
+.open-market-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.open-market-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.open-market-head > div {
+  flex: 1;
+  min-width: 0;
+}
+.open-market-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-1);
+}
+.open-market-head p {
+  margin: 5px 0 0;
+  max-width: 64ch;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.open-market-cta {
+  flex: 0 0 auto;
+  padding: 9px 15px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.open-market-cta:hover {
+  background: var(--accent-hover);
+}
+.open-market-body {
+  margin-top: 16px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-1);
+}
+.open-market-body dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+.open-market-body dt {
+  color: var(--text-4);
+  font-size: 10.5px;
+  font-weight: 620;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.open-market-body dd {
+  margin: 4px 0 0;
+  color: var(--text-1);
+  font-family: var(--data);
+  font-size: 13.5px;
+}
+.open-market-basis,
+.open-market-note {
+  margin: 14px 0 0;
+  color: var(--text-4);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.open-market-note {
+  margin-top: 6px;
+}

@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { MarketDetail } from "@/components/market-detail";
 import { equityForTicker } from "@/lib/equities/registry";
 import { loadResearchForEquity } from "@/lib/equities/research";
+import { tradableRepresentations } from "@/lib/dbc/market-coverage";
 
 type Props = { params: Promise<{ ticker: string }> };
 export const dynamic = "force-dynamic";
@@ -22,11 +23,14 @@ export default async function Page({ params }: Props) {
   // Research is streamed rather than awaited. SEC company facts are large and
   // slow on a cold cache; blocking here delayed the whole page by seconds.
   const research = loadResearchForEquity(equity);
+  /* Pool state is registry data and belongs on the server; the reference price
+     that sizes a proposal arrives with the client's live comparison. */
+  const hasMarket = tradableRepresentations(equity).length > 0;
   return (
     <div className="app page-markets">
       <AppHeader active="markets" />
       <main className="markets-main">
-        <MarketDetail equity={equity} research={research} />
+        <MarketDetail equity={equity} research={research} hasMarket={hasMarket} />
       </main>
     </div>
   );
