@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { HenarBrand } from "@/components/henar-brand";
 import { HeroGlobe } from "@/components/hero-globe";
+import { LandingAtmosphere } from "@/components/landing-atmosphere";
 import { LandingUnify } from "@/components/landing-unify";
 import { LandingCompanies } from "@/components/landing-companies";
 import { LandingResearch } from "@/components/landing-research";
@@ -67,6 +68,7 @@ const example = equityForTicker("NVDA");
 export default function Home() {
   return (
     <div className={styles.page}>
+      <LandingAtmosphere />
       <header className={styles.header}>
         <Link href="/" className="brand" aria-label="Henar home">
           <HenarBrand />
@@ -189,10 +191,10 @@ export default function Home() {
         <section className={styles.tradeSection}>
           <div className={styles.sectionCopy} data-reveal>
             <span className={styles.eyebrow}>Trade</span>
-            <h2>More ways to trade.</h2>
+            <h2>Every venue, one ticket.</h2>
             <p>
-              Simple execution for the common cases, with a Pro terminal one
-              toggle away.
+              Henar quotes every connected venue at once and shows you what each
+              one would pay — including the ones it cannot fill.
             </p>
           </div>
           <LandingTrade />

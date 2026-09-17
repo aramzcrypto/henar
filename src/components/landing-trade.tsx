@@ -1,15 +1,25 @@
 import { Clock3, Crosshair, Repeat2 } from "lucide-react";
 
 /**
- * Trade is one set of order types behind two interfaces, so the interfaces are
- * a switch above the order types rather than a fourth item beside them: Swap,
- * Limit and DCA all work in Simple and in Pro.
+ * Three order types, and the execution underneath them.
+ *
+ * This used to open on a Simple/Pro switch. There is no Pro terminal and one
+ * is not being built, so the switch promised a product that does not exist and
+ * spent the most prominent slot in the section doing it. What belongs there is
+ * the thing Henar actually built and nobody can see from a screenshot: the
+ * router.
+ *
+ * Every claim here is checkable. The venues are the ones with enabled pools in
+ * `src/data/router/pools.json`; splitting across up to three of them is
+ * `DEFAULT_SPLIT_OPTIONS.maxLegs`; the simulation is the gate in
+ * `RouterApi.quoteAndBuild`, which refuses a route whose simulation errors or
+ * falls short of its floor.
  */
 const MODES = [
   {
     icon: Repeat2,
     name: "Swap",
-    description: "Route across available liquidity, ranked by net output.",
+    description: "Every venue quoted at once, ranked by what lands in your wallet.",
   },
   {
     icon: Crosshair,
@@ -23,14 +33,25 @@ const MODES = [
   },
 ];
 
+const VENUES = ["Raydium", "Orca", "Meteora", "Jupiter", "OpenOcean"];
+
 export function LandingTrade() {
   return (
-    <div className="tswitch-wrap" data-reveal>
-      <div className="tswitch" role="img" aria-label="Simple and Pro interfaces">
-        <span data-on>Simple</span>
-        <span>Pro</span>
+    <div className="trade-intro" data-reveal>
+      <div className="troute" role="img" aria-label="Henar routes across Raydium, Orca, Meteora, Jupiter and OpenOcean, splitting one order across up to three venues">
+        <span className="troute-label">Routes across</span>
+        <span className="troute-venues">
+          {VENUES.map((venue) => (
+            <span className="troute-venue" key={venue}>
+              {venue}
+            </span>
+          ))}
+        </span>
       </div>
-      <p className="tswitch-note">One toggle. The same order types in both.</p>
+      <p className="trade-note">
+        One order can be split across three venues at once. Every transaction is
+        simulated before it reaches your wallet.
+      </p>
 
       <div className="tmodes">
         {MODES.map(({ icon: Icon, name, description }, index) => (

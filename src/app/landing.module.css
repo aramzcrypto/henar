@@ -1,4 +1,6 @@
 .page {
+  /* The positioned ancestor the atmosphere spans. */
+  position: relative;
   min-height: 100svh;
   /* clip, not hidden: hidden makes this a scroll container, which silently
      disables position:sticky for the pinned Coverage stage. clip does the
@@ -8,7 +10,12 @@
   color: var(--text);
 }
 
+/* Above the atmosphere. The ambient layer is fixed at z-index 0, and a fixed
+   element paints above static in-flow content, so every band of the page has
+   to claim its own layer or the vignette settles over the text. */
 .header {
+  position: relative;
+  z-index: 1;
   width: min(100%, 1500px);
   height: 88px;
   min-height: 88px;
@@ -55,6 +62,8 @@
 }
 
 .main {
+  position: relative;
+  z-index: 1;
   width: min(100%, 1500px);
   max-width: none;
   margin: 0 auto;
@@ -220,7 +229,7 @@
   grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
   gap: clamp(70px, 10vw, 180px);
   align-items: center;
-  padding: 150px 4%;
+  padding: 112px 4%;
 }
 
 /* Research runs full width: the bento's cropped mockups need the measure, and
@@ -232,7 +241,7 @@
   display: grid;
   justify-items: center;
   gap: 60px;
-  padding: 150px 4%;
+  padding: 112px 4%;
   text-align: center;
 }
 
@@ -253,7 +262,7 @@
 .companiesSection {
   display: grid;
   justify-items: center;
-  padding: 150px 4%;
+  padding: 112px 4%;
   text-align: center;
 }
 
@@ -278,6 +287,8 @@
 
 .sectionCopy h2 {
   margin-top: 20px;
+  /* Breaks between phrases rather than wherever the line happens to run out. */
+  text-wrap: balance;
   font-size: clamp(40px, 4.6vw, 67px);
   font-weight: 520;
   line-height: 1.04;
@@ -554,6 +565,8 @@
 
 
 .footer {
+  position: relative;
+  z-index: 1;
   width: min(92%, 1380px);
   margin: 0 auto;
   padding: 27px 0;
