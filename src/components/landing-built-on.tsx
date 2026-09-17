@@ -40,11 +40,11 @@ const INTEGRATIONS = [
   },
   {
     name: "Meteora",
-    what: "Liquidity and launches",
+    what: "Liquidity",
     detail:
-      "DLMM pools carry the private-market book and take a leg in Henar's split routes. DBC Studio configures and monitors bonding-curve launches.",
-    href: "/studio",
-    cta: "DBC Studio",
+      "DLMM pools carry the entire private-market book and take a leg in Henar's split routes, alongside Raydium and Orca.",
+    href: "/trade",
+    cta: "See a route",
   },
 ];
 
