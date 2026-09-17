@@ -28,8 +28,34 @@ export function currentTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
+/**
+ * Switch the theme with every transition suppressed.
+ *
+ * Two reasons, one cosmetic and one a real bug. Cosmetically, the product
+ * transitions `color`, `background` and `border-color` on buttons and links,
+ * so flipping the theme cross-fades the entire page for 150ms and looks like
+ * a glitch rather than a switch.
+ *
+ * The bug is worse. A transitioned property whose value comes from `var()`
+ * does not reliably pick up a change to the custom property itself: switching
+ * to dark left the Connect button with its light background while its text
+ * went light, so the button vanished. Suppressing transitions across the flip
+ * makes the change a plain recalculation, which cannot go stale.
+ *
+ * The flag is removed two frames later — one to let the new values paint,
+ * one because a single frame is sometimes still inside the same style pass.
+ */
 function applyTheme(theme: Theme) {
-  document.documentElement.setAttribute("data-theme", theme);
+  const root = document.documentElement;
+  root.setAttribute("data-theme-switching", "");
+  root.setAttribute("data-theme", theme);
+  /* Read a layout property to force the suppression into effect before the
+     theme change is painted; without it both land in the same recalculation
+     and the suppression does nothing. */
+  void root.offsetHeight;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => root.removeAttribute("data-theme-switching"));
+  });
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {

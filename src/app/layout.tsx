@@ -27,7 +27,7 @@ export const viewport: Viewport = {
      behind a light theme. */
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0b" },
-    { media: "(prefers-color-scheme: light)", color: "#fbfbfc" },
+    { media: "(prefers-color-scheme: light)", color: "#f1f2f5" },
   ],
 };
 export const metadata: Metadata = {

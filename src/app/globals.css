@@ -132,7 +132,7 @@
   --text-2: #3a3a44;
   --text-3: #52525b;
   --text-4: #5f5f69;
-  --text-5: #6f6f79;
+  --text-5: #67676f;
   --text-inverse: #f7f7f8;
 
   --border-1: #e4e4e9;
@@ -200,7 +200,7 @@
     --text-2: #3a3a44;
     --text-3: #52525b;
     --text-4: #5f5f69;
-    --text-5: #6f6f79;
+    --text-5: #67676f;
     --text-inverse: #f7f7f8;
 
     --border-1: #e4e4e9;
@@ -14307,4 +14307,15 @@ body {
   :root:not([data-theme="dark"]) img[src*="issuers%2Fsolana.svg"] {
     filter: invert(1) hue-rotate(180deg);
   }
+}
+
+/* Everything holds still while the theme flips. See `applyTheme`: the
+   cross-fade looks like a glitch, and a transitioned property reading from a
+   custom property can keep its old value when only that property changes,
+   which left the Connect button with a light background and light text. */
+:root[data-theme-switching] *,
+:root[data-theme-switching] *::before,
+:root[data-theme-switching] *::after {
+  transition: none !important;
+  animation-duration: 0s !important;
 }
