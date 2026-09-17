@@ -82,6 +82,9 @@ import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 import { FAIR_VALUE_LABELS, formatBps } from "@/lib/pyth/fair-value";
 import type { FairValueAssessment } from "@/lib/pyth/types";
 import { ThemeToggle } from "./theme-toggle";
+
+/** The company whose underlying feed the current Pyth entitlement covers. */
+const DEMO_TICKER = "TSLA";
 /** Idle long enough that refreshing quotes is spending quota on nobody. */
 const IDLE_PAUSE_MS = 3 * 60_000;
 
@@ -376,14 +379,23 @@ export function Stockroom({
     logo: stock.logo,
     provider: stock.provider,
   };
-  const [marketReceive, setMarketReceive] = useState<PaymentToken>(() => ({
-    mint: stocks[0].mint,
-    symbol: stocks[0].ticker,
-    name: stocks[0].name,
-    decimals: 9,
-    logo: stocks[0].logo,
-    provider: stocks[0].provider,
-  }));
+  /* The ticket opens on the company Henar can actually demonstrate live
+     market data with. The list is alphabetical, so it used to open on
+     whatever sorted first — and if that company's Pyth feed is outside the
+     current entitlement, the first thing anyone sees is a fair-value panel
+     reporting no reference, which reads as a broken integration rather than
+     as an honest one. Falls back to the head of the list. */
+  const [marketReceive, setMarketReceive] = useState<PaymentToken>(() => {
+    const opening = stocks.find((candidate) => candidate.ticker === DEMO_TICKER) ?? stocks[0];
+    return {
+      mint: opening.mint,
+      symbol: opening.ticker,
+      name: opening.name,
+      decimals: 9,
+      logo: opening.logo,
+      provider: opening.provider,
+    };
+  });
   useEffect(() => {
     setMarketReceive((current) =>
       current.mint === stock.mint

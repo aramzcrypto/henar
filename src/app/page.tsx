@@ -10,6 +10,7 @@ import { LandingCompanies } from "@/components/landing-companies";
 import { LandingResearch } from "@/components/landing-research";
 import { LandingTrade } from "@/components/landing-trade";
 import { LandingEarn } from "@/components/landing-earn";
+import { LandingBuiltOn } from "@/components/landing-built-on";
 import { LandingRing } from "@/components/landing-ring";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import {
@@ -214,6 +215,18 @@ export default function Home() {
             </p>
           </div>
           <LandingEarn stocks={earnStocks} />
+        </section>
+
+        <section className={styles.tradeSection}>
+          <div className={styles.sectionCopy} data-reveal>
+            <span className={styles.eyebrow}>Built on</span>
+            <h2>Where the data comes from.</h2>
+            <p>
+              Every price, product and route in Henar traces to a named source.
+              Each one is live — follow the link and check it.
+            </p>
+          </div>
+          <LandingBuiltOn />
         </section>
 
         <section className={styles.finalCta}>

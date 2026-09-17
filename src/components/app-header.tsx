@@ -4,26 +4,23 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import {
-  ArrowLeftRight,
-  ArrowRight,
-  Box,
-  ChartNoAxesCombined,
-  ChevronDown,
-  LogOut,
-  Sprout,
-  User,
-  Wallet,
-} from "lucide-react";
+import { ArrowLeftRight, ArrowRight, Box, ChartNoAxesCombined, ChevronDown, FlaskConical, LogOut, Sprout, User, Wallet } from "lucide-react";
 import { HenarBrand } from "./henar-brand";
 import { RewardsMenu } from "./rewards-menu";
 import { ThemeToggle } from "./theme-toggle";
 
+/* Studio is behind the same public flag the route itself checks, so the link
+   exists exactly when the page does. It was reachable only from the admin
+   dashboard, which meant the DBC work was effectively invisible to anyone who
+   did not already know the URL. */
 const navigation = [
   { path: "markets", label: "Markets", icon: ChartNoAxesCombined },
   { path: "trade", label: "Trade", icon: ArrowLeftRight },
   { path: "earn", label: "Earn", icon: Sprout },
   { path: "packs", label: "Packs", icon: Box },
+  ...(process.env.NEXT_PUBLIC_HENAR_DBC_STUDIO === "1"
+    ? [{ path: "studio", label: "Studio", icon: FlaskConical }]
+    : []),
 ];
 
 function MarketsWallet() {

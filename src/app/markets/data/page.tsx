@@ -21,7 +21,7 @@ export default async function Page() {
         <section className="markets-shell">
           <h1 className="sr-only">Market data</h1>
           <div className="markets-controls">
-            <MarketsTabs active="overview" />
+            <MarketsTabs active="data" />
           </div>
           <PythCoveragePanel coverage={coverage} enabled={enabled} />
         </section>
