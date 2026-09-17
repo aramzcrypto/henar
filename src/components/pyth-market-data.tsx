@@ -309,7 +309,9 @@ function PythHistoryChart({ ticker, data }: { ticker: string; data: CompanyPyth 
   const lo = Math.min(0, ...all), hi = Math.max(0, ...all);
   const x = (t: number) => pad + ((t - t0) / Math.max(1, t1 - t0)) * (width - 2 * pad);
   const y = (v: number) => height - pad - ((v - lo) / Math.max(0.0001, hi - lo)) * (height - 2 * pad);
-  const colors = ["#f56b88", "#7cc4ff", "#f5c46b", "#9be0a0"];
+  /* The shared chart palette, so the series stay legible on a light ground
+     instead of washing out. */
+  const colors = ["var(--viz-rose)", "var(--viz-blue)", "var(--viz-amber)", "var(--viz-green)"];
   return (
     <div className="pyth-chart">
       <div className="pyth-chart-tabs" role="group" aria-label="Series">

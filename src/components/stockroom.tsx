@@ -81,6 +81,7 @@ import { unpackMint } from "@solana/spl-token";
 import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 import { FAIR_VALUE_LABELS, formatBps } from "@/lib/pyth/fair-value";
 import type { FairValueAssessment } from "@/lib/pyth/types";
+import { ThemeToggle } from "./theme-toggle";
 /** Idle long enough that refreshing quotes is spending quota on nobody. */
 const IDLE_PAUSE_MS = 3 * 60_000;
 
@@ -1446,6 +1447,7 @@ export function Stockroom({
           })}
         </nav>
         <div className="header-right">
+          <ThemeToggle />
           <RewardsMenu />
           <span className="network">
             <i />

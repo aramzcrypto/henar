@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { HenarBrand } from "@/components/henar-brand";
 import { HeroGlobe } from "@/components/hero-globe";
 import { LandingAtmosphere } from "@/components/landing-atmosphere";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { LandingUnify } from "@/components/landing-unify";
 import { LandingCompanies } from "@/components/landing-companies";
 import { LandingResearch } from "@/components/landing-research";
@@ -79,9 +80,12 @@ export default function Home() {
           <Link href="/earn">Earn</Link>
           <Link href="/docs">Docs</Link>
         </nav>
-        <Link href="/markets" className={styles.launchLink}>
-          Open Henar <ArrowRight size={14} />
-        </Link>
+        <div className={styles.headerRight}>
+          <ThemeToggle />
+          <Link href="/markets" className={styles.launchLink}>
+            Open Henar <ArrowRight size={14} />
+          </Link>
+        </div>
       </header>
 
       <main className={styles.main}>

@@ -13,9 +13,63 @@ import createGlobe, { type Globe } from "cobe";
  * If WebGL is unavailable the canvas never fades in and the hero reads fine
  * without it, so there is no fallback artwork to maintain.
  */
+/** True when the document is currently painting the light theme. */
+function isLight() {
+  const explicit = document.documentElement.getAttribute("data-theme");
+  if (explicit === "light") return true;
+  if (explicit === "dark") return false;
+  return window.matchMedia("(prefers-color-scheme: light)").matches;
+}
+
+/**
+ * The globe in each theme.
+ *
+ * A globe lit for a black page is a dark sphere with pale dots, and on a white
+ * page that is a heavy grey blob — which is exactly what the first light build
+ * looked like. cobe's `dark` flag inverts the lighting model, so light gets a
+ * pale sphere with dark landmasses instead of the same object on the wrong
+ * ground. The teal marker colour is shared: it is the one thing that should
+ * not change meaning between themes.
+ */
+function globeTheme(light: boolean) {
+  return light
+    ? {
+        dark: 0,
+        diffuse: 0.55,
+        mapBrightness: 5.2,
+        baseColor: [0.82, 0.83, 0.87] as [number, number, number],
+        markerColor: [0.14, 0.55, 0.5] as [number, number, number],
+        glowColor: [0.96, 0.96, 0.98] as [number, number, number],
+      }
+    : {
+        dark: 1,
+        diffuse: 1.7,
+        mapBrightness: 14,
+        baseColor: [0.34, 0.36, 0.43] as [number, number, number],
+        markerColor: [0.27, 0.7, 0.66] as [number, number, number],
+        glowColor: [0.17, 0.21, 0.27] as [number, number, number],
+      };
+}
+
 export function HeroGlobe() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
+  /* Re-keys the effect so the globe is rebuilt when the theme changes. cobe
+     takes its lighting at construction and `update()` cannot change `dark`. */
+  const [light, setLight] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setLight(isLight());
+    sync();
+    const media = window.matchMedia("(prefers-color-scheme: light)");
+    media.addEventListener("change", sync);
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => {
+      media.removeEventListener("change", sync);
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const node = canvas.current;
@@ -40,13 +94,8 @@ export function HeroGlobe() {
         height: size(),
         phi,
         theta: 0.22,
-        dark: 1,
-        diffuse: 1.7,
         mapSamples: 17000,
-        mapBrightness: 14,
-        baseColor: [0.34, 0.36, 0.43],
-        markerColor: [0.27, 0.7, 0.66],
-        glowColor: [0.17, 0.21, 0.27],
+        ...globeTheme(light),
       });
     } catch {
       return; // No WebGL context; leave the canvas hidden.
@@ -141,7 +190,7 @@ export function HeroGlobe() {
       window.removeEventListener("resize", onResize);
       globe?.destroy();
     };
-  }, []);
+  }, [light]);
 
   return (
     <div className="hero-globe" aria-hidden="true">

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { HenarBrand } from "./henar-brand";
 import { RewardsMenu } from "./rewards-menu";
+import { ThemeToggle } from "./theme-toggle";
 
 const navigation = [
   { path: "markets", label: "Markets", icon: ChartNoAxesCombined },
@@ -135,6 +136,7 @@ export function AppHeader({ active }: { active: string }) {
         ))}
       </nav>
       <div className="header-right">
+        <ThemeToggle />
         <RewardsMenu />
         <MarketsWallet />
       </div>

@@ -22,10 +22,13 @@ const ISSUERS: Record<string, string> = {
   ondo: "Ondo",
 };
 
+/* Through the chart palette rather than as literals, so an issuer keeps its
+   identity in both themes: the dark hues are tuned to glow on near-black and
+   go pastel and unreadable on white. */
 const ISSUER_COLOURS: Record<string, string> = {
-  xstocks: "#46b3a8",
-  backpack: "#e0a355",
-  ondo: "#8b7fd4",
+  xstocks: "var(--viz-teal)",
+  backpack: "var(--viz-amber)",
+  ondo: "var(--viz-violet)",
 };
 
 function compact(value: number | null) {
@@ -152,7 +155,7 @@ export function MarketsBento({
       .map(([provider, volume]) => ({
         provider,
         label: ISSUERS[provider] ?? provider,
-        colour: ISSUER_COLOURS[provider] ?? "#78787f",
+        colour: ISSUER_COLOURS[provider] ?? "var(--text-4)",
         volume,
         share: (volume / total) * 100,
       }))
