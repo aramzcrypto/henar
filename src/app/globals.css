@@ -14375,3 +14375,151 @@ body {
 .built-on-item a:hover {
   color: var(--accent);
 }
+
+/* Live reference prices on the Market data page. The page used to open on
+   coverage statistics, which is an operations dashboard; the prices come
+   first now and the coverage table explains why the list is the length it
+   is. */
+.pyth-live-section {
+  margin: 0 0 30px;
+}
+.pyth-live-head {
+  margin: 0 0 16px;
+}
+.pyth-live-head h2 {
+  margin: 8px 0 6px;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+.pyth-live-head p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.pyth-live {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(276px, 1fr));
+  gap: 14px;
+}
+.pyth-live-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-1), var(--shadow-1);
+}
+.pyth-live-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pyth-live-symbol {
+  display: block;
+  color: var(--text-4);
+  font-family: var(--data);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+.pyth-live-card header strong {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--data);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+.pyth-live-card header a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 560;
+}
+.pyth-live-facts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 14px;
+  margin: 0;
+  padding: 13px 0 0;
+  border-top: 1px solid var(--border-1);
+}
+.pyth-live-facts dt {
+  color: var(--text-4);
+  font-size: 10.5px;
+  font-weight: 620;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.pyth-live-facts dd {
+  margin: 3px 0 0;
+  color: var(--text-2);
+  font-family: var(--data);
+  font-size: 12.5px;
+}
+.pyth-live-reps {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 13px 0 0;
+  border-top: 1px solid var(--border-1);
+  list-style: none;
+}
+.pyth-live-reps li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.pyth-live-reps span {
+  color: var(--text-2);
+  font-family: var(--data);
+}
+.pyth-live-reps em {
+  color: var(--text-5);
+  font-size: 11px;
+  font-style: normal;
+}
+.pyth-live-reps b {
+  color: var(--text-2);
+  font-family: var(--data);
+  font-weight: 500;
+}
+/* A refusal is said plainly and quietly: it is information, not an error. */
+.pyth-live-reps b[data-state="NOT_ENTITLED"],
+.pyth-live-reps b[data-state="UNAVAILABLE"],
+.pyth-live-reps b[data-state="CATALOG_ONLY"] {
+  color: var(--text-5);
+  font-size: 11.5px;
+}
+.pyth-live-none {
+  display: block !important;
+  color: var(--text-5);
+  font-size: 11.5px;
+}
+
+/* Placeholders while each half of the Market data page streams in. */
+.pyth-live-pending {
+  height: 232px;
+  margin: 0 0 30px;
+  border-radius: 14px;
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-1);
+}
+.pyth-coverage-pending {
+  padding: 28px 22px;
+  border-radius: 14px;
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-1);
+  color: var(--text-4);
+  font-size: 13px;
+}

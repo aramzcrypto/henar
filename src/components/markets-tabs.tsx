@@ -2,19 +2,21 @@
 
 import Link from "next/link";
 
-export type MarketsView = "overview" | "all" | "pre-ipo" | "calendar" | "data";
+export type MarketsView = "overview" | "all" | "pre-ipo" | "calendar";
 
 const items: { value: MarketsView; label: string; href: string }[] = [
   { value: "overview", label: "Overview", href: "/markets" },
   { value: "all", label: "All markets", href: "/markets?view=all" },
   { value: "pre-ipo", label: "Pre-IPO", href: "/markets/pre-ipo" },
   { value: "calendar", label: "Calendar", href: "/markets/calendar" },
-  /* The Pyth coverage surface used to be reachable only by opening a company,
-     switching to its Onchain tab and clicking through the price panel — four
-     unsignposted steps for the page that explains where every price on the
-     product comes from. */
-  { value: "data", label: "Market data", href: "/markets/data" },
 ];
+
+/* Market data is deliberately not a tab. It is a provenance surface — what
+   the price feeds are and what this key can read — which is evidence, not a
+   destination someone browsing companies is looking for. It is reached from
+   the landing page's sources section and from the "Powered by Pyth Pro" link
+   on any company's price panel, which is where a reader who wants to know
+   where a number came from actually is. */
 
 /**
  * Overview and All markets are in-page views, so they switch without a
