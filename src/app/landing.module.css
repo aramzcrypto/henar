@@ -754,10 +754,28 @@
 }
 
 /* The globe is positioned from globals.css; the hero only needs to clip
-   it and keep the copy above it. */
+   it and keep the copy above it.
+
+   Full bleed. `.main` caps its children at 1500px with a 4% gutter, so the
+   hero used to end in two visible vertical seams where the band stopped and
+   the page showed through — obvious on light, where the two whites differ.
+   Breaking the hero out to the viewport puts the globe's fade at the screen
+   edge, which is where it was always meant to be. */
 .hero {
   position: relative;
+  left: 50%;
+  right: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
   overflow: hidden;
+}
+
+/* The copy keeps the page's measure even though the band does not. */
+.hero > .heroCopy {
+  width: min(100%, 1500px);
+  margin: 0 auto;
+  padding: 0 4%;
 }
 
 /* The globe grows past the viewport as it exits, and .hero clips it. Fading

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 
-export type ThemeChoice = "system" | "light" | "dark";
+export type Theme = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "henar.theme.v1";
 
@@ -21,67 +21,69 @@ export const THEME_STORAGE_KEY = "henar.theme.v1";
  */
 export const THEME_INIT_SCRIPT = `(function(){try{var c=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(c==="light"||c==="dark"){document.documentElement.setAttribute("data-theme",c)}}catch(e){}})()`;
 
-export function applyTheme(choice: ThemeChoice) {
-  const root = document.documentElement;
-  if (choice === "system") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", choice);
+/** What the page is painting right now, chosen or inherited from the system. */
+export function currentTheme(): Theme {
+  const explicit = document.documentElement.getAttribute("data-theme");
+  if (explicit === "light" || explicit === "dark") return explicit;
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+function applyTheme(theme: Theme) {
+  document.documentElement.setAttribute("data-theme", theme);
   try {
-    if (choice === "system") localStorage.removeItem(THEME_STORAGE_KEY);
-    else localStorage.setItem(THEME_STORAGE_KEY, choice);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
     /* Private windows and blocked storage: the choice still applies to this
-       page, it simply will not be remembered. That is a better outcome than
-       refusing to switch. */
+       page, it simply will not be remembered. Better than refusing to switch. */
   }
 }
 
-const OPTIONS: { value: ThemeChoice; label: string; Icon: typeof Sun }[] = [
-  { value: "light", label: "Light", Icon: Sun },
-  { value: "system", label: "System", Icon: Monitor },
-  { value: "dark", label: "Dark", Icon: Moon },
-];
-
 /**
- * Three states, not two.
+ * One button that shows the theme you are in and switches to the other.
  *
- * A two-way switch cannot express "follow my system", which is what most
- * people actually want and what the product does before anyone touches it.
- * Collapsing that into a boolean means the first click permanently opts the
- * user out of their own operating system's setting without saying so.
+ * Until someone touches it the page still follows the operating system — that
+ * is the `prefers-color-scheme` block in the stylesheet, and this control
+ * reads whichever theme that produced. The first click is what turns an
+ * inherited theme into a chosen one.
  */
 export function ThemeToggle({ className }: { className?: string }) {
-  const [choice, setChoice] = useState<ThemeChoice>("system");
+  const [theme, setTheme] = useState<Theme>("dark");
+  /* Until this mounts we do not know what the system prefers, and rendering a
+     sun when the page is dark is worse than rendering nothing for a frame. */
+  const [known, setKnown] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(THEME_STORAGE_KEY);
-      if (stored === "light" || stored === "dark") setChoice(stored);
-    } catch {
-      /* Unreadable storage just means the control opens on System. */
-    }
+    setTheme(currentTheme());
+    setKnown(true);
+    /* While no explicit choice exists the page follows the system, so the
+       control has to follow it too or it will claim the wrong state. */
+    const media = window.matchMedia("(prefers-color-scheme: light)");
+    const sync = () => {
+      if (!document.documentElement.getAttribute("data-theme")) setTheme(currentTheme());
+    };
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, []);
 
-  const pick = (next: ThemeChoice) => {
-    setChoice(next);
-    applyTheme(next);
-  };
+  const next: Theme = theme === "dark" ? "light" : "dark";
 
   return (
-    <div className={className ? `theme-toggle ${className}` : "theme-toggle"} role="radiogroup" aria-label="Colour theme">
-      {OPTIONS.map(({ value, label, Icon }) => (
-        <button
-          key={value}
-          type="button"
-          role="radio"
-          aria-checked={choice === value}
-          aria-label={label}
-          title={label}
-          data-on={choice === value ? "" : undefined}
-          onClick={() => pick(value)}
-        >
-          <Icon size={14} strokeWidth={1.7} aria-hidden="true" />
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className={className ? `theme-toggle ${className}` : "theme-toggle"}
+      onClick={() => {
+        setTheme(next);
+        applyTheme(next);
+      }}
+      aria-label={`Switch to ${next} theme`}
+      title={`Switch to ${next} theme`}
+      data-known={known ? "" : undefined}
+    >
+      {theme === "dark" ? (
+        <Moon size={15} strokeWidth={1.7} aria-hidden="true" />
+      ) : (
+        <Sun size={15} strokeWidth={1.7} aria-hidden="true" />
+      )}
+    </button>
   );
 }

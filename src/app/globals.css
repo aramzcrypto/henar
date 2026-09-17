@@ -125,9 +125,9 @@
 
   --text-1: #14141a;
   --text-2: #3a3a44;
-  --text-3: #57575f;
-  --text-4: #6e6e77;
-  --text-5: #8a8a93;
+  --text-3: #52525b;
+  --text-4: #5f5f69;
+  --text-5: #6f6f79;
   --text-inverse: #f7f7f8;
 
   --border-1: #e4e4e9;
@@ -136,8 +136,8 @@
 
   /* Re-picked, not inverted: the dark greens and ambers are too light to read
      on white, and the brand red needs to darken slightly to stay legible. */
-  --positive: #0f8f52;
-  --positive-soft: #2aa76a;
+  --positive: #0b7845;
+  --positive-soft: #14894f;
   --negative: #cf0733;
   --warning: #9a6b00;
   --info: #2f5fc4;
@@ -193,17 +193,17 @@
 
     --text-1: #14141a;
     --text-2: #3a3a44;
-    --text-3: #57575f;
-    --text-4: #6e6e77;
-    --text-5: #8a8a93;
+    --text-3: #52525b;
+    --text-4: #5f5f69;
+    --text-5: #6f6f79;
     --text-inverse: #f7f7f8;
 
     --border-1: #e4e4e9;
     --border-2: #d5d5dc;
     --border-3: #c2c2cb;
 
-    --positive: #0f8f52;
-    --positive-soft: #2aa76a;
+    --positive: #0b7845;
+    --positive-soft: #14894f;
     --negative: #cf0733;
     --warning: #9a6b00;
     --info: #2f5fc4;
@@ -14215,42 +14215,34 @@ body {
 /* ---------------------------------------------------------------------------
    Theme control
    ---------------------------------------------------------------------------
-   Three states rather than two. A boolean cannot say "follow my system",
-   which is what the product does before anyone touches it and what most
-   people want; collapsing it means the first click silently opts the user out
-   of their own OS setting.
+   One button showing the theme you are in. It fades in once mounted, because
+   before that the component cannot know what the system prefers and a sun
+   shown over a dark page is worse than a blank for one frame.
 --------------------------------------------------------------------------- */
 .theme-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 1px;
-  padding: 2px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--border-1);
-}
-.theme-toggle button {
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  width: 27px;
-  height: 25px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: transparent;
-  color: var(--text-5);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--border-1);
+  color: var(--text-3);
   cursor: pointer;
-  transition: color 120ms ease, background 120ms ease;
+  opacity: 0;
+  transition: color 130ms ease, background 130ms ease, opacity 200ms ease;
 }
-.theme-toggle button:hover {
-  color: var(--text-2);
+.theme-toggle[data-known] {
+  opacity: 1;
 }
-.theme-toggle button[data-on] {
-  background: var(--surface-4);
+.theme-toggle:hover {
+  background: var(--surface-3);
   color: var(--text-1);
 }
-.theme-toggle button:focus-visible {
+.theme-toggle:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
