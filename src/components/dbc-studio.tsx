@@ -261,16 +261,41 @@ export function DbcStudio() {
         {step === "configure" && config && (
           <section className={admin.section}>
             <div className={admin.sectionHeading}>
-              <h2>Launch a bonding-curve market</h2>
+              <h2>Launch a market</h2>
+            </div>
+
+            {/* The quick path. Everything a launch actually needs from a
+                person is a name, a ticker and an image; the curve, the fee
+                schedule and the migration rules all have working defaults and
+                a preset sets them together. The full configuration is one
+                disclosure away for anyone who wants it, rather than twenty-one
+                controls in the way of anyone who does not. */}
+            <div className={styles.quick}>
+              {field("Pool name", <input value={pool.name} maxLength={32} onChange={(e) => setPool({ ...pool, name: e.target.value })} placeholder="Acme Corp Equity Token" />)}
+              {field("Symbol", <input value={pool.symbol} maxLength={10} onChange={(e) => setPool({ ...pool, symbol: e.target.value })} placeholder="ACMEx" />)}
+              {field("Metadata URL", <input value={pool.uri} onChange={(e) => setPool({ ...pool, uri: e.target.value })} placeholder="https://…/metadata.json" />)}
             </div>
 
             <div className={styles.startRow}>
-              <span className={styles.startLabel}>Start from</span>
+              <span className={styles.startLabel}>Curve</span>
               {presets && Object.entries(presets).map(([id, p]) => (
-                <button key={id} className={admin.refresh} onClick={() => setConfig(p.config)} title={p.description}>{p.label}</button>
+                <button
+                  key={id}
+                  className={
+                    config && p.config.migrationMarketCap === config.migrationMarketCap
+                      ? `${styles.curve} ${styles.curveOn}`
+                      : styles.curve
+                  }
+                  onClick={() => setConfig(p.config)}
+                  title={p.description}
+                >
+                  {p.label}
+                </button>
               ))}
             </div>
 
+            <details className={styles.advanced}>
+              <summary>Advanced settings</summary>
             <fieldset className={styles.group}>
               <legend>Token</legend>
               <div className={styles.grid}>
@@ -307,27 +332,10 @@ export function DbcStudio() {
               {num("creatorTradingFeePercentage")}
               </div>
             </details>
-
-            <details className={styles.group}>
-              <summary>Migration</summary>
-              <div className={styles.grid}>
-              {num("migrationFeePercentage")}
-              {num("creatorMigrationFeePercentage")}
-              {field("Fee on the migrated pool", <select value={typeof config.migrationFeeOption === "string" ? config.migrationFeeOption : "Customizable"} onChange={(e) => setConfig({ ...config, migrationFeeOption: e.target.value === "Customizable" ? { customizable: { poolFeeBps: 100, collectFeeMode: "QuoteToken", dynamicFee: false } } : (e.target.value as StudioMarketConfig["migrationFeeOption"]) })}>{["FixedBps25", "FixedBps30", "FixedBps100", "FixedBps200", "FixedBps400", "FixedBps600", "Customizable"].map((o) => <option key={o}>{o}</option>)}</select>)}
-              {field("Trading opens by", <select value={config.activationType} onChange={(e) => setConfig({ ...config, activationType: e.target.value as StudioMarketConfig["activationType"] })}><option>Timestamp</option><option>Slot</option></select>)}
-              </div>
-            </details>
-
-            <details className={styles.group}>
-              <summary>Liquidity split at migration</summary>
-              <div className={styles.grid}>
-              {field("Partner liquidity, locked % / unlocked %", <div className={styles.row}><input type="number" value={config.liquidityDistribution.partnerPermanentLockedPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, partnerPermanentLockedPercentage: Number(e.target.value) } })} /><input type="number" value={config.liquidityDistribution.partnerPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, partnerPercentage: Number(e.target.value) } })} /></div>)}
-              {field("Creator liquidity, locked % / unlocked %", <div className={styles.row}><input type="number" value={config.liquidityDistribution.creatorPermanentLockedPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, creatorPermanentLockedPercentage: Number(e.target.value) } })} /><input type="number" value={config.liquidityDistribution.creatorPercentage} onChange={(e) => setConfig({ ...config, liquidityDistribution: { ...config.liquidityDistribution, creatorPercentage: Number(e.target.value) } })} /></div>)}
-              </div>
             </details>
 
             <div className={styles.row}>
-              <button className={admin.primary} onClick={() => { setStep("model"); void runModel(); }}>Model this market</button>
+              <button className={admin.primary} onClick={() => { setStep("model"); void runModel(); }}>Continue</button>
             </div>
           </section>
         )}

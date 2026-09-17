@@ -181,3 +181,81 @@
   color: var(--text-4);
   font-size: 12px;
 }
+
+/* The quick path: name, ticker, image. Everything else has a working default
+   and a preset sets it, so a launch does not begin with a fee scheduler. */
+.quick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 0 0 18px;
+}
+
+.quick :global(input) {
+  height: 44px;
+  font-size: 15px;
+}
+
+/* The full configuration, out of the way rather than removed. */
+.advanced {
+  margin: 4px 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.advanced > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1px solid var(--border-1);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  list-style: none;
+}
+
+.advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced > summary::before {
+  content: "+";
+  color: var(--text-4);
+}
+
+.advanced[open] > summary {
+  margin-bottom: 16px;
+}
+
+.advanced[open] > summary::before {
+  content: "−";
+}
+
+/* Curve presets are a choice between two, so they are chips side by side —
+   not the page's primary action, which reusing the CTA style made them look
+   like, full width and stacked. */
+.curve {
+  padding: 9px 15px;
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.curve:hover {
+  color: var(--text-1);
+}
+
+.curveOn {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
