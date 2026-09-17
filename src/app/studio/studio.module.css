@@ -259,3 +259,31 @@
   background: var(--accent-soft);
   color: var(--accent-text);
 }
+
+/* Form on the left, what it is building on the right. The consequences of a
+   setting used to be spread across twenty controls and only assembled at the
+   review step; stating them beside the form is what lets the page explain
+   itself while it is filled in. */
+.configure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 26px;
+  align-items: start;
+}
+
+.configureForm {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .configure {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.curveNote {
+  flex-basis: 100%;
+  margin-top: 4px;
+  color: var(--text-4);
+  font-size: 12px;
+}

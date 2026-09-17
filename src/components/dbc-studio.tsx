@@ -21,6 +21,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Buffer } from "buffer";
 import { HenarBrand } from "./henar-brand";
+import { DbcStudioPreview } from "./dbc-studio-preview";
 import { ADMIN_SESSION_MS, adminMessage } from "@/lib/admin/message";
 import { validateStudioDeployment } from "@/lib/dbc-studio/client";
 import type { DbcMarketView, DeployCluster, FeeProfileRecommendation, GraduationRecommendation, PreparedDeployment, StudioConfigSummary, StudioMarketConfig } from "@henar/dbc-studio";
@@ -259,7 +260,8 @@ export function DbcStudio() {
         {error && <div className={admin.error}>{error}</div>}
 
         {step === "configure" && config && (
-          <section className={admin.section}>
+          <section className={`${admin.section} ${styles.configure}`}>
+            <div className={styles.configureForm}>
             <div className={admin.sectionHeading}>
               <h2>Launch a market</h2>
             </div>
@@ -292,6 +294,9 @@ export function DbcStudio() {
                   {p.label}
                 </button>
               ))}
+              <span className={styles.curveNote}>
+                Graduates at {`$${config.migrationMarketCap.toLocaleString("en-US", { maximumFractionDigits: 0 })}`} market cap, then migrates into Meteora DAMM v2.
+              </span>
             </div>
 
             <details className={styles.advanced}>
@@ -335,8 +340,16 @@ export function DbcStudio() {
             </details>
 
             <div className={styles.row}>
-              <button className={admin.primary} onClick={() => { setStep("model"); void runModel(); }}>Continue</button>
+              <button
+                className={admin.primary}
+                disabled={!pool.name.trim() || !pool.symbol.trim()}
+                onClick={() => { setStep("model"); void runModel(); }}
+              >
+                {!pool.name.trim() || !pool.symbol.trim() ? "Fill token details" : "Continue"}
+              </button>
             </div>
+            </div>
+            <DbcStudioPreview config={config} name={pool.name} symbol={pool.symbol} />
           </section>
         )}
 
