@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SPLIT_OPTIONS, constantProductCurve, optimizeSplit, type VenueCurve } from "@henar/router-core";
+import { DEFAULT_SPLIT_OPTIONS, constantProductCurve, optimizeSplit, type VenueCurve, routerSplitOptions } from "@henar/router-core";
 
 // FIXTURE curves: constant-product pools with explicit reserves. Not live.
 const deep = (venue: VenueCurve["venue"], fee = 10) => constantProductCurve(venue, "deep", 10_000_000_000n, 2_000_000_000n, fee); // 10k USDC / 2k shares
@@ -223,4 +223,26 @@ test("refinement never publishes an empty leg", () => {
   }
   assert.equal(r.legs.reduce((s, l) => s + BigInt(l.amountIn), 0n), 400_000_000n);
   assert.equal(r.legs.reduce((s, l) => s + l.percentBps, 0), 10_000);
+});
+
+/* --- The leg cap follows the lookup table ---------------------------------
+ * Three legs do not fit in a 1232-byte packet without a table: 0 of 9 routes
+ * fitted, and with one built over the same routes all 9 did, at 530-556
+ * bytes. So the cap is a function of configuration, not a constant — it can
+ * never be raised into a state where the route cannot be sent.
+ */
+test("the leg cap is two without a router lookup table and three with one", () => {
+  const before = process.env.HENAR_ROUTER_LOOKUP_TABLE;
+  try {
+    delete process.env.HENAR_ROUTER_LOOKUP_TABLE;
+    assert.equal(routerSplitOptions().maxLegs, 2, "no table: a third leg would not fit");
+    process.env.HENAR_ROUTER_LOOKUP_TABLE = "11111111111111111111111111111112";
+    assert.equal(routerSplitOptions().maxLegs, 3, "with a table: three legs compile to about half the limit");
+    // Everything else about the construction is unchanged by the table.
+    assert.equal(routerSplitOptions().granularity, DEFAULT_SPLIT_OPTIONS.granularity);
+    assert.equal(routerSplitOptions().refineSteps, DEFAULT_SPLIT_OPTIONS.refineSteps);
+  } finally {
+    if (before === undefined) delete process.env.HENAR_ROUTER_LOOKUP_TABLE;
+    else process.env.HENAR_ROUTER_LOOKUP_TABLE = before;
+  }
 });

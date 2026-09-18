@@ -25,7 +25,7 @@
 import { intermediateRecord } from "./intermediates";
 import { intermediateRoutePools } from "./pool-registry";
 import { routerRepresentation } from "./representations";
-import { DEFAULT_SPLIT_OPTIONS, optimizeSplit, type SplitOptions } from "./split";
+import { optimizeSplit, routerSplitOptions, type SplitOptions } from "./split";
 import {
   bpsOf,
   fromRaw,
@@ -114,7 +114,7 @@ function bestSingle(curves: VenueCurve[], amountIn: bigint) {
 /** Allocate across the representation-side pools: a split when it pays, else the best single. */
 function allocate(curves: VenueCurve[], amountIn: bigint, options: PathOptions): { curve: VenueCurve; amountIn: bigint }[] | null {
   if (curves.length > 1) {
-    const split = optimizeSplit(curves, amountIn, options.splitOptions ?? DEFAULT_SPLIT_OPTIONS);
+    const split = optimizeSplit(curves, amountIn, options.splitOptions ?? routerSplitOptions());
     if (split.kind === "split" && (split.netImprovementBps ?? 0) >= 1) {
       const legs = split.legs.map((leg) => ({ curve: curves.find((c) => c.venue === leg.venue && c.poolAddress === leg.poolAddress)!, amountIn: fromRaw(leg.amountIn) }));
       if (legs.every((l) => l.curve)) return legs;

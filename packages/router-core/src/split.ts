@@ -78,11 +78,31 @@ export type SplitOptions = {
  * thin, so the build path keeps a fallback ladder: a construction that still
  * does not serialize drops to the best single venue rather than being sent.
  *
+ * The cap lifts to three on its own once a router lookup table is configured,
+ * and not before. Measured against a table built in memory over the same
+ * routes, three legs compile to 530-556 bytes instead of overrunning: 0 of 9
+ * fitted without one, 9 of 9 with. A table turns 32-byte account keys into
+ * 1-byte indexes, and 88 accounts recur across routes — comfortably inside a
+ * table's 256 addresses. See `routerSplitOptions` below.
+ *
  * The cap is on legs the optimizer may *open*, not a target. One venue still
  * wins whenever it is genuinely best, and the caller ranks the construction
  * against every single-venue quote before anything is emitted.
  */
 export const DEFAULT_SPLIT_OPTIONS: SplitOptions = { granularity: 24, maxLegs: 2, extraLegCostBps: 0, refineSteps: 60 };
+
+/**
+ * The split options the router should use right now.
+ *
+ * The leg cap is a function of whether a lookup table is available, because
+ * that is what decides whether a three-leg route can be sent at all. Tying it
+ * to configuration rather than to a constant means the cap can never be raised
+ * into a state where routes do not fit: no table, no third leg.
+ */
+export function routerSplitOptions(): SplitOptions {
+  const table = process.env.HENAR_ROUTER_LOOKUP_TABLE;
+  return table ? { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3 } : DEFAULT_SPLIT_OPTIONS;
+}
 
 export type SplitLeg = { venue: Venue; poolAddress: string | null; amountIn: RawAmount; amountOut: RawAmount; percentBps: number };
 

@@ -79,6 +79,13 @@ function routerApi(connection: Connection) {
        than failing the build: a table is an optimisation, not a dependency. */
     lookupTables: {
       async resolve(addresses: string[]) {
+        /* The router's own table carries the pool, vault and tick-array
+           accounts routes reuse. It is what makes a three-leg route sendable:
+           measured, three legs compile to 530-556 bytes with it and overrun
+           1232 without. The split cap reads the same variable, so a third leg
+           is never opened unless this table is there to fit it. */
+        const routerTable = process.env.HENAR_ROUTER_LOOKUP_TABLE;
+        if (routerTable) addresses = [...new Set([routerTable, ...addresses])];
         const fetched = await Promise.all(
           addresses.map((address) =>
             connection.getAddressLookupTable(new PublicKey(address)).then((r) => r.value, () => null),

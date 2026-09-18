@@ -18,7 +18,7 @@ import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 import { poolsForRepresentation } from "./pool-registry";
 import { flagEnabled } from "./flags";
 import { requestScopedConnection } from "./request-cache";
-import { DEFAULT_SPLIT_OPTIONS, optimizeSplit, type SplitOptions } from "./split";
+import { optimizeSplit, routerSplitOptions, type SplitOptions } from "./split";
 import { adapterForPool, composePath, type PathFloors } from "./path";
 import { privateMarketsRoutingEnabled, routerRepresentation } from "./representations";
 import { benchmarkRecord, type TelemetrySink } from "./telemetry";
@@ -512,7 +512,7 @@ async function splitAcrossPools(
   if (curves.length < 2)
     return { route: null, reason: `only ${curves.length} venue curve${curves.length === 1 ? "" : "s"} could be built; a split needs two` };
   const venueAmount = fromRaw(venueRequest.amount);
-  const split = optimizeSplit(curves, venueAmount, options.splitOptions ?? DEFAULT_SPLIT_OPTIONS);
+  const split = optimizeSplit(curves, venueAmount, options.splitOptions ?? routerSplitOptions());
   if (split.kind !== "split") return { route: null, reason: split.reason };
   /* Economically meaningless splits are suppressed here, and only here. The
      optimizer reports every construction it finds; this is the smallest gain

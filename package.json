@@ -67,6 +67,8 @@
     "router:census:legs": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-leg-census.ts",
     "router:validate:builder": "node --env-file-if-exists=.env.local --import tsx scripts/router/validate-native-builder.ts",
     "router:benchmark:executable": "node --env-file-if-exists=.env.local --import tsx scripts/router/benchmark-executable.ts",
+    "router:plan:lut": "node --env-file-if-exists=.env.local --import tsx scripts/router/plan-router-lookup-table.ts",
+    "router:lut:setup": "node --env-file-if-exists=.env.local --import tsx scripts/router/setup-router-lookup-table.ts",
     "router:trade:prepare": "node --env-file-if-exists=.env.local --import tsx scripts/router/prepare-live-trade.ts prepare",
     "router:trade:reconcile": "node --env-file-if-exists=.env.local --import tsx scripts/router/prepare-live-trade.ts reconcile"
   },
