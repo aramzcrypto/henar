@@ -100,3 +100,63 @@ test("lookup tables are resolved through the provider and applied to the v0 mess
   assert.deepEqual(r.built.lookupTables, [key(88)]);
   assert.equal(r.built.transaction.message.addressTableLookups.length, 1);
 });
+
+/* --- Transaction size is a hard constraint -------------------------------
+ * A route can quote well, build cleanly and still be unsendable: a Solana
+ * packet is 1232 bytes, and three legs of concentrated liquidity carry a lot
+ * of tick arrays. The builder used to compile the message and return it
+ * without ever serializing, so an oversized route reached the user and failed
+ * on submission. It must refuse instead, and say how big it was.
+ */
+test("a route that exceeds the packet limit is refused with its measured size", async () => {
+  /* Pad one leg with enough distinct accounts to overrun 1232 bytes. Each
+     account key is 32 bytes in a message with no lookup table. */
+  const fat: LegInstructionBuilder = async (leg) => ({
+    instructions: [
+      new TransactionInstruction({
+        programId: new PublicKey(leg.programId),
+        keys: Array.from({ length: 40 }, (_, i) => ({ pubkey: new PublicKey(key(100 + i)), isSigner: false, isWritable: true })),
+        data: Buffer.alloc(320),
+      }),
+    ],
+    lookupTables: [],
+    reason: null,
+    detail: "fixture",
+  });
+  const r = await buildTransaction(splitSellPlan(), { ...opts, legBuilder: fat });
+  assert.equal(r.ok, false);
+  assert.equal(!r.ok && r.reason, "TRANSACTION_TOO_LARGE");
+  /* Either path is a correct refusal: an oversized message may fail inside
+     serialization or measure over the limit. What matters is that it is
+     refused as TRANSACTION_TOO_LARGE and says why. */
+  assert.match(!r.ok ? (r.detail ?? "") : "", /byte|serialize|overrun/);
+});
+
+test("a normal route reports the size it actually serialized to", async () => {
+  const r = await buildTransaction(singleBuyPlan(), opts);
+  assert.equal(r.ok, true, !r.ok ? r.detail : "");
+  if (!r.ok) return;
+  assert.ok(r.built.serializedBytes > 0);
+  assert.ok(r.built.serializedBytes <= 1232, `expected a sendable transaction, got ${r.built.serializedBytes} bytes`);
+  // The measurement is the serialization, not an estimate derived from it.
+  assert.equal(r.built.serializedBytes, r.built.transaction.serialize().length);
+});
+
+test("lookup tables offered by a leg are collected and passed to compilation", async () => {
+  const table = key(77);
+  const withTable: LegInstructionBuilder = async (leg, options) => {
+    const base = await fakeLegBuilder(leg, options);
+    return { ...base, lookupTables: [new PublicKey(table)] };
+  };
+  const asked: string[] = [];
+  const r = await buildTransaction(singleBuyPlan(), {
+    ...opts,
+    legBuilder: withTable,
+    /* Returning none keeps the fixture offline; what is asserted is that the
+       builder asked for the venue's table at all, which it previously did
+       not — every route compiled with no tables and the large ones overran. */
+    lookupTables: { resolve: async (addresses) => { asked.push(...addresses); return []; } },
+  });
+  assert.equal(r.ok, true, !r.ok ? r.detail : "");
+  assert.ok(asked.includes(table), `expected the venue's lookup table to be resolved, asked for ${JSON.stringify(asked)}`);
+});

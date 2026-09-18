@@ -125,7 +125,15 @@ async function main() {
   await mkdir("logs", { recursive: true });
   const run = new Date().toISOString();
   const limit = Number(process.argv[2] ?? "25");
-  const directAdapters = [raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, byrealAdapter];
+  /* BENCH_EXCLUDE_VENUES drops venues from the run so their contribution can
+     be measured by difference — "what is Meteora worth?" is answered by the
+     gap between a run with it and a run without. It changes what is measured,
+     never what is required: an excluded venue is absent, not downgraded, and
+     every venue still in the run must satisfy the executability invariant. */
+  const excluded = new Set((process.env.BENCH_EXCLUDE_VENUES ?? "").split(",").map((v) => v.trim()).filter(Boolean));
+  const directAdapters = [raydiumAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, byrealAdapter]
+    .filter((a) => !excluded.has(a.venue));
+  if (excluded.size) process.stdout.write(`Excluding venues: ${[...excluded].join(", ")}\n`);
   const sink = new MemorySink();
   const registry = loadPoolRegistry();
   const reps = [...registry.byRepresentation.entries()].filter(([, p]) => p.some((x) => x.enabled)).map(([id]) => id).slice(0, limit);

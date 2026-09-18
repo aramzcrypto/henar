@@ -55,19 +55,34 @@ export type SplitOptions = {
 };
 
 /**
- * Three legs, not two.
+ * Two legs, not three — because three does not fit in a packet.
  *
- * Measured against Jupiter on Henar's own listed equities (16 September 2026,
- * `docs/router/COMPETITIVENESS_2026-09-16.md`): a winning external route used
- * a mean of 1.15 venues at $1,000, 2.73 at $10,000 and 3.27 at $50,000. A
- * two-leg cap cannot express the shape of the trade at size, and the measured
- * gap widened from about 3 bps to 8 bps over exactly that range.
+ * The cap was three on the argument that winning external routes use a mean of
+ * 2.73 venues at $10,000 and 3.27 at $50,000, so two could not express the
+ * shape of the trade at size. That reasoning was about price and never checked
+ * whether the result could be sent.
+ *
+ * Measured on mainnet, 18 September 2026 (`docs/router/EXECUTABLE_BENCHMARK.json`),
+ * every route built and serialized against live state:
+ *
+ *   1 leg    725 bytes
+ *   2 legs   994 median, 1106 worst
+ *   3 legs   1263 — and 7 of 8 could not be serialized at all
+ *
+ * A Solana packet is 1232 bytes. Not one three-leg route fitted, with the
+ * lookup tables the venues publish already applied. A cap that emits routes
+ * which cannot be sent is worse than a lower cap: it shows a price no order
+ * can produce, which is the same defect as quoting a venue we cannot build.
+ *
+ * Two legs leave 126 bytes of headroom at the observed worst case. That is
+ * thin, so the build path keeps a fallback ladder: a construction that still
+ * does not serialize drops to the best single venue rather than being sent.
  *
  * The cap is on legs the optimizer may *open*, not a target. One venue still
  * wins whenever it is genuinely best, and the caller ranks the construction
  * against every single-venue quote before anything is emitted.
  */
-export const DEFAULT_SPLIT_OPTIONS: SplitOptions = { granularity: 24, maxLegs: 3, extraLegCostBps: 0, refineSteps: 60 };
+export const DEFAULT_SPLIT_OPTIONS: SplitOptions = { granularity: 24, maxLegs: 2, extraLegCostBps: 0, refineSteps: 60 };
 
 export type SplitLeg = { venue: Venue; poolAddress: string | null; amountIn: RawAmount; amountOut: RawAmount; percentBps: number };
 

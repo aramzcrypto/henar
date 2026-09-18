@@ -155,8 +155,12 @@ test("deterministic rounding: chunk remainder lands on the last chunk so inputs 
  * range where a winning external route goes from one venue to three.
  * ------------------------------------------------------------------------ */
 
-test("the default leg cap is three, because winning external routes use more than two at size", () => {
-  assert.equal(DEFAULT_SPLIT_OPTIONS.maxLegs, 3);
+test("the default leg cap is two, because a three-leg route does not fit in a packet", () => {
+  /* Measured on mainnet 18 Sep 2026: three-leg routes serialize to 1263 bytes
+     against a 1232-byte limit, and 7 of 8 could not be serialized at all. The
+     optimizer may still be asked for three explicitly; what changed is the
+     default, so nothing unsendable is emitted by accident. */
+  assert.equal(DEFAULT_SPLIT_OPTIONS.maxLegs, 2);
 });
 
 test("a three-leg split refines every boundary, not just the first pair", () => {

@@ -9,7 +9,7 @@
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { AddressLookupTableAccount, Connection, PublicKey } from "@solana/web3.js";
 import { USDC_MINT, flagEnabled, poolByAddress, routerRepresentationForMint, telemetrySinkFromEnv, type PlannedLeg, type BuildOptions } from "@henar/router-core";
 import { RouterApi } from "@henar/router-app";
 import { RpcSimulator } from "@henar/tx-builder";
@@ -70,6 +70,22 @@ function routerApi(connection: Connection) {
       if (quote.unavailableReason) return { instructions: [], lookupTables: [], reason: quote.unavailableReason, detail: quote.unavailableDetail };
       if (quote.poolAddress !== leg.poolAddress) return { instructions: [], lookupTables: [], reason: "QUOTE_TERMS_MISMATCH", detail: "pool changed between quote and build" };
       return adapter.buildSwapInstructions(quote, { connection, pools, now, deadlineMs: 8_000 }, options);
+    },
+    /* Address lookup tables. The adapters publish the tables their venues
+       maintain (Raydium's CLMM table among them) and the builder collects
+       them; without a resolver they were compiled away and every route was
+       built with none, which is what pushed three-leg splits past the
+       1232-byte packet limit. Inactive or missing tables are skipped rather
+       than failing the build: a table is an optimisation, not a dependency. */
+    lookupTables: {
+      async resolve(addresses: string[]) {
+        const fetched = await Promise.all(
+          addresses.map((address) =>
+            connection.getAddressLookupTable(new PublicKey(address)).then((r) => r.value, () => null),
+          ),
+        );
+        return fetched.filter((t): t is AddressLookupTableAccount => Boolean(t?.isActive()));
+      },
     },
     // Every built transaction is simulated as the owner before it is returned.
     simulator: new RpcSimulator(connection),

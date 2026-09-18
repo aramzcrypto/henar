@@ -33,8 +33,9 @@ import {
   type TelemetrySink,
   type VenueAdapter,
 } from "@henar/router-core";
+import { DEFAULT_SPLIT_OPTIONS } from "@henar/router-core";
 import { DEFAULT_EXECUTION_POLICY, effectiveSlippageBps, guardQuote, guardResult, type GuardVerdict, type PythGuardInput, type PythGuardVerdict } from "@henar/execution-guard";
-import { buildTransaction, normalizeSimulation, planExecution, type BlockhashProvider, type LegInstructionBuilder, type Simulator } from "@henar/tx-builder";
+import { buildTransaction, normalizeSimulation, planExecution, type BlockhashProvider, type LegInstructionBuilder, type LookupTableProvider, type Simulator } from "@henar/tx-builder";
 import type { RouterHealth } from "./health";
 
 export type ApiDeps = {
@@ -50,6 +51,8 @@ export type ApiDeps = {
   treasuryOwner?: string | null;
   blockhash?: BlockhashProvider;
   legBuilder?: LegInstructionBuilder;
+  /** Resolves address lookup tables so routes compile compactly enough to send. */
+  lookupTables?: LookupTableProvider;
   /**
    * Pre-send simulation gate. When configured, every built transaction is
    * simulated as the owner before it is returned, and a route whose
@@ -226,7 +229,12 @@ export class RouterApi {
     return this.deps.now?.() ?? Date.now();
   }
 
-  async quote(body: QuoteApiRequest): Promise<{ status: number; body: QuoteApiResponse | { error: string } }> {
+  /**
+   * `maxLegs` caps how many legs the split optimizer may open. It exists for
+   * the size fallback in quoteAndBuild: a route that does not fit in a packet
+   * is re-quoted with a lower cap rather than presented and left to fail.
+   */
+  async quote(body: QuoteApiRequest, options: { maxLegs?: number } = {}): Promise<{ status: number; body: QuoteApiResponse | { error: string } }> {
     if (!flagEnabled("routerQuotes")) return { status: 503, body: { error: "HENAR_ROUTER_QUOTES is off" } };
     const rep = routerRepresentation(body.representationId);
     if (!rep) return { status: 404, body: { error: "unknown representation" } };
@@ -257,6 +265,7 @@ export class RouterApi {
       telemetry: this.deps.telemetry ?? null,
       now: () => this.now(),
       deadlineMs: body.deadlineMs,
+      splitOptions: options.maxLegs ? { ...DEFAULT_SPLIT_OPTIONS, maxLegs: options.maxLegs } : undefined,
       // The path is sized on the floors the guard will set, so both must
       // come from the same policy; the guard's verdict is re-checked below.
       pathFloors: {
@@ -489,37 +498,70 @@ export class RouterApi {
   async quoteAndBuild(body: QuoteApiRequest & { owner: string }): Promise<{ status: number; body: unknown }> {
     if (!flagEnabled("routerExecution")) return { status: 403, body: { error: "HENAR_ROUTER_EXECUTION is off", liveValidation: "LIVE_VALIDATION_PENDING" } };
     if (!this.deps.treasuryOwner || !this.deps.blockhash || !this.deps.legBuilder) return { status: 503, body: { error: "builder dependencies not configured" } };
-    const quoted = await this.quote(body);
-    if (quoted.status !== 200) return quoted;
+    /* Size fallback ladder. A split can price well, build cleanly and still
+       not fit in a 1232-byte packet — three legs of concentrated liquidity
+       carry a lot of tick arrays. Rather than hand the user a route that
+       cannot be sent, the optimizer is re-run with a lower leg cap and the
+       best construction that actually serializes is the one returned. The
+       ladder ends at a single venue, which always fits. */
+    const attempts: (number | undefined)[] = [undefined, 2, 1];
+    let lastTooLarge: { status: number; body: unknown } | null = null;
+    for (const maxLegs of attempts) {
+      const outcome = await this.attemptBuild(body, maxLegs);
+      if (outcome.tooLarge) {
+        lastTooLarge = outcome.response;
+        continue;
+      }
+      return outcome.response;
+    }
+    return lastTooLarge ?? { status: 409, body: { error: "no route fits in a transaction" } };
+  }
+
+  /** One rung of the size ladder: quote at this leg cap, guard, plan, build. */
+  private async attemptBuild(
+    body: QuoteApiRequest & { owner: string },
+    maxLegs: number | undefined,
+  ): Promise<{ tooLarge: boolean; response: { status: number; body: unknown } }> {
+    const done = (response: { status: number; body: unknown }) => ({ tooLarge: false, response });
+    const { treasuryOwner, blockhash, legBuilder } = this.deps;
+    if (!treasuryOwner || !blockhash || !legBuilder) return done({ status: 503, body: { error: "builder dependencies not configured" } });
+    const quoted = await this.quote(body, { maxLegs });
+    if (quoted.status !== 200) return done(quoted);
     const q = quoted.body as QuoteApiResponse;
     const cached = this.cache.get(q.quoteId);
-    if (!cached?.verdict?.approved) return { status: 409, body: { error: "quote was not approved for execution", reason: cached?.verdict?.reason ?? q.unavailableReason, quote: q } };
-    if ((cached.legVerdicts ?? [cached.verdict]).some((v) => v.mode !== "execute")) return { status: 409, body: { error: "quote is quote-only; no validated execution path", mode: cached.verdict.mode, quote: q } };
+    if (!cached?.verdict?.approved) return done({ status: 409, body: { error: "quote was not approved for execution", reason: cached?.verdict?.reason ?? q.unavailableReason, quote: q } });
+    if ((cached.legVerdicts ?? [cached.verdict]).some((v) => v.mode !== "execute")) return done({ status: 409, body: { error: "quote is quote-only; no validated execution path", mode: cached.verdict.mode, quote: q } });
     const rep = routerRepresentation(q.representation.id);
-    if (!rep) return { status: 404, body: { error: "unknown representation" } };
+    if (!rep) return done({ status: 404, body: { error: "unknown representation" } });
     let decimals = rep.decimals;
     let tokenProgram = rep.tokenProgram;
     if ((decimals === null || !tokenProgram) && this.deps.connection) {
       const inspected = await inspectMint(this.deps.connection, rep.mint);
-      if (!inspected || !inspected.supported) return { status: 409, body: { error: `representation mint not supported: ${inspected?.unsupportedReason ?? "missing"}` } };
+      if (!inspected || !inspected.supported) return done({ status: 409, body: { error: `representation mint not supported: ${inspected?.unsupportedReason ?? "missing"}` } });
       decimals = inspected.decimals;
       tokenProgram = inspected.program;
     }
-    if (decimals === null || !tokenProgram) return { status: 409, body: { error: "representation decimals/token program not verified on chain" } };
+    if (decimals === null || !tokenProgram) return done({ status: 409, body: { error: "representation decimals/token program not verified on chain" } });
     try {
       const plan = planExecution({
         representation: { id: rep.id, provider: rep.provider, mint: rep.mint, decimals, tokenProgram },
         side: body.side,
         owner: body.owner,
-        treasuryOwner: this.deps.treasuryOwner,
+        treasuryOwner,
         userInput: fromRaw(body.amount),
         legs: (cached.legVerdicts ?? [cached.verdict]).map((verdict) => ({ verdict })),
         ...pathPlanInput(cached),
         policy: this.deps.policy ?? DEFAULT_EXECUTION_POLICY,
         now: this.now(),
       });
-      const built = await buildTransaction(plan, { blockhash: this.deps.blockhash, legBuilder: this.deps.legBuilder, now: this.now() });
-      if (!built.ok) return { status: 409, body: { error: built.detail, reason: built.reason, quote: q } };
+      const built = await buildTransaction(plan, { blockhash, legBuilder, lookupTables: this.deps.lookupTables, now: this.now() });
+      if (!built.ok) {
+        const response = { status: 409, body: { error: built.detail, reason: built.reason, quote: q } };
+        /* Signal the ladder rather than answering: a smaller construction of
+           the same trade may still fit in a packet. */
+        if (built.reason === "TRANSACTION_TOO_LARGE") return { tooLarge: true, response };
+        return done(response);
+      }
       /* Simulation gate. The floor inside the venue instruction protects the
          user on chain; this protects them from being asked to sign something
          that cannot land, and it is the only place the whole transaction is
@@ -530,10 +572,10 @@ export class RouterApi {
         const gate = await gateSimulation(this.deps.simulator, built.built.transaction, plan, this.now());
         this.deps.health?.recordSimulation(gate.ok);
         simulation = gate.simulation;
-        if (!gate.ok) return { status: 409, body: { error: gate.error, reason: "SIMULATION_FAILED", quote: q, simulation } };
+        if (!gate.ok) return done({ status: 409, body: { error: gate.error, reason: "SIMULATION_FAILED", quote: q, simulation } });
       }
       this.deps.health?.recordExecution(true);
-      return {
+      return done({
         status: 200,
         body: {
           quote: q,
@@ -557,10 +599,12 @@ export class RouterApi {
           blockhash: built.built.blockhash,
           lastValidBlockHeight: built.built.lastValidBlockHeight,
           legFloors: built.built.legFloors,
+          serializedBytes: built.built.serializedBytes,
+          lookupTables: built.built.lookupTables,
         },
-      };
+      });
     } catch (error) {
-      return { status: 409, body: { error: (error as Error).message } };
+      return done({ status: 409, body: { error: (error as Error).message } });
     }
   }
 

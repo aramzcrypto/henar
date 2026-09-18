@@ -38,6 +38,12 @@ export interface BlockhashProvider {
   latest(): Promise<{ blockhash: string; lastValidBlockHeight: number; source: "rpc" | "fixture" }>;
 }
 
+/**
+ * A Solana packet is 1232 bytes; anything larger cannot be transmitted,
+ * whatever the account limit says.
+ */
+export const MAX_TRANSACTION_BYTES = 1232;
+
 export interface LookupTableProvider {
   resolve(addresses: string[]): Promise<AddressLookupTableAccount[]>;
 }
@@ -52,6 +58,8 @@ export type BuiltTransaction = {
   lastValidBlockHeight: number;
   blockhashSource: "rpc" | "fixture";
   instructionCount: number;
+  /** Measured, not estimated: what the transaction actually serializes to. */
+  serializedBytes: number;
   accountKeys: number;
   lookupTables: string[];
   /** Every leg's floor as passed to its adapter, for audit. */
@@ -114,6 +122,7 @@ export async function buildTransaction(plan: ExecutionPlan, options: BuilderOpti
 
   const legFloors: BuiltTransaction["legFloors"] = [];
   const legPrograms: BuiltTransaction["legPrograms"] = [];
+  const legTables = new Set<string>();
   for (const leg of plan.legs) {
     const result = await options.legBuilder(leg, { owner: plan.owner, minimumAmountOut: leg.minimumAmountOut });
     if (result.reason || !result.instructions.length)
@@ -122,15 +131,35 @@ export async function buildTransaction(plan: ExecutionPlan, options: BuilderOpti
       for (const k of ix.keys)
         if (k.isSigner && !k.pubkey.equals(owner)) return { ok: false, reason: "INVALID_REQUEST", detail: `leg ${leg.index} requires signer ${k.pubkey.toBase58()}` };
     instructions.push(...result.instructions);
+    /* Adapters hand back the lookup tables their venue publishes — Raydium's
+       CLMM table, for instance. These were being dropped, so every route
+       compiled with no tables at all and three-leg splits overran the packet
+       limit. They are the cheapest way to fit a route and are tried first. */
+    for (const table of result.lookupTables) legTables.add(table.toBase58());
     legFloors.push({ index: leg.index, venue: leg.venue, minimumAmountOut: leg.minimumAmountOut });
     legPrograms.push({ index: leg.index, programIds: result.programIds ?? [...new Set(result.instructions.map((ix) => ix.programId.toBase58()))] });
   }
   if (plan.henarFee.on === "output" && fromRaw(plan.henarFee.amount) > 0n) instructions.push(feeIx());
 
   const { blockhash, lastValidBlockHeight, source } = await options.blockhash.latest();
-  const tables = plan.lookupTables.addresses.length && options.lookupTables ? await options.lookupTables.resolve(plan.lookupTables.addresses) : [];
+  const tableAddresses = [...new Set([...plan.lookupTables.addresses, ...legTables])];
+  const tables = tableAddresses.length && options.lookupTables ? await options.lookupTables.resolve(tableAddresses) : [];
   const message = new TransactionMessage({ payerKey: owner, recentBlockhash: blockhash, instructions }).compileToV0Message(tables);
   const transaction = new VersionedTransaction(message);
+
+  /* Size is checked by serializing, not by estimating from account counts: a
+     transaction that cannot be serialized cannot be sent, and the estimate the
+     planner keeps is a static per-venue guess. Refusing here, with the measured
+     size, lets the caller retry with fewer legs instead of handing the user a
+     route that would fail on submission. */
+  let serializedBytes: number;
+  try {
+    serializedBytes = transaction.serialize().length;
+  } catch (error) {
+    return { ok: false, reason: "TRANSACTION_TOO_LARGE", detail: `route does not serialize with ${tables.length} lookup table(s): ${(error as Error).message}` };
+  }
+  if (serializedBytes > MAX_TRANSACTION_BYTES)
+    return { ok: false, reason: "TRANSACTION_TOO_LARGE", detail: `${serializedBytes} bytes with ${tables.length} lookup table(s) exceeds the ${MAX_TRANSACTION_BYTES}-byte limit` };
   return {
     ok: true,
     built: {
@@ -140,6 +169,7 @@ export async function buildTransaction(plan: ExecutionPlan, options: BuilderOpti
       lastValidBlockHeight,
       blockhashSource: source,
       instructionCount: instructions.length,
+      serializedBytes,
       accountKeys: message.staticAccountKeys.length + message.addressTableLookups.reduce((s, l) => s + l.readonlyIndexes.length + l.writableIndexes.length, 0),
       lookupTables: tables.map((t) => t.key.toBase58()),
       legFloors,

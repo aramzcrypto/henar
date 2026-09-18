@@ -90,6 +90,10 @@ export type UnavailableReason =
      the quote is real and unfillable. Quoting it would show a number no order
      could produce. */
   | "VENUE_NOT_EXECUTABLE"
+  /* The built transaction does not fit in a Solana packet. A route can be
+     priced, built and still be unsendable; the caller must fall back to a
+     construction with fewer legs rather than present this one. */
+  | "TRANSACTION_TOO_LARGE"
   | "VENUE_UNHEALTHY"
   | "VENUE_TIMEOUT"
   // The venue refused to answer, which is not the same as having no route.
