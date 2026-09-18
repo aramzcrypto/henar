@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-09-18T11:24:29.628Z",
+  "measuredAt": "2026-09-18T22:33:41.365Z",
   "sizes": [
     100,
     1000,
@@ -15,12 +15,51 @@
     "BA",
     "IBM",
     "BOT",
-    "BROS",
-    "BULL",
-    "COST",
-    "DELL",
-    "DJT",
-    "DKNG"
+    "DKNG",
+    "DRAM",
+    "HOOD",
+    "INTC",
+    "LLY",
+    "MRNA",
+    "MRVL",
+    "MSTR",
+    "MU",
+    "NBIS",
+    "SKHY",
+    "SNDK",
+    "SPCX",
+    "TTWO",
+    "AMDon",
+    "METAon",
+    "MUon",
+    "SLVon",
+    "WMTx",
+    "AMZNx",
+    "SPCXx",
+    "STRCx",
+    "COINx",
+    "QQQx",
+    "METAx",
+    "TSMx",
+    "XOMx",
+    "AMBRx",
+    "AAPLx",
+    "NVDAx",
+    "GOOGLx",
+    "TSLAx",
+    "JPMx",
+    "LLYx",
+    "SPYx",
+    "MSTRx",
+    "MCDx",
+    "Vx",
+    "MUx",
+    "CEGx",
+    "CRCLx",
+    "PEPx",
+    "HOODx",
+    "BACx",
+    "AMDx"
   ],
   "venues": [
     {
@@ -28,104 +67,541 @@
       "programId": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
       "tickersQuoted": [],
       "quotes": [],
+      "dustPairs": 0,
       "maxSizeUsd": 0,
       "medianVsJupiterBps": null,
       "swapInstruction": null,
       "extraSigners": null,
       "lookupTables": null,
       "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "note": "never quoted for any of the 7 equities probed for it"
     },
     {
       "label": "GoonFi V2",
       "programId": "goonuddtQRrWqqn5nFyczVKaie28f3kDkHWkHtURSLE",
-      "tickersQuoted": [],
-      "quotes": [],
-      "maxSizeUsd": 0,
-      "medianVsJupiterBps": null,
-      "swapInstruction": null,
-      "extraSigners": null,
-      "lookupTables": null,
-      "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "tickersQuoted": [
+        "MU"
+      ],
+      "quotes": [
+        {
+          "ticker": "MU",
+          "sizeUsd": 100,
+          "outAmount": "98424",
+          "vsJupiterBps": -5
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 1000,
+          "outAmount": "982908",
+          "vsJupiterBps": -19
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 5000,
+          "outAmount": "4911655",
+          "vsJupiterBps": -24
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 10000,
+          "outAmount": "9816066",
+          "vsJupiterBps": -32
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 25000,
+          "outAmount": "24521312",
+          "vsJupiterBps": -39
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 50000,
+          "outAmount": "48979922",
+          "vsJupiterBps": -52
+        }
+      ],
+      "dustPairs": 0,
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": -28,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 24,
+        "writableAccounts": 7,
+        "signerAccounts": 1,
+        "dataBytes": 36,
+        "venueProgramIsCpiTarget": true
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "ZeroFi",
       "programId": "ZERor4xhbUycZ6gb9ntrhqscUcZmAbQDjEAtCf4hbZY",
       "tickersQuoted": [
-        "BOT"
+        "HOOD",
+        "INTC",
+        "LLY",
+        "MU",
+        "SKHY",
+        "SNDK",
+        "SPCX"
       ],
       "quotes": [
         {
-          "ticker": "BOT",
+          "ticker": "HOOD",
           "sizeUsd": 100,
-          "outAmount": "3604359",
-          "vsJupiterBps": 20
-        },
-        {
-          "ticker": "BOT",
-          "sizeUsd": 1000,
-          "outAmount": "35953114",
+          "outAmount": "830906",
           "vsJupiterBps": -2
         },
         {
-          "ticker": "BOT",
+          "ticker": "HOOD",
+          "sizeUsd": 1000,
+          "outAmount": "8309062",
+          "vsJupiterBps": -2
+        },
+        {
+          "ticker": "HOOD",
           "sizeUsd": 5000,
-          "outAmount": null,
-          "vsJupiterBps": null
+          "outAmount": "41531993",
+          "vsJupiterBps": -2
         },
         {
-          "ticker": "BOT",
+          "ticker": "HOOD",
           "sizeUsd": 10000,
-          "outAmount": null,
-          "vsJupiterBps": null
+          "outAmount": "83060330",
+          "vsJupiterBps": 0
         },
         {
-          "ticker": "BOT",
+          "ticker": "HOOD",
           "sizeUsd": 25000,
-          "outAmount": null,
+          "outAmount": "207510259",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "HOOD",
+          "sizeUsd": 50000,
+          "outAmount": "371523892",
+          "vsJupiterBps": -1035
+        },
+        {
+          "ticker": "INTC",
+          "sizeUsd": 100,
+          "outAmount": "917163",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "INTC",
+          "sizeUsd": 1000,
+          "outAmount": "9171634",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "INTC",
+          "sizeUsd": 5000,
+          "outAmount": "45853401",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "INTC",
+          "sizeUsd": 10000,
+          "outAmount": "91685675",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "INTC",
+          "sizeUsd": 25000,
+          "outAmount": "229141351",
+          "vsJupiterBps": 581
+        },
+        {
+          "ticker": "INTC",
+          "sizeUsd": 50000,
+          "outAmount": "457980814",
+          "vsJupiterBps": 1179
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 100,
+          "outAmount": "86552",
+          "vsJupiterBps": -5
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 1000,
+          "outAmount": "865520",
+          "vsJupiterBps": 7
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 5000,
+          "outAmount": "4326213",
+          "vsJupiterBps": 32
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 10000,
+          "outAmount": "8650606",
+          "vsJupiterBps": 131
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 25000,
+          "outAmount": "21611866",
+          "vsJupiterBps": 753
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 50000,
+          "outAmount": "43178896",
+          "vsJupiterBps": 60342
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 100,
+          "outAmount": "98495",
+          "vsJupiterBps": 1
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 1000,
+          "outAmount": "984954",
+          "vsJupiterBps": 1
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 5000,
+          "outAmount": "4924477",
+          "vsJupiterBps": 1
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 10000,
+          "outAmount": "9848487",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 25000,
+          "outAmount": "24614934",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 50000,
+          "outAmount": "49144619",
+          "vsJupiterBps": -18
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 100,
+          "outAmount": "533133",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 1000,
+          "outAmount": "5331335",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 5000,
+          "outAmount": "26654119",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 10000,
+          "outAmount": "53303181",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 25000,
+          "outAmount": "133219385",
+          "vsJupiterBps": 6
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 50000,
+          "outAmount": "266109814",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 100,
+          "outAmount": "55758",
+          "vsJupiterBps": -3
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 1000,
+          "outAmount": "557595",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 5000,
+          "outAmount": "2787819",
           "vsJupiterBps": null
         },
         {
-          "ticker": "BOT",
+          "ticker": "SNDK",
+          "sizeUsd": 10000,
+          "outAmount": "5574930",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 25000,
+          "outAmount": "13932026",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SNDK",
           "sizeUsd": 50000,
-          "outAmount": null,
-          "vsJupiterBps": null
+          "outAmount": "27836373",
+          "vsJupiterBps": 6
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 100,
+          "outAmount": "656018",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 1000,
+          "outAmount": "6560194",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 5000,
+          "outAmount": "32797041",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 10000,
+          "outAmount": "65590491",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 25000,
+          "outAmount": "163965520",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 50000,
+          "outAmount": "327563269",
+          "vsJupiterBps": -6
         }
       ],
-      "maxSizeUsd": 1000,
-      "medianVsJupiterBps": 9,
-      "swapInstruction": null,
-      "extraSigners": null,
-      "lookupTables": null,
-      "classification": "STATEFUL_OR_UNCLEAR",
-      "note": "quotes, but Jupiter would not return swap instructions for the forced route"
+      "dustPairs": 0,
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": 1,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 24,
+        "writableAccounts": 9,
+        "signerAccounts": 1,
+        "dataBytes": 35,
+        "venueProgramIsCpiTarget": true
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "BisonFi",
       "programId": "BiSoNHVpsVZW2F7rx2eQ59yQwKxzU5NvBcmKshCSUypi",
       "tickersQuoted": [],
       "quotes": [],
+      "dustPairs": 0,
       "maxSizeUsd": 0,
       "medianVsJupiterBps": null,
       "swapInstruction": null,
       "extraSigners": null,
       "lookupTables": null,
       "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "note": "never quoted for any of the 6 equities probed for it"
     },
     {
       "label": "Archer",
       "programId": "Archer8kgiavM61GyusMzaaS2ft5sALtNsD1HxkUPMhy",
-      "tickersQuoted": [],
-      "quotes": [],
-      "maxSizeUsd": 0,
-      "medianVsJupiterBps": null,
-      "swapInstruction": null,
-      "extraSigners": null,
-      "lookupTables": null,
-      "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "tickersQuoted": [
+        "LLY",
+        "MRNA",
+        "MU",
+        "SNDK"
+      ],
+      "quotes": [
+        {
+          "ticker": "LLY",
+          "sizeUsd": 100,
+          "outAmount": "86600",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 1000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 5000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 10000,
+          "outAmount": "6138400",
+          "vsJupiterBps": -2811
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 25000,
+          "outAmount": "6138400",
+          "vsJupiterBps": -6945
+        },
+        {
+          "ticker": "LLY",
+          "sizeUsd": 50000,
+          "outAmount": "6138400",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "MRNA",
+          "sizeUsd": 100,
+          "outAmount": "648000",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "MRNA",
+          "sizeUsd": 1000,
+          "outAmount": "6487000",
+          "vsJupiterBps": 9
+        },
+        {
+          "ticker": "MRNA",
+          "sizeUsd": 5000,
+          "outAmount": "16204000",
+          "vsJupiterBps": -4936
+        },
+        {
+          "ticker": "MRNA",
+          "sizeUsd": 10000,
+          "outAmount": "16204000",
+          "vsJupiterBps": -7376
+        },
+        {
+          "ticker": "MRNA",
+          "sizeUsd": 25000,
+          "outAmount": "16204000",
+          "vsJupiterBps": -8847
+        },
+        {
+          "ticker": "MRNA",
+          "sizeUsd": 50000,
+          "outAmount": "16204000",
+          "vsJupiterBps": -9061
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 100,
+          "outAmount": "98200",
+          "vsJupiterBps": -28
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 1000,
+          "outAmount": "976200",
+          "vsJupiterBps": -87
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 5000,
+          "outAmount": "4846200",
+          "vsJupiterBps": -157
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 10000,
+          "outAmount": "9678200",
+          "vsJupiterBps": -172
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 25000,
+          "outAmount": "24078700",
+          "vsJupiterBps": -219
+        },
+        {
+          "ticker": "MU",
+          "sizeUsd": 50000,
+          "outAmount": "25242200",
+          "vsJupiterBps": -4873
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 100,
+          "outAmount": "55700",
+          "vsJupiterBps": -13
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 1000,
+          "outAmount": "556800",
+          "vsJupiterBps": -11
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 5000,
+          "outAmount": "2780600",
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 10000,
+          "outAmount": "5556500",
+          "vsJupiterBps": -34
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 25000,
+          "outAmount": "6733100",
+          "vsJupiterBps": -5167
+        },
+        {
+          "ticker": "SNDK",
+          "sizeUsd": 50000,
+          "outAmount": "6733100",
+          "vsJupiterBps": -7579
+        }
+      ],
+      "dustPairs": 0,
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": -172,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 23,
+        "writableAccounts": 9,
+        "signerAccounts": 1,
+        "dataBytes": 36,
+        "venueProgramIsCpiTarget": true
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "Denali",
@@ -138,26 +614,26 @@
         {
           "ticker": "AMD",
           "sizeUsd": 100,
-          "outAmount": "182282",
-          "vsJupiterBps": 5
+          "outAmount": "179371",
+          "vsJupiterBps": -20
         },
         {
           "ticker": "AMD",
           "sizeUsd": 1000,
-          "outAmount": "1822726",
-          "vsJupiterBps": 5
+          "outAmount": "1793726",
+          "vsJupiterBps": 0
         },
         {
           "ticker": "AMD",
           "sizeUsd": 5000,
-          "outAmount": "9112964",
-          "vsJupiterBps": 5
+          "outAmount": "8968712",
+          "vsJupiterBps": 2
         },
         {
           "ticker": "AMD",
           "sizeUsd": 10000,
-          "outAmount": "18215796",
-          "vsJupiterBps": 5
+          "outAmount": "17937425",
+          "vsJupiterBps": 3
         },
         {
           "ticker": "AMD",
@@ -174,14 +650,14 @@
         {
           "ticker": "DKNG",
           "sizeUsd": 100,
-          "outAmount": "4427407",
-          "vsJupiterBps": -3
+          "outAmount": "4563945",
+          "vsJupiterBps": -29
         },
         {
           "ticker": "DKNG",
           "sizeUsd": 1000,
-          "outAmount": "44276039",
-          "vsJupiterBps": -2
+          "outAmount": "45639450",
+          "vsJupiterBps": -26
         },
         {
           "ticker": "DKNG",
@@ -208,416 +684,1131 @@
           "vsJupiterBps": null
         }
       ],
+      "dustPairs": 0,
       "maxSizeUsd": 10000,
-      "medianVsJupiterBps": 5,
+      "medianVsJupiterBps": -10,
       "swapInstruction": {
         "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
         "accounts": 22,
         "writableAccounts": 7,
         "signerAccounts": 1,
-        "dataBytes": 36
+        "dataBytes": 36,
+        "venueProgramIsCpiTarget": true
       },
       "extraSigners": 0,
       "lookupTables": 1,
-      "classification": "JUPITER_BUILDER_DEPENDENT",
-      "note": "the swap goes through Jupiter's own program: reachable only via Jupiter's builder, not Henar-native liquidity"
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "BinaryFi",
       "programId": "B72M6nyCLFgWiJtAN4naUTminMiTmyGcEqQHXwVeRdht",
-      "tickersQuoted": [],
-      "quotes": [],
-      "maxSizeUsd": 0,
-      "medianVsJupiterBps": null,
-      "swapInstruction": null,
-      "extraSigners": null,
-      "lookupTables": null,
-      "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "tickersQuoted": [
+        "CRCLx",
+        "DRAM",
+        "SKHY"
+      ],
+      "quotes": [
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 100,
+          "outAmount": "108902000",
+          "vsJupiterBps": -11
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 1000,
+          "outAmount": "1084656947",
+          "vsJupiterBps": -50
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 5000,
+          "outAmount": "5445064998",
+          "vsJupiterBps": -8
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 10000,
+          "outAmount": "10887627994",
+          "vsJupiterBps": -10
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 25000,
+          "outAmount": "27208576306",
+          "vsJupiterBps": -11
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 50000,
+          "outAmount": "54404936650",
+          "vsJupiterBps": -9
+        },
+        {
+          "ticker": "DRAM",
+          "sizeUsd": 100,
+          "outAmount": "1671147",
+          "vsJupiterBps": 10
+        },
+        {
+          "ticker": "DRAM",
+          "sizeUsd": 1000,
+          "outAmount": "16644633",
+          "vsJupiterBps": -26
+        },
+        {
+          "ticker": "DRAM",
+          "sizeUsd": 5000,
+          "outAmount": "83557399",
+          "vsJupiterBps": 13
+        },
+        {
+          "ticker": "DRAM",
+          "sizeUsd": 10000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DRAM",
+          "sizeUsd": 25000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DRAM",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 100,
+          "outAmount": "532642",
+          "vsJupiterBps": -3
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 1000,
+          "outAmount": "5326420",
+          "vsJupiterBps": -3
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 5000,
+          "outAmount": "26525571",
+          "vsJupiterBps": -42
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 10000,
+          "outAmount": "53249949",
+          "vsJupiterBps": -4
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 25000,
+          "outAmount": "133099760",
+          "vsJupiterBps": -2
+        },
+        {
+          "ticker": "SKHY",
+          "sizeUsd": 50000,
+          "outAmount": "266143703",
+          "vsJupiterBps": 0
+        }
+      ],
+      "dustPairs": 0,
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": -8,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 24,
+        "writableAccounts": 7,
+        "signerAccounts": 1,
+        "dataBytes": 35,
+        "venueProgramIsCpiTarget": true
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "Deriverse",
       "programId": "DRVSpZ2YUYYKgZP8XtLhAGtT1zYSCKzeHfb4DgRnrgqD",
       "tickersQuoted": [],
       "quotes": [],
+      "dustPairs": 0,
       "maxSizeUsd": 0,
       "medianVsJupiterBps": null,
       "swapInstruction": null,
       "extraSigners": null,
       "lookupTables": null,
       "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "note": "never quoted for any of the 6 equities probed for it"
     },
     {
       "label": "Scorch",
       "programId": "ojh19ojaKduoJZuaJADhcVGp4xt1TcdAvZmpVsCorch",
       "tickersQuoted": [],
       "quotes": [],
+      "dustPairs": 0,
       "maxSizeUsd": 0,
       "medianVsJupiterBps": null,
       "swapInstruction": null,
       "extraSigners": null,
       "lookupTables": null,
       "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "note": "never quoted for any of the 9 equities probed for it"
     },
     {
       "label": "Quantum",
       "programId": "QuaNtZsgYRe5Z9Bk4LZ4cTD9tbkVoyCNf1R2BN9bBDv",
       "tickersQuoted": [],
       "quotes": [],
+      "dustPairs": 0,
       "maxSizeUsd": 0,
       "medianVsJupiterBps": null,
       "swapInstruction": null,
       "extraSigners": null,
       "lookupTables": null,
       "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "note": "never quoted for any of the 6 equities probed for it"
     },
     {
       "label": "Quay",
       "programId": "QUayE6nexQWYNZAEqfN8FxoNwQDSu3CAzT2qq9J1ArG",
       "tickersQuoted": [],
       "quotes": [],
+      "dustPairs": 0,
       "maxSizeUsd": 0,
       "medianVsJupiterBps": null,
       "swapInstruction": null,
       "extraSigners": null,
       "lookupTables": null,
       "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "note": "never quoted for any of the 6 equities probed for it"
     },
     {
       "label": "AlphaQ",
       "programId": "ALPHAQmeA7bjrVuccPsYPiCvsi428SNwte66Srvs4pHA",
       "tickersQuoted": [],
       "quotes": [],
+      "dustPairs": 0,
       "maxSizeUsd": 0,
       "medianVsJupiterBps": null,
       "swapInstruction": null,
       "extraSigners": null,
       "lookupTables": null,
       "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "note": "never quoted for any of the 6 equities probed for it"
     },
     {
       "label": "Riptide",
       "programId": "riptK81hDxhe5pW5jSzSM9iRA8azgEgLJ4dXkPtBS7j",
-      "tickersQuoted": [],
-      "quotes": [],
-      "maxSizeUsd": 0,
-      "medianVsJupiterBps": null,
-      "swapInstruction": null,
-      "extraSigners": null,
-      "lookupTables": null,
-      "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "tickersQuoted": [
+        "CRCLx",
+        "MSTRx",
+        "NVDAx",
+        "QQQx",
+        "SPYx",
+        "TSLAx"
+      ],
+      "quotes": [
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 100,
+          "outAmount": "108968003",
+          "vsJupiterBps": -5
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 1000,
+          "outAmount": "1089681221",
+          "vsJupiterBps": -4
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 5000,
+          "outAmount": "5448406108",
+          "vsJupiterBps": -2
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 10000,
+          "outAmount": "10895645116",
+          "vsJupiterBps": -3
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 25000,
+          "outAmount": "27226819397",
+          "vsJupiterBps": -4
+        },
+        {
+          "ticker": "CRCLx",
+          "sizeUsd": 50000,
+          "outAmount": "54410630130",
+          "vsJupiterBps": -8
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 100,
+          "outAmount": "65106260",
+          "vsJupiterBps": 8
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 1000,
+          "outAmount": "651062603",
+          "vsJupiterBps": 8
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 5000,
+          "outAmount": "3255436118",
+          "vsJupiterBps": 8
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 10000,
+          "outAmount": "6509219561",
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 25000,
+          "outAmount": "16262042767",
+          "vsJupiterBps": 10
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 50000,
+          "outAmount": "32005616760",
+          "vsJupiterBps": -138
+        },
+        {
+          "ticker": "NVDAx",
+          "sizeUsd": 100,
+          "outAmount": "44925874",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "NVDAx",
+          "sizeUsd": 1000,
+          "outAmount": "449258740",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "NVDAx",
+          "sizeUsd": 5000,
+          "outAmount": "2246293703",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "NVDAx",
+          "sizeUsd": 10000,
+          "outAmount": "4492587406",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "NVDAx",
+          "sizeUsd": 25000,
+          "outAmount": "11228365494",
+          "vsJupiterBps": 1
+        },
+        {
+          "ticker": "NVDAx",
+          "sizeUsd": 50000,
+          "outAmount": "22445134971",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "QQQx",
+          "sizeUsd": 100,
+          "outAmount": "13812376",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "QQQx",
+          "sizeUsd": 1000,
+          "outAmount": "138123769",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "QQQx",
+          "sizeUsd": 5000,
+          "outAmount": "690618848",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "QQQx",
+          "sizeUsd": 10000,
+          "outAmount": "1381115141",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "QQQx",
+          "sizeUsd": 25000,
+          "outAmount": "3451738535",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "QQQx",
+          "sizeUsd": 50000,
+          "outAmount": "6899869423",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 100,
+          "outAmount": "13044449",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 1000,
+          "outAmount": "130444491",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 5000,
+          "outAmount": "652223909",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 10000,
+          "outAmount": "1304447818",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 25000,
+          "outAmount": "3260714277",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 50000,
+          "outAmount": "6519808939",
+          "vsJupiterBps": -2
+        },
+        {
+          "ticker": "TSLAx",
+          "sizeUsd": 100,
+          "outAmount": "27471957",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "TSLAx",
+          "sizeUsd": 1000,
+          "outAmount": "274719572",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "TSLAx",
+          "sizeUsd": 5000,
+          "outAmount": "1373597864",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "TSLAx",
+          "sizeUsd": 10000,
+          "outAmount": "2747195728",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "TSLAx",
+          "sizeUsd": 25000,
+          "outAmount": "6866217885",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "TSLAx",
+          "sizeUsd": 50000,
+          "outAmount": "13725464822",
+          "vsJupiterBps": -1
+        }
+      ],
+      "dustPairs": 0,
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": 0,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 23,
+        "writableAccounts": 7,
+        "signerAccounts": 1,
+        "dataBytes": 36,
+        "venueProgramIsCpiTarget": true
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "TesseraV",
       "programId": "TessVdML9pBGgG9yGks7o4HewRaXVAMuoVj4x83GLQH",
-      "tickersQuoted": [],
-      "quotes": [],
-      "maxSizeUsd": 0,
-      "medianVsJupiterBps": null,
-      "swapInstruction": null,
-      "extraSigners": null,
-      "lookupTables": null,
-      "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "tickersQuoted": [
+        "SPCX"
+      ],
+      "quotes": [
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 100,
+          "outAmount": "656154",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 1000,
+          "outAmount": "6561543",
+          "vsJupiterBps": 2
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 5000,
+          "outAmount": "32790710",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 10000,
+          "outAmount": "65567569",
+          "vsJupiterBps": -3
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 25000,
+          "outAmount": "163819039",
+          "vsJupiterBps": -7
+        },
+        {
+          "ticker": "SPCX",
+          "sizeUsd": 50000,
+          "outAmount": "326718970",
+          "vsJupiterBps": -32
+        }
+      ],
+      "dustPairs": 0,
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": -2,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 24,
+        "writableAccounts": 7,
+        "signerAccounts": 1,
+        "dataBytes": 36,
+        "venueProgramIsCpiTarget": true
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "Manifest",
       "programId": "MNFSTqtC93rEfYHB6hF82sKdZpUDFWkViLByLd1k1Ms",
       "tickersQuoted": [
-        "AMC",
-        "BABA",
-        "BA",
-        "COST",
-        "DELL",
-        "DJT",
-        "DKNG"
+        "BACx",
+        "JPMx",
+        "MCDx",
+        "METAon",
+        "WMTx"
       ],
       "quotes": [
         {
-          "ticker": "AMC",
-          "sizeUsd": 100,
-          "outAmount": "2551085",
-          "vsJupiterBps": -9309
-        },
-        {
-          "ticker": "AMC",
-          "sizeUsd": 1000,
-          "outAmount": "17342419",
-          "vsJupiterBps": -9529
-        },
-        {
-          "ticker": "AMC",
-          "sizeUsd": 5000,
-          "outAmount": "21441851",
-          "vsJupiterBps": -9882
-        },
-        {
-          "ticker": "AMC",
-          "sizeUsd": 10000,
-          "outAmount": "22924559",
-          "vsJupiterBps": -9935
-        },
-        {
-          "ticker": "AMC",
-          "sizeUsd": 25000,
-          "outAmount": "23762548",
-          "vsJupiterBps": -9967
-        },
-        {
-          "ticker": "AMC",
-          "sizeUsd": 50000,
-          "outAmount": "24847366",
-          "vsJupiterBps": -9966
-        },
-        {
-          "ticker": "BABA",
-          "sizeUsd": 100,
-          "outAmount": "91",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BABA",
-          "sizeUsd": 1000,
-          "outAmount": "919",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BABA",
-          "sizeUsd": 5000,
-          "outAmount": "4596",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BABA",
-          "sizeUsd": 10000,
-          "outAmount": "9192",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BABA",
-          "sizeUsd": 25000,
-          "outAmount": "22980",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BABA",
-          "sizeUsd": 50000,
-          "outAmount": "45960",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BA",
-          "sizeUsd": 100,
-          "outAmount": "50",
-          "vsJupiterBps": -9999
-        },
-        {
-          "ticker": "BA",
-          "sizeUsd": 1000,
-          "outAmount": "506",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BA",
-          "sizeUsd": 5000,
-          "outAmount": "2531",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BA",
-          "sizeUsd": 10000,
-          "outAmount": "5063",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BA",
-          "sizeUsd": 25000,
-          "outAmount": "12658",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "BA",
-          "sizeUsd": 50000,
-          "outAmount": "25317",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "COST",
-          "sizeUsd": 100,
-          "outAmount": "11",
-          "vsJupiterBps": -9999
-        },
-        {
-          "ticker": "COST",
-          "sizeUsd": 1000,
-          "outAmount": "111",
-          "vsJupiterBps": -9999
-        },
-        {
-          "ticker": "COST",
-          "sizeUsd": 5000,
-          "outAmount": "559",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "COST",
-          "sizeUsd": 10000,
-          "outAmount": "1118",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "COST",
-          "sizeUsd": 25000,
-          "outAmount": "2796",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "COST",
-          "sizeUsd": 50000,
-          "outAmount": "5592",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DELL",
-          "sizeUsd": 100,
-          "outAmount": "16",
-          "vsJupiterBps": -9999
-        },
-        {
-          "ticker": "DELL",
-          "sizeUsd": 1000,
-          "outAmount": "169",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DELL",
-          "sizeUsd": 5000,
-          "outAmount": "848",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DELL",
-          "sizeUsd": 10000,
-          "outAmount": "1696",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DELL",
-          "sizeUsd": 25000,
-          "outAmount": "4240",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DELL",
-          "sizeUsd": 50000,
-          "outAmount": "8480",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DJT",
-          "sizeUsd": 100,
-          "outAmount": "1153",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DJT",
-          "sizeUsd": 1000,
-          "outAmount": "11534",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DJT",
-          "sizeUsd": 5000,
-          "outAmount": "57673",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DJT",
-          "sizeUsd": 10000,
-          "outAmount": "115346",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DJT",
-          "sizeUsd": 25000,
-          "outAmount": "288367",
-          "vsJupiterBps": -9998
-        },
-        {
-          "ticker": "DJT",
-          "sizeUsd": 50000,
-          "outAmount": null,
-          "vsJupiterBps": null
-        },
-        {
-          "ticker": "DKNG",
+          "ticker": "BACx",
           "sizeUsd": 100,
           "outAmount": null,
           "vsJupiterBps": null
         },
         {
-          "ticker": "DKNG",
+          "ticker": "BACx",
           "sizeUsd": 1000,
-          "outAmount": "40330952",
-          "vsJupiterBps": -893
+          "outAmount": null,
+          "vsJupiterBps": null
         },
         {
-          "ticker": "DKNG",
+          "ticker": "BACx",
           "sizeUsd": 5000,
-          "outAmount": "41262628",
-          "vsJupiterBps": -8133
+          "outAmount": "13525672",
+          "vsJupiterBps": 0
         },
         {
-          "ticker": "DKNG",
+          "ticker": "BACx",
           "sizeUsd": 10000,
-          "outAmount": "41284812",
-          "vsJupiterBps": -9064
+          "outAmount": "14376070",
+          "vsJupiterBps": 0
         },
         {
-          "ticker": "DKNG",
+          "ticker": "BACx",
           "sizeUsd": 25000,
-          "outAmount": "20753437",
-          "vsJupiterBps": -9811
+          "outAmount": "16927267",
+          "vsJupiterBps": 0
         },
         {
-          "ticker": "DKNG",
+          "ticker": "BACx",
           "sizeUsd": 50000,
-          "outAmount": "41462284",
-          "vsJupiterBps": -9809
+          "outAmount": "21179261",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "JPMx",
+          "sizeUsd": 100,
+          "outAmount": "11105583",
+          "vsJupiterBps": -5996
+        },
+        {
+          "ticker": "JPMx",
+          "sizeUsd": 1000,
+          "outAmount": "15526887",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "JPMx",
+          "sizeUsd": 5000,
+          "outAmount": "17253956",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "JPMx",
+          "sizeUsd": 10000,
+          "outAmount": "17253956",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "JPMx",
+          "sizeUsd": 25000,
+          "outAmount": "17253956",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "JPMx",
+          "sizeUsd": 50000,
+          "outAmount": "17253956",
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 100,
+          "outAmount": "39418935",
+          "vsJupiterBps": 7
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 1000,
+          "outAmount": "392808221",
+          "vsJupiterBps": -11
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 5000,
+          "outAmount": "1930779714",
+          "vsJupiterBps": -177
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 10000,
+          "outAmount": "2723547513",
+          "vsJupiterBps": -3067
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 25000,
+          "outAmount": "2732064159",
+          "vsJupiterBps": -7213
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 50000,
+          "outAmount": "2734718310",
+          "vsJupiterBps": -8600
+        },
+        {
+          "ticker": "METAon",
+          "sizeUsd": 100,
+          "outAmount": "49165806",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "METAon",
+          "sizeUsd": 1000,
+          "outAmount": "63310060",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "METAon",
+          "sizeUsd": 5000,
+          "outAmount": "68436650",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "METAon",
+          "sizeUsd": 10000,
+          "outAmount": "68547291",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "METAon",
+          "sizeUsd": 25000,
+          "outAmount": "68697291",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "METAon",
+          "sizeUsd": 50000,
+          "outAmount": "68947291",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "WMTx",
+          "sizeUsd": 100,
+          "outAmount": "90171325",
+          "vsJupiterBps": -174
+        },
+        {
+          "ticker": "WMTx",
+          "sizeUsd": 1000,
+          "outAmount": "879395724",
+          "vsJupiterBps": -217
+        },
+        {
+          "ticker": "WMTx",
+          "sizeUsd": 5000,
+          "outAmount": "1804724624",
+          "vsJupiterBps": -5894
+        },
+        {
+          "ticker": "WMTx",
+          "sizeUsd": 10000,
+          "outAmount": "1887871626",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "WMTx",
+          "sizeUsd": 25000,
+          "outAmount": "1969541943",
+          "vsJupiterBps": -7834
+        },
+        {
+          "ticker": "WMTx",
+          "sizeUsd": 50000,
+          "outAmount": "1971855778",
+          "vsJupiterBps": -6553
         }
       ],
+      "dustPairs": 14,
       "maxSizeUsd": 50000,
-      "medianVsJupiterBps": -9998,
+      "medianVsJupiterBps": 0,
       "swapInstruction": {
         "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
         "accounts": 24,
         "writableAccounts": 10,
         "signerAccounts": 1,
-        "dataBytes": 36
+        "dataBytes": 36,
+        "venueProgramIsCpiTarget": true
       },
       "extraSigners": 0,
       "lookupTables": 1,
-      "classification": "JUPITER_BUILDER_DEPENDENT",
-      "note": "the swap goes through Jupiter's own program: reachable only via Jupiter's builder, not Henar-native liquidity"
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     },
     {
       "label": "Byreal",
       "programId": "REALQqNEomY6cQGZJUGwywTBD2UmDT32rZcNnfxQ5N2",
-      "tickersQuoted": [],
-      "quotes": [],
-      "maxSizeUsd": 0,
-      "medianVsJupiterBps": null,
-      "swapInstruction": null,
-      "extraSigners": null,
-      "lookupTables": null,
-      "classification": "NO_STOCK_LIQUIDITY",
-      "note": "never quoted for any of the 12 equities probed"
+      "tickersQuoted": [
+        "AAPLx",
+        "AMZNx",
+        "COINx",
+        "GOOGLx",
+        "HOODx",
+        "MCDx",
+        "METAx",
+        "MSTRx",
+        "SPYx",
+        "STRCx"
+      ],
+      "quotes": [
+        {
+          "ticker": "AAPLx",
+          "sizeUsd": 100,
+          "outAmount": "29774780",
+          "vsJupiterBps": 19
+        },
+        {
+          "ticker": "AAPLx",
+          "sizeUsd": 1000,
+          "outAmount": "297670486",
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "AAPLx",
+          "sizeUsd": 5000,
+          "outAmount": "1486636540",
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "AAPLx",
+          "sizeUsd": 10000,
+          "outAmount": "2968981668",
+          "vsJupiterBps": 20
+        },
+        {
+          "ticker": "AAPLx",
+          "sizeUsd": 25000,
+          "outAmount": "7389946942",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "AAPLx",
+          "sizeUsd": 50000,
+          "outAmount": "14663420522",
+          "vsJupiterBps": -44
+        },
+        {
+          "ticker": "AMZNx",
+          "sizeUsd": 100,
+          "outAmount": "39259819",
+          "vsJupiterBps": 1
+        },
+        {
+          "ticker": "AMZNx",
+          "sizeUsd": 1000,
+          "outAmount": "392362887",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "AMZNx",
+          "sizeUsd": 5000,
+          "outAmount": "1956821711",
+          "vsJupiterBps": -16
+        },
+        {
+          "ticker": "AMZNx",
+          "sizeUsd": 10000,
+          "outAmount": "3901321806",
+          "vsJupiterBps": -34
+        },
+        {
+          "ticker": "AMZNx",
+          "sizeUsd": 25000,
+          "outAmount": "9656027494",
+          "vsJupiterBps": -94
+        },
+        {
+          "ticker": "AMZNx",
+          "sizeUsd": 50000,
+          "outAmount": "18839557598",
+          "vsJupiterBps": -273
+        },
+        {
+          "ticker": "COINx",
+          "sizeUsd": 100,
+          "outAmount": "51420865",
+          "vsJupiterBps": -8
+        },
+        {
+          "ticker": "COINx",
+          "sizeUsd": 1000,
+          "outAmount": "513702025",
+          "vsJupiterBps": -12
+        },
+        {
+          "ticker": "COINx",
+          "sizeUsd": 5000,
+          "outAmount": "2557281044",
+          "vsJupiterBps": -40
+        },
+        {
+          "ticker": "COINx",
+          "sizeUsd": 10000,
+          "outAmount": "5086400950",
+          "vsJupiterBps": -81
+        },
+        {
+          "ticker": "COINx",
+          "sizeUsd": 25000,
+          "outAmount": "12501909806",
+          "vsJupiterBps": -215
+        },
+        {
+          "ticker": "COINx",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "GOOGLx",
+          "sizeUsd": 100,
+          "outAmount": "28428767",
+          "vsJupiterBps": -16
+        },
+        {
+          "ticker": "GOOGLx",
+          "sizeUsd": 1000,
+          "outAmount": "284190975",
+          "vsJupiterBps": -8
+        },
+        {
+          "ticker": "GOOGLx",
+          "sizeUsd": 5000,
+          "outAmount": "1418810280",
+          "vsJupiterBps": -18
+        },
+        {
+          "ticker": "GOOGLx",
+          "sizeUsd": 10000,
+          "outAmount": "2832283677",
+          "vsJupiterBps": -29
+        },
+        {
+          "ticker": "GOOGLx",
+          "sizeUsd": 25000,
+          "outAmount": "7039989340",
+          "vsJupiterBps": -62
+        },
+        {
+          "ticker": "GOOGLx",
+          "sizeUsd": 50000,
+          "outAmount": "13941645145",
+          "vsJupiterBps": -117
+        },
+        {
+          "ticker": "HOODx",
+          "sizeUsd": 100,
+          "outAmount": "83294964",
+          "vsJupiterBps": -15
+        },
+        {
+          "ticker": "HOODx",
+          "sizeUsd": 1000,
+          "outAmount": "832152987",
+          "vsJupiterBps": -8
+        },
+        {
+          "ticker": "HOODx",
+          "sizeUsd": 5000,
+          "outAmount": "4143153151",
+          "vsJupiterBps": -33
+        },
+        {
+          "ticker": "HOODx",
+          "sizeUsd": 10000,
+          "outAmount": "8242693959",
+          "vsJupiterBps": -72
+        },
+        {
+          "ticker": "HOODx",
+          "sizeUsd": 25000,
+          "outAmount": "20283555593",
+          "vsJupiterBps": -202
+        },
+        {
+          "ticker": "HOODx",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 100,
+          "outAmount": "39299996",
+          "vsJupiterBps": -22
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 1000,
+          "outAmount": "392752640",
+          "vsJupiterBps": -13
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 5000,
+          "outAmount": "1958790680",
+          "vsJupiterBps": -35
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 10000,
+          "outAmount": "3905439969",
+          "vsJupiterBps": -59
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 25000,
+          "outAmount": "9680953307",
+          "vsJupiterBps": -125
+        },
+        {
+          "ticker": "MCDx",
+          "sizeUsd": 50000,
+          "outAmount": "19120957432",
+          "vsJupiterBps": -216
+        },
+        {
+          "ticker": "METAx",
+          "sizeUsd": 100,
+          "outAmount": "14903405",
+          "vsJupiterBps": -5
+        },
+        {
+          "ticker": "METAx",
+          "sizeUsd": 1000,
+          "outAmount": "148832470",
+          "vsJupiterBps": -13
+        },
+        {
+          "ticker": "METAx",
+          "sizeUsd": 5000,
+          "outAmount": "739712001",
+          "vsJupiterBps": -64
+        },
+        {
+          "ticker": "METAx",
+          "sizeUsd": 10000,
+          "outAmount": "1468359633",
+          "vsJupiterBps": -130
+        },
+        {
+          "ticker": "METAx",
+          "sizeUsd": 25000,
+          "outAmount": "3546044995",
+          "vsJupiterBps": -437
+        },
+        {
+          "ticker": "METAx",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 100,
+          "outAmount": "64973407",
+          "vsJupiterBps": -12
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 1000,
+          "outAmount": "648645324",
+          "vsJupiterBps": -28
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 5000,
+          "outAmount": "3218465799",
+          "vsJupiterBps": -104
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 10000,
+          "outAmount": "6373820036",
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 25000,
+          "outAmount": "15383022670",
+          "vsJupiterBps": -530
+        },
+        {
+          "ticker": "MSTRx",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 100,
+          "outAmount": "13046502",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 1000,
+          "outAmount": "130449494",
+          "vsJupiterBps": -1
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 5000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 10000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 25000,
+          "outAmount": "3248461571",
+          "vsJupiterBps": -38
+        },
+        {
+          "ticker": "SPYx",
+          "sizeUsd": 50000,
+          "outAmount": "6471354742",
+          "vsJupiterBps": -77
+        },
+        {
+          "ticker": "STRCx",
+          "sizeUsd": 100,
+          "outAmount": "93259906",
+          "vsJupiterBps": 0
+        },
+        {
+          "ticker": "STRCx",
+          "sizeUsd": 1000,
+          "outAmount": "931676284",
+          "vsJupiterBps": -9
+        },
+        {
+          "ticker": "STRCx",
+          "sizeUsd": 5000,
+          "outAmount": "4636787194",
+          "vsJupiterBps": -54
+        },
+        {
+          "ticker": "STRCx",
+          "sizeUsd": 10000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "STRCx",
+          "sizeUsd": 25000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "STRCx",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        }
+      ],
+      "dustPairs": 0,
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": -31,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 28,
+        "writableAccounts": 11,
+        "signerAccounts": 1,
+        "dataBytes": 35,
+        "venueProgramIsCpiTarget": true
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "NATIVE_ADAPTER_CANDIDATE",
+      "note": "the venue program is the CPI target and the payer is the only signer; whether its curve can be reproduced is a separate question this harness does not answer"
     }
   ]
 }
