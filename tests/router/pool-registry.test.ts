@@ -14,6 +14,7 @@ import {
 import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
 import { meteoraAdapter } from "@henar/venue-meteora";
 import { orcaAdapter } from "@henar/venue-orca";
+import { byrealAdapter } from "@henar/venue-byreal";
 
 const rep = listRouterRepresentations()[0];
 
@@ -66,8 +67,11 @@ test("committed pools.json loads, and every entry pairs a registry mint with USD
      so those routes are compared and guarded, then executed through the
      reviewed market path. Raydium CPMM joined it when `raydiumCpmmAdapter`
      landed with a quote, a curve and a builder — the registry had gone on
-     disabling those pools with a reason that said no adapter existed. */
-  const QUOTABLE = new Set(["clmm", "whirlpool", "dlmm", "cpmm"]);
+     disabling those pools with a reason that said no adapter existed. Byreal
+     joined it with a quote and a curve; it builds nothing yet, which is why
+     the split optimizer can allocate to it while settlement happens
+     elsewhere. */
+  const QUOTABLE = new Set(["clmm", "whirlpool", "dlmm", "cpmm", "byreal_clmm"]);
   for (const p of registry.pools.filter((p) => p.enabled)) {
     assert.ok(QUOTABLE.has(p.poolType), `${p.address}: ${p.poolType} has no direct adapter`);
     assert.ok((p.tvlUsd ?? 0) >= 1000, "enabled pools meet the TVL floor");
@@ -99,7 +103,7 @@ test("every pool type the registry enables has an adapter that declares it", () 
      pool type can only be enabled while some adapter claims it, and an
      adapter's arrival is noticed rather than waiting to be remembered. */
   const declared = new Set(
-    [raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, orcaAdapter].flatMap((a) => a.capabilities().poolTypes),
+    [raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, orcaAdapter, byrealAdapter].flatMap((a) => a.capabilities().poolTypes),
   );
   const enabledTypes = new Set(loadPoolRegistry().pools.filter((p) => p.enabled).map((p) => p.poolType));
   for (const type of enabledTypes)

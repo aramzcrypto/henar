@@ -34,6 +34,8 @@ export type Venue =
   | "meteora-dbc"
   | "meteora-damm-v2"
   | "orca"
+  /** Bybit's Solana DEX. Its CLMM is a Raydium-layout fork with its own SDK. */
+  | "byreal"
   | "titan"
   | "openocean"
   | "okx"
@@ -127,6 +129,7 @@ export type PoolType =
   | "dlmm" // Meteora DLMM (LBUZK…)
   | "dbc" // Meteora Dynamic Bonding Curve (dbcij…)
   | "damm_v2" // Meteora DAMM v2 / cp-amm (cpamd…) — DBC's graduation venue
+  | "byreal_clmm" // Byreal concentrated (REALQ…), a Raydium-layout fork
   | "damm" // Meteora dynamic AMM v1 (legacy, no adapter)
   | "whirlpool"; // Orca
 

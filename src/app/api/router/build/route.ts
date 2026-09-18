@@ -22,6 +22,7 @@ import { meteoraDbcAdapter } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter } from "@henar/venue-meteora-damm-v2";
 import { openOceanAdapter } from "@henar/venue-openocean";
 import { orcaAdapter } from "@henar/venue-orca";
+import { byrealAdapter } from "@henar/venue-byreal";
 import { rfqAdapter } from "@henar/venue-rfq";
 import { consumeQuoteBudget, verifyQuoteAccess } from "@/lib/wallet-access-server";
 
@@ -29,7 +30,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const adapters = [jupiterAdapter, raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, rfqAdapter];
+const adapters = [jupiterAdapter, raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, byrealAdapter, rfqAdapter];
 let api: RouterApi | null = null;
 
 function routerApi(connection: Connection) {

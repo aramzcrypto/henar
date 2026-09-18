@@ -62,6 +62,9 @@ const LAYOUTS: Partial<Record<PoolType, { base: number; quote: number }>> = {
   clmm: { base: 73, quote: 105 },
   cpmm: { base: 168, quote: 200 },
   dlmm: { base: 88, quote: 120 },
+  /* Byreal CLMM is a Raydium CLMM fork and shares its PoolState layout;
+     verified against a live pool, where USDC sits at offset 105. */
+  byreal_clmm: { base: 73, quote: 105 },
 };
 
 export type DecodedPoolMints = { base: string; quote: string };

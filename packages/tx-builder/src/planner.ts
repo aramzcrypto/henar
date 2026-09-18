@@ -39,6 +39,7 @@ export const HENAR_PROGRAM_IDS: Record<Venue, string | null> = {
   "meteora-dbc": "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN",
   "meteora-damm-v2": "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG",
   orca: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+  byreal: "REALQqNEomY6cQGZJUGwywTBD2UmDT32rZcNnfxQ5N2",
   /** Aggregator legs carry their real program set from the build (`programIds`). */
   titan: "aggregator:titan",
   openocean: null,
@@ -54,6 +55,9 @@ export const VENUE_COMPUTE_ESTIMATE: Record<Venue, { units: number; accounts: nu
   okx: { units: 300_000, accounts: 40 },
   rfq: { units: 300_000, accounts: 40 },
   raydium: { units: 200_000, accounts: 24 },
+  /* A concentrated swap walking tick arrays, sized like Raydium CLMM because
+     Byreal is a fork of it and carries the same remaining-account shape. */
+  byreal: { units: 220_000, accounts: 26 },
   meteora: { units: 250_000, accounts: 26 },
   "meteora-dbc": { units: 180_000, accounts: 18 },
   "meteora-damm-v2": { units: 180_000, accounts: 18 },

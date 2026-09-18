@@ -48,6 +48,7 @@ const RAYDIUM_PROGRAMS: Record<string, { poolType: string; direct: boolean }> = 
 
 const ORCA_WHIRLPOOL_PROGRAM = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";
 const METEORA_DLMM_PROGRAM = "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo";
+const BYREAL_CLMM_PROGRAM = "REALQqNEomY6cQGZJUGwywTBD2UmDT32rZcNnfxQ5N2";
 const METEORA_DBC_PROGRAM = "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN";
 const METEORA_DAMM_V2_PROGRAM = "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG";
 
@@ -68,6 +69,26 @@ type OrcaDiscoveryFile = {
     tvlUsd: number | null;
     discoverySource: string;
     fetchedAt: string;
+  }[];
+};
+
+type ByrealDiscoveryFile = {
+  program: string;
+  fetchedAt: string;
+  slot: number;
+  sizes: number[];
+  pools: {
+    address: string;
+    mint: string;
+    representationId: string;
+    provider: string;
+    tokenSymbol: string;
+    baseMint: string;
+    quoteMint: string;
+    feeBps: number | null;
+    /** Largest census size the pool filled completely, in whole USDC. */
+    depthUsd: number;
+    error: string | null;
   }[];
 };
 
@@ -363,6 +384,57 @@ function main() {
       });
     }
 
+    /* Byreal admission is by what a pool can actually fill, which is the one
+       thing TVL does not tell you: a large balance in a narrow concentrated
+       range fills less at $10,000 than a shallower pool with a wider one. The
+       census quotes every pool through Byreal's own SDK at six order sizes and
+       records the largest that filled; the floor here is that number, not a
+       balance. */
+    const byreal = await readJson<ByrealDiscoveryFile>("src/data/router/byreal-discovery.json");
+    for (const pool of byreal?.pools ?? []) {
+      const rep = verifiedMints.get(pool.mint);
+      if (!rep) {
+        reject("byreal: mint not verified in registry");
+        continue;
+      }
+      if (!exactPair(pool.baseMint, pool.quoteMint, pool.mint)) {
+        reject("byreal: not an exact mint/USDC pair");
+        continue;
+      }
+      let disabledReason: string | null = null;
+      if (pool.error) disabledReason = `census error: ${pool.error}`;
+      else if (pool.depthUsd < MIN_TVL_USD) disabledReason = `fills only $${pool.depthUsd} of the $${MIN_TVL_USD} floor`;
+      pools.push({
+        id: `byreal:${pool.address}`,
+        representationId: rep.representationId,
+        mint: pool.mint,
+        provider: rep.provider,
+        tokenSymbol: rep.tokenSymbol,
+        venue: "byreal",
+        address: pool.address,
+        programId: BYREAL_CLMM_PROGRAM,
+        poolType: "byreal_clmm",
+        baseMint: pool.baseMint,
+        quoteMint: pool.quoteMint,
+        feeBps: pool.feeBps,
+        feeConfig: null,
+        observedTokenPrograms: null,
+        /* Executable depth, deliberately recorded in the TVL field so every
+           consumer that ranks by it ranks by what fills. */
+        tvlUsd: pool.depthUsd,
+        discoveredFrom: "rpc:byreal-clmm+sdk-census",
+        discoveredAt: byreal?.fetchedAt ?? now,
+        verifiedAt: now,
+        verification: "DISCOVERED",
+        onchainVerifiedAt: null,
+        verificationDetail: null,
+        eligibility: "ROUTER_ELIGIBLE",
+        dbc: null,
+        enabled: disabledReason === null,
+        disabledReason,
+      });
+    }
+
     const meteora = await readJson<MeteoraDiscoveryRow[]>(
       "src/data/router/meteora-discovery.json",
     );
@@ -581,6 +653,7 @@ function main() {
       process.stdout.write(`  rejected ${count}: ${why}\n`);
     if (!raydium) process.stdout.write("  (no raydium-discovery.json found)\n");
     if (!meteora) process.stdout.write("  (no meteora-discovery.json found)\n");
+    if (!byreal) process.stdout.write("  (no byreal-discovery.json found)\n");
     if (!dbc) process.stdout.write("  (no meteora-dbc-discovery.json found)\n");
     if (!damm) process.stdout.write("  (no meteora-damm-v2-discovery.json found)\n");
   })();

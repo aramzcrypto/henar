@@ -16,6 +16,7 @@ import { meteoraDbcAdapter } from "@henar/venue-meteora-dbc";
 import { meteoraDammV2Adapter } from "@henar/venue-meteora-damm-v2";
 import { openOceanAdapter } from "@henar/venue-openocean";
 import { orcaAdapter } from "@henar/venue-orca";
+import { byrealAdapter } from "@henar/venue-byreal";
 import { rfqAdapter } from "@henar/venue-rfq";
 
 export const runtime = "nodejs";
@@ -27,7 +28,7 @@ function routerApi() {
   if (!api) {
     const rpc = process.env.SOLANA_RPC_URL;
     api = new RouterApi({
-      adapters: [jupiterAdapter, raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, rfqAdapter],
+      adapters: [jupiterAdapter, raydiumAdapter, raydiumCpmmAdapter, meteoraAdapter, meteoraDbcAdapter, meteoraDammV2Adapter, openOceanAdapter, orcaAdapter, byrealAdapter, rfqAdapter],
       connection: rpc ? rateLimitedConnection(rpc) : null,
       health: null,
       telemetry: telemetrySinkFromEnv(),
