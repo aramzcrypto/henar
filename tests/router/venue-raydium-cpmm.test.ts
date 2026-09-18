@@ -155,7 +155,8 @@ test("cpmm: chain-vs-registry checks refuse mismatched, fee-bearing and closed p
 
 test("cpmm: execution flag gates the native path and the build", async () => {
   const off = adapterWith(state(), false);
-  assert.equal(off.capabilities().nativeBuild, false);
+  // Capability, not switch: the builder exists and refuses below.
+  assert.equal(off.capabilities().nativeBuild, true);
   assert.deepEqual(off.capabilities().poolTypes, ["cpmm"]);
   const quote = await off.getQuote(request, ctx({ pools: [cpmmPool()] }));
   assert.equal(quote.executionPath, "none");

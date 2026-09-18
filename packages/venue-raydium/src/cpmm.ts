@@ -237,7 +237,12 @@ export class RaydiumCpmmAdapter implements VenueAdapter {
       venue: "raydium",
       quote: true,
       legacyExecution: false,
-      nativeBuild: this.executionEnabled(),
+      /* A capability, not a switch: this adapter implements a builder. Whether
+         a build is *allowed* right now is HENAR_ROUTER_EXECUTION, enforced in
+         buildSwapInstructions, which fails closed. Coupling the two here would
+         make every venue unbuildable whenever execution is off, emptying the
+         quote surface for price discovery and benchmarks. */
+      nativeBuild: true,
       poolTypes: ["cpmm"],
       supportsMinOut: true,
       // Token-2022 mints are fine; transfer-fee mints are refused (see header).

@@ -61,7 +61,11 @@ test("raydium native build: flag off, missing options, expired, no RPC, unregist
   const ctx = { connection: null, pools: [pool("raydium", key(1))], now: NOW, deadlineMs: 1000 };
   const off = new RaydiumAdapter({ executionEnabled: false });
   assert.equal((await off.buildSwapInstructions(quote, ctx)).reason, "VENUE_DISABLED");
-  assert.equal(off.capabilities().nativeBuild, false);
+  /* nativeBuild states that a builder exists, which does not change with the
+     execution flag; the flag is enforced in the builder, as the refusal above
+     shows. Coupling the two would strip every venue out of the executable
+     candidate set whenever execution is off. */
+  assert.equal(off.capabilities().nativeBuild, true);
   const on = new RaydiumAdapter({ executionEnabled: true });
   assert.equal(on.capabilities().nativeBuild, true);
   assert.equal((await on.buildSwapInstructions(quote, ctx)).reason, "INVALID_REQUEST");

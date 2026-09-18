@@ -79,7 +79,7 @@ test("path legs skip Pyth (the leg is not priced in USDC per share)", () => {
 });
 
 function adapter(venue: VenueAdapter["venue"], impl: (r: QuoteRequest) => VenueQuote): VenueAdapter {
-  return { venue, capabilities: () => ({ venue, quote: true, legacyExecution: false, nativeBuild: false, poolTypes: [], supportsMinOut: true, supportsToken2022: true }), health: async () => ({ venue, healthy: true, checkedAt: "", detail: null }), getQuote: async (r) => impl(r), buildSwapInstructions: async () => ({ instructions: [], lookupTables: [], reason: "NOT_IMPLEMENTED", detail: null }) };
+  return { venue, capabilities: () => ({ venue, quote: true, legacyExecution: false, nativeBuild: true, poolTypes: [], supportsMinOut: true, supportsToken2022: true }), health: async () => ({ venue, healthy: true, checkedAt: "", detail: null }), getQuote: async (r) => impl(r), buildSwapInstructions: async () => ({ instructions: [], lookupTables: [], reason: "NOT_IMPLEMENTED", detail: null }) };
 }
 
 test("RouterApi carries the Pyth finding on the response and survives a failing Pyth provider", async () => {

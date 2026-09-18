@@ -86,6 +86,10 @@ export type UnavailableReason =
   | "NO_VERIFIED_POOL"
   | "POOL_DISABLED"
   | "VENUE_NOT_CONFIGURED"
+  /* The venue priced the trade but Henar cannot build instructions for it, so
+     the quote is real and unfillable. Quoting it would show a number no order
+     could produce. */
+  | "VENUE_NOT_EXECUTABLE"
   | "VENUE_UNHEALTHY"
   | "VENUE_TIMEOUT"
   // The venue refused to answer, which is not the same as having no route.
@@ -567,8 +571,16 @@ export type RankedRoute = {
 export type EngineResult = {
   enabled: boolean;
   request: QuoteRequest;
+  /** Executable only: every quote here is one Henar can build and simulate. */
   best: RankedQuote | null;
   alternatives: RankedQuote[];
+  /**
+   * Quotes from venues that priced the trade but cannot be built. They are
+   * kept so benchmarks and diagnostics can see what the liquidity is worth,
+   * and they are kept *out* of `best`, `alternatives`, `route` and `path`,
+   * because presenting one would be quoting a price Henar cannot fill.
+   */
+  diagnostics: RankedQuote[];
   /** Set only when split routing is on and a split beat the best single venue. */
   route: RankedRoute | null;
   /**
@@ -906,6 +918,35 @@ export type VenueCapabilities = {
   supportsMinOut: boolean;
   supportsToken2022: boolean;
 };
+
+/**
+ * The executability invariant.
+ *
+ * A Henar-native leg is one bound to a registry pool: a split leg, a path leg,
+ * or a direct venue quote. Henar builds those instructions itself, so the
+ * venue must be able to quote *and* to build. A venue that can only quote
+ * produces a number no order can produce — the defect this rules out.
+ *
+ * Aggregator venues are not native legs. They carry no pool and execute
+ * through their own builder, which `legacyExecution` describes; they are
+ * governed by `executableRoute` instead.
+ */
+export function executableAsNativeLeg(caps: VenueCapabilities): boolean {
+  return caps.quote && caps.nativeBuild;
+}
+
+/** Whether a venue's quote can be executed by any path Henar has. */
+export function executableRoute(caps: VenueCapabilities): boolean {
+  return caps.quote && (caps.nativeBuild || caps.legacyExecution);
+}
+
+/**
+ * True for venues that quote against a registry pool, i.e. the ones that can
+ * appear as a native leg at all. Aggregators declare no pool types.
+ */
+export function isPoolVenue(caps: VenueCapabilities): boolean {
+  return caps.poolTypes.length > 0;
+}
 
 export type QuoteContext = {
   /** Null where no RPC is configured. Direct venues then fail closed. */

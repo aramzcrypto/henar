@@ -10,7 +10,7 @@ import { tradeFee } from "@/lib/trade-fee";
 function adapter(venue: VenueAdapter["venue"], impl: (r: QuoteRequest) => VenueQuote): VenueAdapter {
   return {
     venue,
-    capabilities: () => ({ venue, quote: true, legacyExecution: false, nativeBuild: false, poolTypes: [], supportsMinOut: true, supportsToken2022: true }),
+    capabilities: () => ({ venue, quote: true, legacyExecution: false, nativeBuild: true, poolTypes: [], supportsMinOut: true, supportsToken2022: true }),
     health: async () => ({ venue, healthy: true, checkedAt: "", detail: null }),
     getQuote: async (r) => impl(r),
     buildSwapInstructions: async () => ({ instructions: [], lookupTables: [], reason: "NOT_IMPLEMENTED", detail: null }),

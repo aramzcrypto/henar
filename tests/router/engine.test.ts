@@ -57,10 +57,14 @@ function ok(venue: VenueAdapter["venue"], request: QuoteRequest, out: string, ex
 function adapter(
   venue: VenueAdapter["venue"],
   impl: (request: QuoteRequest, ctx: QuoteContext) => Promise<VenueQuote> | VenueQuote,
+  /* Buildable by default: the engine only ranks quotes it could execute, so a
+     fixture that stands in for a real venue has to be able to build. Tests
+     about the quote-only case pass `nativeBuild: false` explicitly. */
+  caps: Partial<ReturnType<VenueAdapter["capabilities"]>> = {},
 ): VenueAdapter {
   return {
     venue,
-    capabilities: () => ({ venue, quote: true, legacyExecution: false, nativeBuild: false, poolTypes: [], supportsMinOut: true, supportsToken2022: true }),
+    capabilities: () => ({ venue, quote: true, legacyExecution: false, nativeBuild: true, poolTypes: [], supportsMinOut: true, supportsToken2022: true, ...caps }),
     health: async () => ({ venue, healthy: true, checkedAt: "", detail: null }),
     getQuote: async (request, ctx) => impl(request, ctx),
     buildSwapInstructions: async () => ({ instructions: [], lookupTables: [], reason: "NOT_IMPLEMENTED", detail: null }),

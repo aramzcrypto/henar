@@ -25,7 +25,7 @@ function adapter(curves: Record<string, VenueCurve>): VenueAdapter {
   const withQuote = (c: VenueCurve, r: QuoteRequest): VenueCurve => ({ ...c, quoteFor: (amt) => quoteFrom(c, r, amt) });
   return {
     venue: "raydium",
-    capabilities: () => ({ venue: "raydium", quote: true, legacyExecution: false, nativeBuild: false, poolTypes: ["clmm"], supportsMinOut: true, supportsToken2022: true }),
+    capabilities: () => ({ venue: "raydium", quote: true, legacyExecution: false, nativeBuild: true, poolTypes: ["clmm"], supportsMinOut: true, supportsToken2022: true }),
     health: async () => ({ venue: "raydium", healthy: true, checkedAt: "", detail: null }),
     getQuote: async (r, ctx) => {
       const pool = ctx.pools[0];

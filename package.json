@@ -61,7 +61,9 @@
     "earn:plan": "node --env-file-if-exists=.env.local --import tsx scripts/earn/plan-demo-position.ts",
     "router:discover:private": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-private-markets.ts",
     "router:discover:intermediates": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-intermediate-routes.ts",
-    "router:discover:byreal": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-byreal-pools.ts"
+    "router:discover:byreal": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-byreal-pools.ts",
+    "router:probe:opaque": "node --env-file-if-exists=.env.local --import tsx scripts/router/opaque-venue-harness.ts",
+    "router:census:legs": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-leg-census.ts"
   },
   "dependencies": {
     "@byreal-io/byreal-clmm-sdk": "^0.2.2",

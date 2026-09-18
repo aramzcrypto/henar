@@ -1,0 +1,623 @@
+{
+  "measuredAt": "2026-09-18T11:24:29.628Z",
+  "sizes": [
+    100,
+    1000,
+    5000,
+    10000,
+    25000,
+    50000
+  ],
+  "probes": [
+    "AMC",
+    "AMD",
+    "BABA",
+    "BA",
+    "IBM",
+    "BOT",
+    "BROS",
+    "BULL",
+    "COST",
+    "DELL",
+    "DJT",
+    "DKNG"
+  ],
+  "venues": [
+    {
+      "label": "HumidiFi",
+      "programId": "9H6tua7jkLhdm3w8BvgpTn5LZNU7g4ZynDmCiNN3q6Rp",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "GoonFi V2",
+      "programId": "goonuddtQRrWqqn5nFyczVKaie28f3kDkHWkHtURSLE",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "ZeroFi",
+      "programId": "ZERor4xhbUycZ6gb9ntrhqscUcZmAbQDjEAtCf4hbZY",
+      "tickersQuoted": [
+        "BOT"
+      ],
+      "quotes": [
+        {
+          "ticker": "BOT",
+          "sizeUsd": 100,
+          "outAmount": "3604359",
+          "vsJupiterBps": 20
+        },
+        {
+          "ticker": "BOT",
+          "sizeUsd": 1000,
+          "outAmount": "35953114",
+          "vsJupiterBps": -2
+        },
+        {
+          "ticker": "BOT",
+          "sizeUsd": 5000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "BOT",
+          "sizeUsd": 10000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "BOT",
+          "sizeUsd": 25000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "BOT",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        }
+      ],
+      "maxSizeUsd": 1000,
+      "medianVsJupiterBps": 9,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "STATEFUL_OR_UNCLEAR",
+      "note": "quotes, but Jupiter would not return swap instructions for the forced route"
+    },
+    {
+      "label": "BisonFi",
+      "programId": "BiSoNHVpsVZW2F7rx2eQ59yQwKxzU5NvBcmKshCSUypi",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Archer",
+      "programId": "Archer8kgiavM61GyusMzaaS2ft5sALtNsD1HxkUPMhy",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Denali",
+      "programId": "DNL1tgEj3nJovHw9jtyCCQD3arssCJzkmpDizknwzey4",
+      "tickersQuoted": [
+        "AMD",
+        "DKNG"
+      ],
+      "quotes": [
+        {
+          "ticker": "AMD",
+          "sizeUsd": 100,
+          "outAmount": "182282",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "AMD",
+          "sizeUsd": 1000,
+          "outAmount": "1822726",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "AMD",
+          "sizeUsd": 5000,
+          "outAmount": "9112964",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "AMD",
+          "sizeUsd": 10000,
+          "outAmount": "18215796",
+          "vsJupiterBps": 5
+        },
+        {
+          "ticker": "AMD",
+          "sizeUsd": 25000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "AMD",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 100,
+          "outAmount": "4427407",
+          "vsJupiterBps": -3
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 1000,
+          "outAmount": "44276039",
+          "vsJupiterBps": -2
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 5000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 10000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 25000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        }
+      ],
+      "maxSizeUsd": 10000,
+      "medianVsJupiterBps": 5,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 22,
+        "writableAccounts": 7,
+        "signerAccounts": 1,
+        "dataBytes": 36
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "JUPITER_BUILDER_DEPENDENT",
+      "note": "the swap goes through Jupiter's own program: reachable only via Jupiter's builder, not Henar-native liquidity"
+    },
+    {
+      "label": "BinaryFi",
+      "programId": "B72M6nyCLFgWiJtAN4naUTminMiTmyGcEqQHXwVeRdht",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Deriverse",
+      "programId": "DRVSpZ2YUYYKgZP8XtLhAGtT1zYSCKzeHfb4DgRnrgqD",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Scorch",
+      "programId": "ojh19ojaKduoJZuaJADhcVGp4xt1TcdAvZmpVsCorch",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Quantum",
+      "programId": "QuaNtZsgYRe5Z9Bk4LZ4cTD9tbkVoyCNf1R2BN9bBDv",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Quay",
+      "programId": "QUayE6nexQWYNZAEqfN8FxoNwQDSu3CAzT2qq9J1ArG",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "AlphaQ",
+      "programId": "ALPHAQmeA7bjrVuccPsYPiCvsi428SNwte66Srvs4pHA",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Riptide",
+      "programId": "riptK81hDxhe5pW5jSzSM9iRA8azgEgLJ4dXkPtBS7j",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "TesseraV",
+      "programId": "TessVdML9pBGgG9yGks7o4HewRaXVAMuoVj4x83GLQH",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    },
+    {
+      "label": "Manifest",
+      "programId": "MNFSTqtC93rEfYHB6hF82sKdZpUDFWkViLByLd1k1Ms",
+      "tickersQuoted": [
+        "AMC",
+        "BABA",
+        "BA",
+        "COST",
+        "DELL",
+        "DJT",
+        "DKNG"
+      ],
+      "quotes": [
+        {
+          "ticker": "AMC",
+          "sizeUsd": 100,
+          "outAmount": "2551085",
+          "vsJupiterBps": -9309
+        },
+        {
+          "ticker": "AMC",
+          "sizeUsd": 1000,
+          "outAmount": "17342419",
+          "vsJupiterBps": -9529
+        },
+        {
+          "ticker": "AMC",
+          "sizeUsd": 5000,
+          "outAmount": "21441851",
+          "vsJupiterBps": -9882
+        },
+        {
+          "ticker": "AMC",
+          "sizeUsd": 10000,
+          "outAmount": "22924559",
+          "vsJupiterBps": -9935
+        },
+        {
+          "ticker": "AMC",
+          "sizeUsd": 25000,
+          "outAmount": "23762548",
+          "vsJupiterBps": -9967
+        },
+        {
+          "ticker": "AMC",
+          "sizeUsd": 50000,
+          "outAmount": "24847366",
+          "vsJupiterBps": -9966
+        },
+        {
+          "ticker": "BABA",
+          "sizeUsd": 100,
+          "outAmount": "91",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BABA",
+          "sizeUsd": 1000,
+          "outAmount": "919",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BABA",
+          "sizeUsd": 5000,
+          "outAmount": "4596",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BABA",
+          "sizeUsd": 10000,
+          "outAmount": "9192",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BABA",
+          "sizeUsd": 25000,
+          "outAmount": "22980",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BABA",
+          "sizeUsd": 50000,
+          "outAmount": "45960",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BA",
+          "sizeUsd": 100,
+          "outAmount": "50",
+          "vsJupiterBps": -9999
+        },
+        {
+          "ticker": "BA",
+          "sizeUsd": 1000,
+          "outAmount": "506",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BA",
+          "sizeUsd": 5000,
+          "outAmount": "2531",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BA",
+          "sizeUsd": 10000,
+          "outAmount": "5063",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BA",
+          "sizeUsd": 25000,
+          "outAmount": "12658",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "BA",
+          "sizeUsd": 50000,
+          "outAmount": "25317",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "COST",
+          "sizeUsd": 100,
+          "outAmount": "11",
+          "vsJupiterBps": -9999
+        },
+        {
+          "ticker": "COST",
+          "sizeUsd": 1000,
+          "outAmount": "111",
+          "vsJupiterBps": -9999
+        },
+        {
+          "ticker": "COST",
+          "sizeUsd": 5000,
+          "outAmount": "559",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "COST",
+          "sizeUsd": 10000,
+          "outAmount": "1118",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "COST",
+          "sizeUsd": 25000,
+          "outAmount": "2796",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "COST",
+          "sizeUsd": 50000,
+          "outAmount": "5592",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DELL",
+          "sizeUsd": 100,
+          "outAmount": "16",
+          "vsJupiterBps": -9999
+        },
+        {
+          "ticker": "DELL",
+          "sizeUsd": 1000,
+          "outAmount": "169",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DELL",
+          "sizeUsd": 5000,
+          "outAmount": "848",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DELL",
+          "sizeUsd": 10000,
+          "outAmount": "1696",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DELL",
+          "sizeUsd": 25000,
+          "outAmount": "4240",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DELL",
+          "sizeUsd": 50000,
+          "outAmount": "8480",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DJT",
+          "sizeUsd": 100,
+          "outAmount": "1153",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DJT",
+          "sizeUsd": 1000,
+          "outAmount": "11534",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DJT",
+          "sizeUsd": 5000,
+          "outAmount": "57673",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DJT",
+          "sizeUsd": 10000,
+          "outAmount": "115346",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DJT",
+          "sizeUsd": 25000,
+          "outAmount": "288367",
+          "vsJupiterBps": -9998
+        },
+        {
+          "ticker": "DJT",
+          "sizeUsd": 50000,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 100,
+          "outAmount": null,
+          "vsJupiterBps": null
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 1000,
+          "outAmount": "40330952",
+          "vsJupiterBps": -893
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 5000,
+          "outAmount": "41262628",
+          "vsJupiterBps": -8133
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 10000,
+          "outAmount": "41284812",
+          "vsJupiterBps": -9064
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 25000,
+          "outAmount": "20753437",
+          "vsJupiterBps": -9811
+        },
+        {
+          "ticker": "DKNG",
+          "sizeUsd": 50000,
+          "outAmount": "41462284",
+          "vsJupiterBps": -9809
+        }
+      ],
+      "maxSizeUsd": 50000,
+      "medianVsJupiterBps": -9998,
+      "swapInstruction": {
+        "programId": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+        "accounts": 24,
+        "writableAccounts": 10,
+        "signerAccounts": 1,
+        "dataBytes": 36
+      },
+      "extraSigners": 0,
+      "lookupTables": 1,
+      "classification": "JUPITER_BUILDER_DEPENDENT",
+      "note": "the swap goes through Jupiter's own program: reachable only via Jupiter's builder, not Henar-native liquidity"
+    },
+    {
+      "label": "Byreal",
+      "programId": "REALQqNEomY6cQGZJUGwywTBD2UmDT32rZcNnfxQ5N2",
+      "tickersQuoted": [],
+      "quotes": [],
+      "maxSizeUsd": 0,
+      "medianVsJupiterBps": null,
+      "swapInstruction": null,
+      "extraSigners": null,
+      "lookupTables": null,
+      "classification": "NO_STOCK_LIQUIDITY",
+      "note": "never quoted for any of the 12 equities probed"
+    }
+  ]
+}

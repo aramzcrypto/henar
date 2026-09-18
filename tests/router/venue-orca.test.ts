@@ -17,7 +17,8 @@ test("orca: no pool → NO_VERIFIED_POOL; pool without RPC → VENUE_NOT_CONFIGU
   assert.equal(q.poolAddress, key(5));
   assert.equal((await a.getQuote({ ...request, inputMint: key(9) }, { connection: {} as never, pools: [orcaPool], now: Date.now(), deadlineMs: 1000 })).unavailableReason, "QUOTE_TERMS_MISMATCH");
   assert.equal((await a.getQuote({ ...request, amountType: "output" }, { connection: null, pools: [orcaPool], now: Date.now(), deadlineMs: 1000 })).unavailableReason, "NOT_IMPLEMENTED");
-  assert.equal(a.capabilities().nativeBuild, false);
+  // The builder exists either way; the flag is enforced inside it.
+  assert.equal(a.capabilities().nativeBuild, true);
   assert.equal(new OrcaAdapter({ executionEnabled: true }).capabilities().nativeBuild, true);
   assert.equal((await a.buildSwapInstructions({} as never, { connection: null, pools: [], now: 0, deadlineMs: 0 })).reason, "VENUE_DISABLED");
 });

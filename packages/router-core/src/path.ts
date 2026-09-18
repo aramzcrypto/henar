@@ -31,6 +31,7 @@ import {
   fromRaw,
   toRaw,
   USDC_MINT,
+  executableAsNativeLeg,
   type FeeBreakdown,
   type QuoteContext,
   type QuoteRequest,
@@ -84,6 +85,10 @@ async function curvesFor(request: QuoteRequest, pools: VerifiedPool[], options: 
     pools.map(async (pool) => {
       const adapter = adapterForPool(options.adapters, pool);
       if (!adapter?.curve) return;
+      /* Both hops of a path are built by Henar, so both must come from venues
+         that can build. A quote-only venue here would produce a path that
+         prices well and cannot be executed. */
+      if (!executableAsNativeLeg(adapter.capabilities())) return;
       const curve = await new Promise<VenueCurve | null>((resolve) => {
         const timer = setTimeout(() => resolve(null), options.deadlineMs);
         adapter.curve!(request, pool, { ...options.ctx, pools: [pool] }).then(

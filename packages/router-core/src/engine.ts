@@ -28,6 +28,8 @@ import {
   toRaw,
   USDC_MINT,
   unavailableQuote,
+  executableAsNativeLeg,
+  isPoolVenue,
   type EngineResult,
   type FeeBreakdown,
   type QuoteContext,
@@ -238,6 +240,7 @@ async function quoteRepresentationUnrecorded(
     request: input,
     best: null,
     alternatives: [],
+    diagnostics: [],
     route: null,
     splitReason: null,
     path: null,
@@ -345,7 +348,23 @@ async function quoteRepresentationUnrecorded(
   );
 
   const ranked: RankedQuote[] = [];
+  const diagnostics: RankedQuote[] = [];
   const exclusions: QuoteExclusion[] = [];
+  /* Which venues may carry an executable native leg. A venue that prices a
+     trade it cannot build is not a route, it is a number: it would win the
+     ranking, be shown as Henar's price, and then fail at build time with
+     NOT_IMPLEMENTED. Its quote is kept in `diagnostics` so benchmarks can
+     still measure what that liquidity is worth. */
+  const buildableVenues = new Set<Venue>();
+  const poolVenues = new Set<Venue>();
+  for (const adapter of options.adapters) {
+    const caps = adapter.capabilities();
+    if (isPoolVenue(caps)) poolVenues.add(caps.venue);
+    if (executableAsNativeLeg(caps)) buildableVenues.add(caps.venue);
+  }
+  const executableQuote = (q: { venue: Venue; poolAddress: string | null }) =>
+    q.poolAddress === null && !poolVenues.has(q.venue) ? true : buildableVenues.has(q.venue);
+
   for (const quote of quotes) {
     if (quote.unavailableReason) {
       exclusions.push({
@@ -371,7 +390,17 @@ async function quoteRepresentationUnrecorded(
       continue;
     }
     try {
-      ranked.push(rankQuote(quote, input, henarFeeBps));
+      const scored = rankQuote(quote, input, henarFeeBps);
+      if (executableQuote(quote)) ranked.push(scored);
+      else {
+        diagnostics.push(scored);
+        exclusions.push({
+          venue: quote.venue,
+          poolAddress: quote.poolAddress,
+          reason: "VENUE_NOT_EXECUTABLE",
+          detail: "venue can quote but Henar cannot build its instructions",
+        });
+      }
     } catch (error) {
       exclusions.push({
         venue: quote.venue,
@@ -382,6 +411,7 @@ async function quoteRepresentationUnrecorded(
     }
   }
   ranked.sort(compareRanked);
+  diagnostics.sort(compareRanked);
 
   const slot = ranked.reduce<number | null>(
     (acc, q) => (q.slot === null ? acc : acc === null ? q.slot : Math.max(acc, q.slot)),
@@ -434,6 +464,7 @@ async function quoteRepresentationUnrecorded(
     ...base,
     best: ranked[0] ?? null,
     alternatives: ranked.slice(1),
+    diagnostics,
     route,
     splitReason,
     path,
@@ -467,6 +498,10 @@ async function splitAcrossPools(
       // CLMM and CPMM share a venue id but not a curve.
       const adapter = pool ? adapterForPool(options.adapters, pool) : null;
       if (!adapter?.curve || !pool) return;
+      /* A split is a Henar-native plan: every leg is built here. A curve from
+         a venue with no builder would improve the quoted number and then make
+         the whole route unbuildable, which is worse than not splitting. */
+      if (!executableAsNativeLeg(adapter.capabilities())) return;
       const curve = await new Promise<VenueCurve | null>((resolve) => {
         const timer = setTimeout(() => resolve(null), deadlineMs);
         adapter.curve!(venueRequest, pool, ctx).then((c) => { clearTimeout(timer); resolve(c); }, () => { clearTimeout(timer); resolve(null); });

@@ -182,7 +182,12 @@ export class MeteoraDbcAdapter implements VenueAdapter {
       quote: true,
       legacyExecution: false,
       // The builder exists (`buildSwapInstructions`) but is flag-gated off.
-      nativeBuild: this.executionEnabled(),
+      /* A capability, not a switch: this adapter implements a builder. Whether
+         a build is *allowed* right now is HENAR_ROUTER_EXECUTION, enforced in
+         buildSwapInstructions, which fails closed. Coupling the two here would
+         make every venue unbuildable whenever execution is off, emptying the
+         quote surface for price discovery and benchmarks. */
+      nativeBuild: true,
       poolTypes: ["dbc"],
       supportsMinOut: true,
       supportsToken2022: true,

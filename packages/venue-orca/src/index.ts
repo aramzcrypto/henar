@@ -137,7 +137,10 @@ export class OrcaAdapter implements VenueAdapter {
   }
 
   capabilities(): VenueCapabilities {
-    return { venue: this.venue, quote: true, legacyExecution: false, nativeBuild: this.executionEnabled(), poolTypes: ["whirlpool"], supportsMinOut: true, supportsToken2022: true };
+    /* nativeBuild is a capability, not a switch: the builder exists. Whether a
+       build is allowed right now is HENAR_ROUTER_EXECUTION, enforced in
+       buildSwapInstructions. */
+    return { venue: this.venue, quote: true, legacyExecution: false, nativeBuild: true, poolTypes: ["whirlpool"], supportsMinOut: true, supportsToken2022: true };
   }
 
   async health(ctx: QuoteContext): Promise<VenueHealth> {
