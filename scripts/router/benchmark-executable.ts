@@ -21,9 +21,9 @@
  * venue instructions rather than the whole packaged transaction.
  */
 import { writeFile } from "node:fs/promises";
-import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, TransactionMessage, VersionedTransaction, type TransactionInstruction } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { USDC_MINT, loadPoolRegistry, quoteRepresentation, type QuoteContext, type VenueAdapter, type VerifiedPool } from "@henar/router-core";
+import { DEFAULT_SPLIT_OPTIONS, USDC_MINT, loadPoolRegistry, quoteRepresentation, type QuoteContext, type VenueAdapter, type VerifiedPool } from "@henar/router-core";
 import { RaydiumAdapter, RaydiumCpmmAdapter } from "@henar/venue-raydium";
 import { MeteoraAdapter } from "@henar/venue-meteora";
 import { OrcaAdapter } from "@henar/venue-orca";
@@ -34,6 +34,16 @@ const OUTPUT = "docs/router/EXECUTABLE_BENCHMARK.json";
 const JUP = "https://lite-api.jup.ag/swap/v1";
 /** The fee Henar charges, matching MARKET_FEE_BPS. */
 const FEE_BPS = 10;
+/**
+ * With HENAR_BENCH_THREE_LEG=1 the optimizer may open a third leg and every
+ * route compiles against a lookup table built in memory over its own accounts.
+ * That is what a router lookup table would give, measured without creating
+ * one: it answers whether a third leg is worth the table, rather than only
+ * whether it would fit.
+ */
+const THREE_LEG = process.env.HENAR_BENCH_THREE_LEG === "1";
+/** Configuration name for the three-leg arm, compared row by row with "all". */
+const THREE_LEG_CONFIG = "3leg+lut";
 
 type Row = {
   config: string;
@@ -110,8 +120,13 @@ async function main() {
       new ByrealAdapter({ executionEnabled: true }),
     ].filter((a) => !exclude.includes(a.venue));
 
+  /* The three-leg arm runs beside the others on the same tickers and sizes,
+     so its gain is a paired difference rather than a comparison of medians
+     taken from separate runs minutes apart. Market state moves between runs;
+     it does not move between two configurations of the same row. */
   const configs: { name: string; adapters: VenueAdapter[] }[] = [
     { name: "all", adapters: build([]) },
+    { name: THREE_LEG_CONFIG, adapters: build([]) },
     { name: "-meteora", adapters: build(["meteora"]) },
     { name: "-byreal", adapters: build(["byreal"]) },
   ];
@@ -154,6 +169,7 @@ async function main() {
         const result = await quoteRepresentation(request, {
           adapters, enabled: true, splitRouting: true, pathRouting: false,
           poolsOverride: pools, connection, deadlineMs: 30_000,
+          splitOptions: name === THREE_LEG_CONFIG ? { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3 } : undefined,
         }).catch((e) => { row.simulationDetail = `quote failed: ${(e as Error).message}`; return null; });
 
         if (result?.best) {
@@ -192,7 +208,7 @@ async function main() {
 
         /* Build and simulate the winning native route's legs. A route that
            cannot survive this is not an improvement, whatever it quoted. */
-        if (name === "all" && result?.best && !result.best.unavailableReason && owner) {
+        if ((name === "all" || name === THREE_LEG_CONFIG) && result?.best && !result.best.unavailableReason && owner) {
           try {
             const legs = result.route
               ? result.route.legs.map((l) => ({ venue: l.venue, quote: l }))
@@ -228,6 +244,19 @@ async function main() {
               const protocolTable = process.env.STOCKROOM_LOOKUP_TABLE;
               if (protocolTable) tableAddresses.add(protocolTable);
               const tables: AddressLookupTableAccount[] = [];
+              if (name === THREE_LEG_CONFIG) {
+                /* The table a router LUT would be, over exactly this route's
+                   accounts. Signers and the payer stay in the static keys. */
+                const carried = new Map<string, PublicKey>();
+                for (const ix of instructions as TransactionInstruction[]) {
+                  carried.set(ix.programId.toBase58(), ix.programId);
+                  for (const k of ix.keys) if (!k.isSigner && !k.pubkey.equals(owner)) carried.set(k.pubkey.toBase58(), k.pubkey);
+                }
+                tables.push(new AddressLookupTableAccount({
+                  key: new PublicKey("11111111111111111111111111111112"),
+                  state: { deactivationSlot: BigInt("18446744073709551615"), lastExtendedSlot: 0, lastExtendedSlotStartIndex: 0, authority: owner, addresses: [...carried.values()] },
+                }));
+              }
               for (const address of tableAddresses) {
                 const fetched = await connection.getAddressLookupTable(new PublicKey(address)).catch(() => null);
                 if (fetched?.value?.isActive()) tables.push(fetched.value);
@@ -247,9 +276,18 @@ async function main() {
                 process.stdout.write(`  ${ticker.padEnd(9)} $${String(sizeUsd).padStart(6)}  ${(row.routeKind ?? "none").padEnd(6)} ${row.routeVenues.join("+").padEnd(24)} OVERSIZED (${tables.length} ALTs)\n`);
                 continue;
               }
-              const sim = await connection.simulateTransaction(transaction, { sigVerify: false, replaceRecentBlockhash: true, commitment: "confirmed" });
-              row.simulated = !sim.value.err;
-              if (sim.value.err) row.simulationDetail = JSON.stringify(sim.value.err);
+              if (name === THREE_LEG_CONFIG) {
+                /* The table is built in memory and has no account on chain, so
+                   the cluster cannot resolve its indexes. Size and price are
+                   still measured exactly — compilation is local and the quote
+                   is the engine's — but simulation is not attempted rather
+                   than recorded as a failure it is not. */
+                row.simulationDetail = "not simulated: lookup table is synthetic";
+              } else {
+                const sim = await connection.simulateTransaction(transaction, { sigVerify: false, replaceRecentBlockhash: true, commitment: "confirmed" });
+                row.simulated = !sim.value.err;
+                if (sim.value.err) row.simulationDetail = JSON.stringify(sim.value.err);
+              }
             } else row.simulated = false;
           } catch (error) {
             row.simulated = false;
@@ -276,6 +314,23 @@ async function main() {
       `${name.padEnd(9)} splits ${String(splits.length).padStart(2)}/${mine.length}  split gain ${String(median(splits.map((r) => r.splitGainBps).filter((n): n is number => n !== null))).padStart(4)}  native gross ${String(pick((r) => r.grossVsJupiterBps)).padStart(5)}  native net ${String(pick((r) => r.netVsJupiterBps)).padStart(5)}  product net ${String(pick((r) => r.productNetVsJupiterBps)).padStart(5)} bps\n`,
     );
   }
+  /* Paired against "all" on the same ticker and size. */
+  const base = new Map(rows.filter((r) => r.config === "all").map((r) => [`${r.ticker}:${r.sizeUsd}`, r]));
+  const paired: number[] = [];
+  const perSize = new Map<number, number[]>();
+  for (const r of rows.filter((x) => x.config === THREE_LEG_CONFIG)) {
+    const a = base.get(`${r.ticker}:${r.sizeUsd}`);
+    if (!a || a.grossVsJupiterBps === null || r.grossVsJupiterBps === null) continue;
+    const gain = r.grossVsJupiterBps - a.grossVsJupiterBps;
+    paired.push(gain);
+    perSize.set(r.sizeUsd, [...(perSize.get(r.sizeUsd) ?? []), gain]);
+  }
+  process.stdout.write(`\nthird leg, paired on the same row: median ${median(paired)} bps over ${paired.length} rows\n`);
+  for (const size of SIZES) {
+    const g = perSize.get(size) ?? [];
+    if (g.length) process.stdout.write(`  $${String(size).padStart(6)}: ${String(median(g)).padStart(4)} bps over ${g.length} rows\n`);
+  }
+
   const simmed = rows.filter((r) => r.simulated !== null);
   const clean = simmed.filter((r) => r.simulated).length;
   process.stdout.write(`build+simulate: ${clean}/${simmed.length} clean (${simmed.length ? Math.round((clean / simmed.length) * 100) : 0}%)\n`);
