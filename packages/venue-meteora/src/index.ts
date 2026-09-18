@@ -24,10 +24,13 @@
  * eventual swap within the account limit of one transaction.
  */
 import { PublicKey, type Connection } from "@solana/web3.js";
+import { ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import {
+  flagEnabled,
   toRaw,
   unavailableQuote,
+  type BuildOptions,
   type BuildResult,
   type QuoteContext,
   type QuoteRequest,
@@ -49,11 +52,20 @@ type DlmmClass = typeof import("@meteora-ag/dlmm").default;
 type Dlmm = InstanceType<DlmmClass>;
 let dlmmPromise: Promise<DlmmClass> | null = null;
 function dlmm() {
+  /* Two module systems. Under Next's bundler the dynamic import resolves; run
+     under plain tsx it throws "'@coral-xyz/anchor' does not provide an export
+     named 'BN'", because the DLMM package's ESM entry re-exports a CommonJS
+     binding that Node cannot name. The require fallback loads the CJS build,
+     which is the same code. Without it the adapter quotes in the app and
+     fails in every script — including the one that validates its builder. */
   if (!dlmmPromise)
-    dlmmPromise = import("@meteora-ag/dlmm").then(
+    dlmmPromise = import("@meteora-ag/dlmm")
+      .catch(async () => {
+        const { createRequire } = await import("node:module");
+        return createRequire(import.meta.url)("@meteora-ag/dlmm") as { default?: DlmmClass };
+      })
       // CJS build: the module object is the class, with default/DLMM aliases.
-      (m) => ((m as { default?: DlmmClass }).default ?? (m as unknown as DlmmClass)),
-    );
+      .then((m) => ((m as { default?: DlmmClass }).default ?? (m as unknown as DlmmClass)));
   return dlmmPromise;
 }
 
@@ -198,15 +210,25 @@ export function cachedBinArrayQuote(
   };
 }
 
+export type MeteoraAdapterOptions = { executionEnabled?: boolean };
+
 export class MeteoraAdapter implements VenueAdapter {
   readonly venue = "meteora" as const;
+
+  constructor(private readonly options: MeteoraAdapterOptions = {}) {}
+
+  private executionEnabled() {
+    return this.options.executionEnabled ?? flagEnabled("routerExecution");
+  }
 
   capabilities(): VenueCapabilities {
     return {
       venue: "meteora",
       quote: true,
       legacyExecution: false,
-      nativeBuild: false,
+      /* A capability, not a switch: the builder exists. HENAR_ROUTER_EXECUTION
+         decides whether a build is allowed, enforced in buildSwapInstructions. */
+      nativeBuild: true,
       poolTypes: ["dlmm"],
       supportsMinOut: true,
       supportsToken2022: true,
@@ -341,13 +363,103 @@ export class MeteoraAdapter implements VenueAdapter {
     }
   }
 
-  async buildSwapInstructions(): Promise<BuildResult> {
-    return {
-      instructions: [],
-      lookupTables: [],
-      reason: "NOT_IMPLEMENTED",
-      detail: "Meteora direct execution is Task 15.",
-    };
+  /**
+   * Native DLMM swap instructions.
+   *
+   * The official SDK's `swap()` returns a whole Transaction built around
+   * `swap2`, which carries the Token-2022 transfer-hook slices and the bin
+   * arrays the fill will cross. Only its instructions are taken, and two are
+   * deliberately dropped:
+   *
+   *   ATA creation. The SDK emits a plain (non-idempotent)
+   *   createAssociatedTokenAccount when it finds the account missing on chain.
+   *   The Henar planner already creates the output and fee ATAs
+   *   idempotently in the same transaction, and it runs first — so the SDK's
+   *   copy would hit an account that now exists and fail the whole trade.
+   *   Ownership of ATAs stays with the planner, which is also the contract
+   *   the Raydium and Orca builders follow.
+   *
+   * SOL wrapping is kept: a path leg through SOL needs it, and the planner
+   * does not do it.
+   *
+   * The bin arrays come from the quote's own metadata, so the instruction
+   * crosses exactly the arrays that were priced. The output is re-checked
+   * against the guard's floor immediately before building, because bins move.
+   */
+  async buildSwapInstructions(quote: VenueQuote, ctx: QuoteContext, options?: BuildOptions): Promise<BuildResult> {
+    const refuse = (reason: BuildResult["reason"], detail: string): BuildResult => ({ instructions: [], lookupTables: [], reason, detail });
+    if (!this.executionEnabled()) return refuse("VENUE_DISABLED", "HENAR_ROUTER_EXECUTION is off");
+    if (quote.venue !== this.venue || quote.unavailableReason || !quote.poolAddress)
+      return refuse("INVALID_REQUEST", "quote is not an available Meteora quote");
+    if (!options) return refuse("INVALID_REQUEST", "owner and guard-approved minimumAmountOut are required");
+    if (Date.parse(quote.expiresAt) < ctx.now) return refuse("QUOTE_EXPIRED", "quote expired");
+    if (!ctx.connection) return refuse("VENUE_NOT_CONFIGURED", "no RPC connection");
+    const minimumOut = BigInt(options.minimumAmountOut);
+    if (minimumOut <= 0n || minimumOut > BigInt(quote.expectedAmountOut))
+      return refuse("INVALID_REQUEST", "minimumAmountOut must be positive and not above the quoted output");
+    const pool = ctx.pools.find((p) => p.address === quote.poolAddress && p.venue === "meteora" && p.enabled);
+    if (!pool) return refuse("NO_VERIFIED_POOL", "quoted pool is not an enabled registry pool");
+
+    try {
+      const DLMM = await dlmm();
+      const connection: Connection = ctx.connection;
+      const instance = await DLMM.create(connection, new PublicKey(pool.address), { cluster: "mainnet-beta" });
+      const x = instance.tokenX.publicKey.toBase58();
+      const y = instance.tokenY.publicKey.toBase58();
+      const pair = new Set([x, y]);
+      if (!(pair.has(quote.inputMint) && pair.has(quote.outputMint)))
+        return refuse("QUOTE_TERMS_MISMATCH", "on-chain mints differ from the quote");
+      if (instance.program.programId.toBase58() !== pool.programId)
+        return refuse("QUOTE_TERMS_MISMATCH", "on-chain program differs from the registry pool");
+
+      const swapForY = quote.inputMint === x;
+      const amountIn = new BN(quote.amountIn);
+
+      /* Re-price against current bins. The guard approved a floor against the
+         quoted output; if the pool has moved below it since, this must refuse
+         rather than send a transaction that will revert on minOut. */
+      const binArrays = await instance.getBinArrayForSwap(swapForY, MAX_BIN_ARRAYS);
+      if (!binArrays.length) return refuse("INSUFFICIENT_LIQUIDITY", "no bin arrays with liquidity");
+      const fresh = cachedBinArrayQuote(instance, binArrays, swapForY)(BigInt(quote.amountIn));
+      if (!fresh) return refuse("INSUFFICIENT_LIQUIDITY", "pool can no longer fill the full amount");
+      if (BigInt(fresh.outAmount.toString()) < minimumOut)
+        return refuse("SLIPPAGE_LIMIT_EXCEEDED", "state moved: current output is below the approved floor");
+
+      /* Cross exactly the arrays that were priced. `swapQuote` returns them
+         for the fill it computed, so taking them from the fresh re-price
+         keeps instruction and price on the same state. */
+      const binArraysPubkey = fresh.binArraysPubkey as PublicKey[];
+      const owner = new PublicKey(options.owner);
+      const tx = await instance.swap({
+        inToken: new PublicKey(quote.inputMint),
+        outToken: new PublicKey(quote.outputMint),
+        inAmount: amountIn,
+        minOutAmount: new BN(minimumOut.toString()),
+        lbPair: new PublicKey(pool.address),
+        user: owner,
+        binArraysPubkey,
+      });
+
+      /* Drop the SDK's ATA creation; the planner owns that and runs first. */
+      const instructions = tx.instructions.filter((ix) => !ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID));
+      const swapIxs = instructions.filter((ix) => ix.programId.toBase58() === pool.programId);
+      if (swapIxs.length !== 1)
+        return refuse("SDK_ERROR", `expected exactly one DLMM instruction, got ${swapIxs.length}`);
+      for (const ix of instructions)
+        for (const k of ix.keys)
+          if (k.isSigner && !k.pubkey.equals(owner))
+            return refuse("INVALID_REQUEST", `venue instruction requires signer ${k.pubkey.toBase58()}`);
+
+      return {
+        instructions,
+        lookupTables: [],
+        reason: null,
+        detail: `DLMM swap2 over ${binArraysPubkey.length} bin arrays; amountOutMin ${minimumOut}`,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return refuse(isInsufficientLiquidity(error) ? "INSUFFICIENT_LIQUIDITY" : "SDK_ERROR", message);
+    }
   }
 }
 

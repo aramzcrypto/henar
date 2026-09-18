@@ -19,3 +19,4 @@ solver-state/
 output/
 .claude/
 logs/
+.env*.local

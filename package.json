@@ -63,7 +63,8 @@
     "router:discover:intermediates": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-intermediate-routes.ts",
     "router:discover:byreal": "node --env-file-if-exists=.env.local --import tsx scripts/router/discover-byreal-pools.ts",
     "router:probe:opaque": "node --env-file-if-exists=.env.local --import tsx scripts/router/opaque-venue-harness.ts",
-    "router:census:legs": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-leg-census.ts"
+    "router:census:legs": "node --env-file-if-exists=.env.local --import tsx scripts/router/route-leg-census.ts",
+    "router:validate:builder": "node --env-file-if-exists=.env.local --import tsx scripts/router/validate-native-builder.ts"
   },
   "dependencies": {
     "@byreal-io/byreal-clmm-sdk": "^0.2.2",

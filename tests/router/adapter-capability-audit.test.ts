@@ -32,7 +32,7 @@ const ADAPTERS: VenueAdapter[] = [
   new RaydiumAdapter({ executionEnabled: true }),
   new RaydiumCpmmAdapter({ executionEnabled: true }),
   new OrcaAdapter({ executionEnabled: true }),
-  new MeteoraAdapter(),
+  new MeteoraAdapter({ executionEnabled: true }),
   new MeteoraDbcAdapter({ executionEnabled: true }),
   new MeteoraDammV2Adapter({ executionEnabled: true }),
   new ByrealAdapter(),
