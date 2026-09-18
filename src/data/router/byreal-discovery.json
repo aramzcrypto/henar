@@ -1,0 +1,1338 @@
+{
+  "program": "REALQqNEomY6cQGZJUGwywTBD2UmDT32rZcNnfxQ5N2",
+  "fetchedAt": "2026-09-18T10:45:36.000Z",
+  "slot": 448060434,
+  "sizes": [
+    100,
+    1000,
+    5000,
+    10000,
+    25000,
+    50000
+  ],
+  "pools": [
+    {
+      "address": "5bWgqeKbHpxVGxdxSEJ9FGjU8AyNhCMuGGhHFBoakQvj",
+      "mint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+      "representationId": "xstocks:Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+      "provider": "xstocks",
+      "tokenSymbol": "AMZNx",
+      "baseMint": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "1426101608872",
+      "sqrtPriceX64": "29266913810174653991",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "39645780",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "396300490",
+          "feeAmount": "2000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "1978014099",
+          "feeAmount": "10000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "3947226454",
+          "feeAmount": "20000002",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "9783486515",
+          "feeAmount": "50000006",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "19204822892",
+          "feeAmount": "100000015",
+          "priceImpactBps": -9903,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "5pobXosbeGSCRG3HdaRiw2TaihDDQMXkHFVbUTF24weM",
+      "mint": "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu",
+      "representationId": "xstocks:Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu",
+      "provider": "xstocks",
+      "tokenSymbol": "COINx",
+      "baseMint": "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "621577666054",
+      "sqrtPriceX64": "24699492679791190771",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "55659825",
+          "feeAmount": "200001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "556000537",
+          "feeAmount": "2000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "2766782086",
+          "feeAmount": "10000002",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "5500745892",
+          "feeAmount": "20000004",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "13514884705",
+          "feeAmount": "50000007",
+          "priceImpactBps": -9903,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "26269531524",
+          "feeAmount": "100000017",
+          "priceImpactBps": -9906,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "Hv44BZaqT5URrrAtGk6jvfbWKL2PytWA4ur2r1QnvtQa",
+      "mint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "representationId": "xstocks:XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "provider": "xstocks",
+      "tokenSymbol": "CRCLx",
+      "baseMint": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "3203046236426",
+      "sqrtPriceX64": "17310709262708378257",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "113325029",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "1132911769",
+          "feeAmount": "2000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "5657056930",
+          "feeAmount": "10000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "11295502402",
+          "feeAmount": "20000003",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "28101066381",
+          "feeAmount": "50000004",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "55741427162",
+          "feeAmount": "100000010",
+          "priceImpactBps": -9902,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "4k43WcUS8kPXkmL7PhgpwCteYYaSgzXvfKU63FEE1WS5",
+      "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+      "representationId": "xstocks:XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+      "provider": "xstocks",
+      "tokenSymbol": "GOOGLx",
+      "baseMint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "1372827601256",
+      "sqrtPriceX64": "34810265275756992640",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "28024546",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "280148335",
+          "feeAmount": "2000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "1398591673",
+          "feeAmount": "10000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "2791821227",
+          "feeAmount": "20000002",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "6939197092",
+          "feeAmount": "50000005",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "13740604126",
+          "feeAmount": "100000010",
+          "priceImpactBps": -9902,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "3Z4H4H9bCcLyt1MmK44J5KZWkJ7taiU821QDTVZYaCpz",
+      "mint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+      "representationId": "xstocks:XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+      "provider": "xstocks",
+      "tokenSymbol": "HOODx",
+      "baseMint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "901911957279",
+      "sqrtPriceX64": "19673493000474701912",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "87732797",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "876509589",
+          "feeAmount": "2000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "4363959973",
+          "feeAmount": "10000001",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "8680571117",
+          "feeAmount": "20000001",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "21348573593",
+          "feeAmount": "50000005",
+          "priceImpactBps": -9903,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "41517802258",
+          "feeAmount": "100000009",
+          "priceImpactBps": -9906,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "CcPxuvtqXeefgnBnCKSKSLvdGdJ3kbWyb3LDevGX3PJg",
+      "mint": "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2",
+      "representationId": "xstocks:XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2",
+      "provider": "xstocks",
+      "tokenSymbol": "MCDx",
+      "baseMint": "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "1000726655395",
+      "sqrtPriceX64": "29419808809686375705",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "39234049",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "392120996",
+          "feeAmount": "2000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "1955771722",
+          "feeAmount": "10000003",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "3899552949",
+          "feeAmount": "20000005",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "9668367026",
+          "feeAmount": "50000007",
+          "priceImpactBps": -9902,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "19099582419",
+          "feeAmount": "100000014",
+          "priceImpactBps": -9903,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "DmHek82VP6HtBmSz56wDrfr4nJysmtGQhpY7D5HVkGnX",
+      "mint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+      "representationId": "xstocks:XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+      "provider": "xstocks",
+      "tokenSymbol": "MSTRx",
+      "baseMint": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "460887729164",
+      "sqrtPriceX64": "21638700944570722302",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "72514933",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "723946480",
+          "feeAmount": "2000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "3593065295",
+          "feeAmount": "10000003",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "7117433972",
+          "feeAmount": "20000006",
+          "priceImpactBps": -9902,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "17241586024",
+          "feeAmount": "50000014",
+          "priceImpactBps": -9905,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "32480169114",
+          "feeAmount": "100000028",
+          "priceImpactBps": -9911,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "FAJMCRnzrLqbBTf6waQDqFk219aoTYaLGtAZNEADCTym",
+      "mint": "MUxEsUKSMACyw5fZf68wxf5FLnZVhtU9CwH8uNNGay1",
+      "representationId": "backpack:MUxEsUKSMACyw5fZf68wxf5FLnZVhtU9CwH8uNNGay1",
+      "provider": "backpack",
+      "tokenSymbol": "MU",
+      "baseMint": "MUxEsUKSMACyw5fZf68wxf5FLnZVhtU9CwH8uNNGay1",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 6,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "18881122372",
+      "sqrtPriceX64": "580089942386766447215",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "101004",
+          "feeAmount": "100000",
+          "priceImpactBps": -12,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "1008519",
+          "feeAmount": "1000000",
+          "priceImpactBps": -27,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "5008567",
+          "feeAmount": "5000001",
+          "priceImpactBps": -94,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "9932883",
+          "feeAmount": "10000002",
+          "priceImpactBps": -177,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "24211445",
+          "feeAmount": "25000002",
+          "priceImpactBps": -423,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "46451469",
+          "feeAmount": "50000007",
+          "priceImpactBps": -813,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "GjLusGo2z3mnXPmebhhNt9ocMDJgfdxrDFctVF8Ev3Kg",
+      "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+      "representationId": "xstocks:Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+      "provider": "xstocks",
+      "tokenSymbol": "NVDAx",
+      "baseMint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "2143740768260",
+      "sqrtPriceX64": "27451239616673602225",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "45064284",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "450516004",
+          "feeAmount": "2000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "2249765674",
+          "feeAmount": "10000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "4492514760",
+          "feeAmount": "20000001",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "11176278064",
+          "feeAmount": "50000004",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "22165838147",
+          "feeAmount": "100000008",
+          "priceImpactBps": -9902,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "FSLSua26xaXSLUG31SnyifgS6wgkRh5SirbCZW9zXNoG",
+      "mint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+      "representationId": "xstocks:Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+      "provider": "xstocks",
+      "tokenSymbol": "QQQx",
+      "baseMint": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "838517345637",
+      "sqrtPriceX64": "49575464782483273131",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "13817108",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "138116036",
+          "feeAmount": "2000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "689360217",
+          "feeAmount": "10000002",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "1375677076",
+          "feeAmount": "20000004",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "3417031628",
+          "feeAmount": "50000008",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "6757826132",
+          "feeAmount": "100000018",
+          "priceImpactBps": -9902,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "DmwKabMV6cTZ1ejwjRFr2R5LPq6p4dTkr7xAaVJSDxhk",
+      "mint": "SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3",
+      "representationId": "backpack:SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3",
+      "provider": "backpack",
+      "tokenSymbol": "SKHY",
+      "baseMint": "SKHYhSjuRWHgikq8eRKbtBbpABgJSkd7ytQV14i9EQ3",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 6,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "47534104811",
+      "sqrtPriceX64": "251663637287878157812",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "536657",
+          "feeAmount": "100000",
+          "priceImpactBps": -12,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "5359144",
+          "feeAmount": "1000000",
+          "priceImpactBps": -25,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "26631871",
+          "feeAmount": "5000000",
+          "priceImpactBps": -86,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "52859704",
+          "feeAmount": "10000000",
+          "priceImpactBps": -162,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "129182549",
+          "feeAmount": "25000004",
+          "priceImpactBps": -382,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "248804947",
+          "feeAmount": "50000005",
+          "priceImpactBps": -738,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "7mcKEBY6Y8EcCst4u55aNAP84Gn2a2VUGCV1n6AS3KoZ",
+      "mint": "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
+      "representationId": "backpack:SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
+      "provider": "backpack",
+      "tokenSymbol": "SPCX",
+      "baseMint": "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 6,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "79474222033",
+      "sqrtPriceX64": "230552866083140229277",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "639470",
+          "feeAmount": "100000",
+          "priceImpactBps": -11,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "6388917",
+          "feeAmount": "1000001",
+          "priceImpactBps": -20,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "31812720",
+          "feeAmount": "5000002",
+          "priceImpactBps": -61,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "63294935",
+          "feeAmount": "10000002",
+          "priceImpactBps": -113,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "155785187",
+          "feeAmount": "25000005",
+          "priceImpactBps": -266,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "297172117",
+          "feeAmount": "50000033",
+          "priceImpactBps": -716,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "27x6aSxcAm6SoazoxmmTtFg6fWMQuNmdKJmHagq1DUZy",
+      "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "representationId": "xstocks:XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "provider": "xstocks",
+      "tokenSymbol": "SPYx",
+      "baseMint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "1993209531852",
+      "sqrtPriceX64": "51108614659683614647",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "13000915",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "129988008",
+          "feeAmount": "2000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "649483829",
+          "feeAmount": "10000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "1297872305",
+          "feeAmount": "20000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "3236945974",
+          "feeAmount": "50000003",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "6448854747",
+          "feeAmount": "100000007",
+          "priceImpactBps": -9901,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "6FQQyf7UcyU86TZC1cmAcfC4a18SJyDggEKtQfTJWmfs",
+      "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+      "representationId": "xstocks:XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+      "provider": "xstocks",
+      "tokenSymbol": "TSLAx",
+      "baseMint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "729066675349",
+      "sqrtPriceX64": "35415956026761253556",
+      "depthUsd": 50000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "27073292",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "270551713",
+          "feeAmount": "2000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "1348637245",
+          "feeAmount": "10000002",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "2687077362",
+          "feeAmount": "20000005",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "6643156146",
+          "feeAmount": "50000013",
+          "priceImpactBps": -9902,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "13039602911",
+          "feeAmount": "100000026",
+          "priceImpactBps": -9904,
+          "filled": true
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "EHdow7Yhmr1ac8Qff9Co1LhSosr38puA6zLd4cbJLdpV",
+      "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+      "representationId": "xstocks:XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+      "provider": "xstocks",
+      "tokenSymbol": "AAPLx",
+      "baseMint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "1986870412458",
+      "sqrtPriceX64": "33949027663722911843",
+      "depthUsd": 25000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "29464796",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "294575612",
+          "feeAmount": "2000000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "1471271269",
+          "feeAmount": "10000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "2938518574",
+          "feeAmount": "20000003",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "7314278316",
+          "feeAmount": "50000008",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": null,
+          "feeAmount": null,
+          "priceImpactBps": null,
+          "filled": false
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "LVcDubF4BFsEw8qmxupmw74bbZfiya99kor5c3Hh24r",
+      "mint": "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8",
+      "representationId": "xstocks:Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8",
+      "provider": "xstocks",
+      "tokenSymbol": "SPCXx",
+      "baseMint": "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "394970815959",
+      "sqrtPriceX64": "23057649652887996550",
+      "depthUsd": 25000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "63927392",
+          "feeAmount": "100000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "638115089",
+          "feeAmount": "1000002",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "3163045448",
+          "feeAmount": "5000007",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "6241703973",
+          "feeAmount": "10000013",
+          "priceImpactBps": -9902,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "14774174491",
+          "feeAmount": "25000023",
+          "priceImpactBps": -9908,
+          "filled": true
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": null,
+          "feeAmount": null,
+          "priceImpactBps": null,
+          "filled": false
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "BqXGCG4vcD81GMiX2Rw9sKrSTqeAAZS6mGR5Ek69B7Lm",
+      "mint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+      "representationId": "xstocks:Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+      "provider": "xstocks",
+      "tokenSymbol": "METAx",
+      "baseMint": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 20,
+      "liquidity": "248414837512",
+      "sqrtPriceX64": "48343987719106749113",
+      "depthUsd": 10000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "14528422",
+          "feeAmount": "200000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "145083673",
+          "feeAmount": "2000002",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "719786799",
+          "feeAmount": "10000007",
+          "priceImpactBps": -9901,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "1420865672",
+          "feeAmount": "20000011",
+          "priceImpactBps": -9902,
+          "filled": true
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "2446887215",
+          "feeAmount": "35395946",
+          "priceImpactBps": -9933,
+          "filled": false
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "2446887215",
+          "feeAmount": "35395946",
+          "priceImpactBps": -9966,
+          "filled": false
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "F78pCVjotVxmMECeubikwFrH3myUjw4zyW59h7dTLQDv",
+      "mint": "SNDKbwMUQvZhnLnxLduradgLHG5KrPuKwpnrkkGRhfH",
+      "representationId": "backpack:SNDKbwMUQvZhnLnxLduradgLHG5KrPuKwpnrkkGRhfH",
+      "provider": "backpack",
+      "tokenSymbol": "SNDK",
+      "baseMint": "SNDKbwMUQvZhnLnxLduradgLHG5KrPuKwpnrkkGRhfH",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 6,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "866689346",
+      "sqrtPriceX64": "747754850256719668725",
+      "depthUsd": 5000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "60625",
+          "feeAmount": "100000",
+          "priceImpactBps": -38,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "590377",
+          "feeAmount": "1000001",
+          "priceImpactBps": -299,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "2582116",
+          "feeAmount": "5000011",
+          "priceImpactBps": -1514,
+          "filled": true
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": null,
+          "feeAmount": null,
+          "priceImpactBps": null,
+          "filled": false
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": null,
+          "feeAmount": null,
+          "priceImpactBps": null,
+          "filled": false
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": null,
+          "feeAmount": null,
+          "priceImpactBps": null,
+          "filled": false
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "CEH9iBXkV4DmdLhogftD24cbvFu6uFYMAkPUqyas1Mbq",
+      "mint": "Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH",
+      "representationId": "xstocks:Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH",
+      "provider": "xstocks",
+      "tokenSymbol": "STRCx",
+      "baseMint": "Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "297427723221",
+      "sqrtPriceX64": "19071207694330382323",
+      "depthUsd": 1000,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "93434543",
+          "feeAmount": "100000",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "931622313",
+          "feeAmount": "1000001",
+          "priceImpactBps": -9900,
+          "filled": true
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "3383530835",
+          "feeAmount": "3678758",
+          "priceImpactBps": -9928,
+          "filled": false
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "3383530835",
+          "feeAmount": "3678758",
+          "priceImpactBps": -9964,
+          "filled": false
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "3383530835",
+          "feeAmount": "3678758",
+          "priceImpactBps": -9986,
+          "filled": false
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "3383530835",
+          "feeAmount": "3678758",
+          "priceImpactBps": -9993,
+          "filled": false
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "D4iEzmoQF4NRGs1wNM6BweeXnzqKeJGEvX5YpXnKd47T",
+      "mint": "DRAMjSWR7HRfJKjRkvQWYL2bcaejaVhuxEcjf4pAY4Cw",
+      "representationId": "backpack:DRAMjSWR7HRfJKjRkvQWYL2bcaejaVhuxEcjf4pAY4Cw",
+      "provider": "backpack",
+      "tokenSymbol": "DRAM",
+      "baseMint": "DRAMjSWR7HRfJKjRkvQWYL2bcaejaVhuxEcjf4pAY4Cw",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 6,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "99136004",
+      "sqrtPriceX64": "140838330459433300012",
+      "depthUsd": 100,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "1562926",
+          "feeAmount": "100001",
+          "priceImpactBps": -890,
+          "filled": true
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "3865699",
+          "feeAmount": "275970",
+          "priceImpactBps": -7747,
+          "filled": false
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "3865699",
+          "feeAmount": "275970",
+          "priceImpactBps": -9549,
+          "filled": false
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "3865699",
+          "feeAmount": "275970",
+          "priceImpactBps": -9775,
+          "filled": false
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "3865699",
+          "feeAmount": "275970",
+          "priceImpactBps": -9910,
+          "filled": false
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "3865699",
+          "feeAmount": "275970",
+          "priceImpactBps": -9955,
+          "filled": false
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    },
+    {
+      "address": "6sAHwddQR259L4aKyDmL1AtKaR3PAGp8dCJ4ABKw7vhG",
+      "mint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+      "representationId": "xstocks:Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+      "provider": "xstocks",
+      "tokenSymbol": "GLDx",
+      "baseMint": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+      "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "baseDecimals": 8,
+      "quoteDecimals": 6,
+      "tickSpacing": 10,
+      "feeBps": 10,
+      "liquidity": "50500726",
+      "sqrtPriceX64": "36994767174590398523",
+      "depthUsd": 0,
+      "quotes": [
+        {
+          "sizeUsd": 100,
+          "amountOut": "1289679",
+          "feeAmount": "5473",
+          "priceImpactBps": -9995,
+          "filled": false
+        },
+        {
+          "sizeUsd": 1000,
+          "amountOut": "1289679",
+          "feeAmount": "5473",
+          "priceImpactBps": -9999,
+          "filled": false
+        },
+        {
+          "sizeUsd": 5000,
+          "amountOut": "1289679",
+          "feeAmount": "5473",
+          "priceImpactBps": -10000,
+          "filled": false
+        },
+        {
+          "sizeUsd": 10000,
+          "amountOut": "1289679",
+          "feeAmount": "5473",
+          "priceImpactBps": -10000,
+          "filled": false
+        },
+        {
+          "sizeUsd": 25000,
+          "amountOut": "1289679",
+          "feeAmount": "5473",
+          "priceImpactBps": -10000,
+          "filled": false
+        },
+        {
+          "sizeUsd": 50000,
+          "amountOut": "1289679",
+          "feeAmount": "5473",
+          "priceImpactBps": -10000,
+          "filled": false
+        }
+      ],
+      "slot": 448060434,
+      "fetchedAt": "2026-09-18T10:45:36.000Z",
+      "error": null
+    }
+  ]
+}
