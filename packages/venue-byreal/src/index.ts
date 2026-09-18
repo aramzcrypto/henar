@@ -23,12 +23,16 @@
  * live fills, so `buildSwapInstructions` refuses and the route is compared and
  * guarded but settled elsewhere.
  */
-import { PublicKey, type Connection } from "@solana/web3.js";
+import { PublicKey, type Connection, type TransactionInstruction } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import {
+  flagEnabled,
   fromRaw,
+  inspectMints,
   toRaw,
   unavailableQuote,
+  type BuildOptions,
   type BuildResult,
   type QuoteContext,
   type QuoteRequest,
@@ -147,22 +151,34 @@ function priceAgainst(m: Sdk, state: PoolState, inputMint: string, amountIn: big
     if (!out.allTrade) return null;
     const amountOut = BigInt(out.expectedAmountOut.toString());
     if (amountOut <= 0n) return null;
-    return { amountOut, feeAmount: BigInt(out.feeAmount.toString()) };
+    /* The tick arrays this fill crosses are the swap instruction's remaining
+       accounts. Pricing and building must agree on them, so they come from
+       the same call rather than being derived again. */
+    return { amountOut, feeAmount: BigInt(out.feeAmount.toString()), remainingAccounts: out.remainingAccounts };
   } catch {
     return null;
   }
 }
 
+export type ByrealAdapterOptions = { executionEnabled?: boolean };
+
 export class ByrealAdapter implements VenueAdapter {
   readonly venue = "byreal" as const;
+
+  constructor(private readonly options: ByrealAdapterOptions = {}) {}
+
+  private executionEnabled() {
+    return this.options.executionEnabled ?? flagEnabled("routerExecution");
+  }
 
   capabilities(): VenueCapabilities {
     return {
       venue: "byreal",
       quote: true,
       legacyExecution: false,
-      // Quote-only until live fills have been watched against these quotes.
-      nativeBuild: false,
+      /* A capability, not a switch: the builder exists. HENAR_ROUTER_EXECUTION
+         decides whether a build is allowed, enforced in buildSwapInstructions. */
+      nativeBuild: true,
       poolTypes: ["byreal_clmm"],
       supportsMinOut: true,
       supportsToken2022: true,
@@ -304,14 +320,100 @@ export class ByrealAdapter implements VenueAdapter {
     }
   }
 
-  async buildSwapInstructions(): Promise<BuildResult> {
-    return {
-      instructions: [],
-      lookupTables: [],
-      reason: "NOT_IMPLEMENTED",
-      detail:
-        "Byreal is quote-only until its quotes have been validated against live fills; the SDK can build, the venue has not earned it yet.",
-    };
+  /**
+   * Native Byreal CLMM swap instructions.
+   *
+   * Built with the SDK's own `swapBaseInInstruction`, which wraps the
+   * program's `swapV2` — the Token-2022-aware entry point that takes both
+   * vault mints. No instruction layout is guessed here.
+   *
+   * Token-2022 is supported only as far as `swapV2` supports it: transfer
+   * fees are handled by the program, transfer *hooks* need extra accounts
+   * this instruction does not carry. A hooked mint is refused rather than
+   * built, because the alternative is a transaction that fails on chain after
+   * the user has signed it.
+   */
+  async buildSwapInstructions(quote: VenueQuote, ctx: QuoteContext, options?: BuildOptions): Promise<BuildResult> {
+    const refuse = (reason: BuildResult["reason"], detail: string): BuildResult => ({ instructions: [], lookupTables: [], reason, detail });
+    if (!this.executionEnabled()) return refuse("VENUE_DISABLED", "HENAR_ROUTER_EXECUTION is off");
+    if (quote.venue !== this.venue || quote.unavailableReason || !quote.poolAddress)
+      return refuse("INVALID_REQUEST", "quote is not an available Byreal quote");
+    if (!options) return refuse("INVALID_REQUEST", "owner and guard-approved minimumAmountOut are required");
+    if (Date.parse(quote.expiresAt) < ctx.now) return refuse("QUOTE_EXPIRED", "quote expired");
+    if (!ctx.connection) return refuse("VENUE_NOT_CONFIGURED", "no RPC connection");
+    const minimumOut = BigInt(options.minimumAmountOut);
+    if (minimumOut <= 0n || minimumOut > BigInt(quote.expectedAmountOut))
+      return refuse("INVALID_REQUEST", "minimumAmountOut must be positive and not above the quoted output");
+    const pool = ctx.pools.find((p) => p.address === quote.poolAddress && p.venue === "byreal" && p.enabled);
+    if (!pool) return refuse("NO_VERIFIED_POOL", "quoted pool is not an enabled registry pool");
+
+    try {
+      const m = await sdk();
+      const connection: Connection = ctx.connection;
+      const state = await readPool(connection, pool.address);
+      if (!state) return refuse("SDK_ERROR", "pool state could not be read");
+      const pair = new Set([state.mintA, state.mintB]);
+      if (!(pair.has(quote.inputMint) && pair.has(quote.outputMint)))
+        return refuse("QUOTE_TERMS_MISMATCH", "on-chain mints differ from the quote");
+
+      /* Transfer hooks would need remaining accounts swapV2 does not carry.
+         Fail closed: a hooked mint is refused, never built optimistically. */
+      const mints = [state.mintA, state.mintB];
+      const inspected = await inspectMints(connection, mints);
+      const inspections = new Map(mints.map((mint, i) => [mint, inspected[i]]));
+      for (const mint of mints) {
+        const inspection = inspections.get(mint);
+        if (!inspection) return refuse("SDK_ERROR", `mint ${mint} could not be inspected`);
+        if (!inspection.supported)
+          return refuse("REPRESENTATION_RESTRICTED", `mint ${mint}: ${inspection.unsupportedReason ?? "unsupported token extensions"}`);
+        if (inspection.transferHookProgram)
+          return refuse("REPRESENTATION_RESTRICTED", `mint ${mint} has a transfer hook; swapV2 carries no accounts for it`);
+      }
+
+      /* Re-price against current state before building: the guard approved a
+         floor against the quoted output, and ticks move. */
+      const fresh = priceAgainst(m, state, quote.inputMint, BigInt(quote.amountIn));
+      if (!fresh) return refuse("INSUFFICIENT_LIQUIDITY", "pool can no longer fill the full amount");
+      if (fresh.amountOut < minimumOut)
+        return refuse("SLIPPAGE_LIMIT_EXCEEDED", "state moved: current output is below the approved floor");
+
+      const owner = new PublicKey(options.owner);
+      const programOf = (mint: string) => new PublicKey(inspections.get(mint)!.program);
+      const ata = (mint: string) => getAssociatedTokenAddressSync(new PublicKey(mint), owner, true, programOf(mint));
+      const built = await m.Instruction.swapBaseInInstruction({
+        poolInfo: state.poolInfo as unknown as Parameters<Sdk["Instruction"]["swapBaseInInstruction"]>[0]["poolInfo"],
+        ownerInfo: {
+          wallet: owner as unknown as PublicKey,
+          tokenAccountA: ata(state.mintA),
+          tokenAccountB: ata(state.mintB),
+        },
+        amount: new BN(quote.amountIn),
+        otherAmountThreshold: new BN(minimumOut.toString()),
+        sqrtPriceLimitX64: new BN(0),
+        isInputMintA: quote.inputMint === state.mintA,
+        exTickArrayBitmap: state.exBitmapInfo.exBitmapAddress,
+        tickArray: fresh.remainingAccounts,
+      } as unknown as Parameters<Sdk["Instruction"]["swapBaseInInstruction"]>[0]);
+
+      const instructions = built.instructions as unknown as TransactionInstruction[];
+      if (!instructions.length) return refuse("SDK_ERROR", "SDK returned no instructions");
+      for (const ix of instructions) {
+        if (ix.programId.toBase58() !== BYREAL_CLMM_PROGRAM)
+          return refuse("SDK_ERROR", `instruction targets ${ix.programId.toBase58()}, not the Byreal CLMM program`);
+        for (const k of ix.keys)
+          if (k.isSigner && !k.pubkey.equals(owner))
+            return refuse("INVALID_REQUEST", `venue instruction requires signer ${k.pubkey.toBase58()}`);
+      }
+
+      return {
+        instructions,
+        lookupTables: [],
+        reason: null,
+        detail: `ClmmInstrument.swapBaseInInstruction (swapV2); ${fresh.remainingAccounts.length} tick arrays; amountOutMin ${minimumOut}`,
+      };
+    } catch (error) {
+      return refuse("SDK_ERROR", (error as Error).message);
+    }
   }
 }
 

@@ -24,7 +24,7 @@ const SIZES_USDC = [100, 1_000, 10_000];
 
 function adapterFor(name: string): { adapter: VenueAdapter; venue: string; poolType: string } {
   if (name === "meteora") return { adapter: new MeteoraAdapter({ executionEnabled: true }), venue: "meteora", poolType: "dlmm" };
-  if (name === "byreal") return { adapter: new ByrealAdapter(), venue: "byreal", poolType: "byreal_clmm" };
+  if (name === "byreal") return { adapter: new ByrealAdapter({ executionEnabled: true }), venue: "byreal", poolType: "byreal_clmm" };
   throw new Error(`unknown venue ${name}; expected meteora or byreal`);
 }
 
