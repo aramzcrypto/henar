@@ -29,7 +29,7 @@ import { MeteoraAdapter } from "@henar/venue-meteora";
 import { OrcaAdapter } from "@henar/venue-orca";
 import { ByrealAdapter } from "@henar/venue-byreal";
 
-const SIZES = [1_000, 10_000, 50_000];
+const SIZES = [100, 1_000, 5_000, 10_000, 25_000, 50_000];
 const OUTPUT = "docs/router/EXECUTABLE_BENCHMARK.json";
 const JUP = "https://lite-api.jup.ag/swap/v1";
 /** The fee Henar charges, matching MARKET_FEE_BPS. */
@@ -50,6 +50,12 @@ type Row = {
   splitGainBps: number | null;
   grossVsJupiterBps: number | null;
   netVsJupiterBps: number | null;
+  /**
+   * What the product actually shows. Henar races its own native engine
+   * against Jupiter and takes the better side, so the number a user sees is
+   * the best of the two, less the fee — not the native engine alone.
+   */
+  productNetVsJupiterBps: number | null;
   simulated: boolean | null;
   simulationDetail: string | null;
   /** Serialized v0 transaction size in bytes, and the limit it must fit. */
@@ -141,7 +147,7 @@ async function main() {
         const row: Row = {
           config: name, ticker, sizeUsd, bestSingleVenue: null, bestSingleOut: null, routeKind: null, routeVenues: [],
           henarGrossOut: null, henarNetOut: null, jupiterOut: null, splitGainBps: null,
-          grossVsJupiterBps: null, netVsJupiterBps: null, simulated: null, simulationDetail: null,
+          grossVsJupiterBps: null, netVsJupiterBps: null, productNetVsJupiterBps: null, simulated: null, simulationDetail: null,
           txBytes: null, lookupTablesUsed: 0,
         };
 
@@ -175,6 +181,13 @@ async function main() {
           row.jupiterOut = jup.toString();
           if (row.henarGrossOut) row.grossVsJupiterBps = Number(((BigInt(row.henarGrossOut) - jup) * 10_000n) / jup);
           if (row.henarNetOut) row.netVsJupiterBps = Number(((BigInt(row.henarNetOut) - jup) * 10_000n) / jup);
+          /* The race: whichever gross output is larger, then the fee. This is
+             the comparison a user experiences, and it is bounded below by
+             Jupiter's own price less the fee. */
+          const gross = row.henarGrossOut ? BigInt(row.henarGrossOut) : 0n;
+          const best = gross > jup ? gross : jup;
+          const net = (best * BigInt(10_000 - FEE_BPS)) / 10_000n;
+          row.productNetVsJupiterBps = Number(((net - jup) * 10_000n) / jup);
         }
 
         /* Build and simulate the winning native route's legs. A route that
@@ -258,12 +271,22 @@ async function main() {
   for (const { name } of configs) {
     const mine = rows.filter((r) => r.config === name);
     const splits = mine.filter((r) => r.routeKind === "split");
+    const pick = (f: (r: Row) => number | null) => median(mine.map(f).filter((n): n is number => n !== null));
     process.stdout.write(
-      `${name.padEnd(9)} splits ${String(splits.length).padStart(2)}/${mine.length}  median split gain ${median(splits.map((r) => r.splitGainBps!).filter((n) => n !== null))} bps  median gross vs jup ${median(mine.map((r) => r.grossVsJupiterBps!).filter((n) => n !== null))} bps  median net vs jup ${median(mine.map((r) => r.netVsJupiterBps!).filter((n) => n !== null))} bps\n`,
+      `${name.padEnd(9)} splits ${String(splits.length).padStart(2)}/${mine.length}  split gain ${String(median(splits.map((r) => r.splitGainBps).filter((n): n is number => n !== null))).padStart(4)}  native gross ${String(pick((r) => r.grossVsJupiterBps)).padStart(5)}  native net ${String(pick((r) => r.netVsJupiterBps)).padStart(5)}  product net ${String(pick((r) => r.productNetVsJupiterBps)).padStart(5)} bps\n`,
     );
   }
   const simmed = rows.filter((r) => r.simulated !== null);
-  process.stdout.write(`build+simulate: ${simmed.filter((r) => r.simulated).length}/${simmed.length} clean\n`);
+  const clean = simmed.filter((r) => r.simulated).length;
+  process.stdout.write(`build+simulate: ${clean}/${simmed.length} clean (${simmed.length ? Math.round((clean / simmed.length) * 100) : 0}%)\n`);
+  /* Per size, because the gap to Jupiter widens with size and a single median
+     over the whole ladder hides that. */
+  for (const size of SIZES) {
+    const at = rows.filter((r) => r.config === "all" && r.sizeUsd === size);
+    const g = median(at.map((r) => r.grossVsJupiterBps).filter((n): n is number => n !== null));
+    const p = median(at.map((r) => r.productNetVsJupiterBps).filter((n): n is number => n !== null));
+    process.stdout.write(`  $${String(size).padStart(6)}: native gross ${String(g).padStart(5)} bps, product net ${String(p).padStart(5)} bps\n`);
+  }
   const sized = rows.filter((r) => r.txBytes !== null);
   const byLegs = new Map<number, number[]>();
   for (const r of sized) byLegs.set(r.routeVenues.length, [...(byLegs.get(r.routeVenues.length) ?? []), r.txBytes!]);
