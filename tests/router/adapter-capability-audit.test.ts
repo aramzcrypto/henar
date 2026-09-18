@@ -14,7 +14,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PublicKey } from "@solana/web3.js";
+import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 import { executableAsNativeLeg, isPoolVenue, unavailableQuote, USDC_MINT, type QuoteRequest, type VenueAdapter } from "@henar/router-core";
 import { JupiterAdapter } from "@henar/venue-jupiter";
 import { RaydiumAdapter, RaydiumCpmmAdapter } from "@henar/venue-raydium";
@@ -82,5 +82,26 @@ test("the capability triple is coherent for every adapter", () => {
        neither with pools declared, is a wiring mistake. */
     if (isPoolVenue(caps)) assert.equal(caps.legacyExecution, false, `${caps.venue} is a pool venue and must not claim legacy execution`);
     else assert.equal(caps.nativeBuild, false, `${caps.venue} declares no pool types and cannot be a native leg`);
+  }
+});
+
+/**
+ * The compute budget belongs to the planner, not to a leg.
+ *
+ * Solana rejects a transaction carrying two setComputeUnitLimit instructions.
+ * The planner sets one for the whole transaction, so a venue builder that
+ * returns its own makes every trade through that venue invalid on submission.
+ * The Meteora SDK's swap() prepends one; it must be stripped. This is checked
+ * over every adapter, because the next SDK to do it will not announce itself.
+ */
+test("no adapter returns compute-budget instructions; the planner owns those", async () => {
+  const request: QuoteRequest = { representationId: "x", side: "buy", amount: "1000000", amountType: "input", inputMint: USDC_MINT, outputMint: key(9) };
+  for (const adapter of ADAPTERS) {
+    const caps = adapter.capabilities();
+    if (!caps.nativeBuild) continue;
+    const quote = unavailableQuote(caps.venue, request, "SDK_ERROR", null, key(1), Date.now());
+    const built = await adapter.buildSwapInstructions(quote, { connection: null, pools: [], now: Date.now(), deadlineMs: 1_000 });
+    for (const ix of built.instructions)
+      assert.notEqual(ix.programId.toBase58(), ComputeBudgetProgram.programId.toBase58(), `${caps.venue} returned a compute-budget instruction`);
   }
 });

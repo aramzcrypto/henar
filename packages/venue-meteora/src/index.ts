@@ -23,7 +23,7 @@
  * visible rather than mistaken for pool depth. The bound also keeps the
  * eventual swap within the account limit of one transaction.
  */
-import { PublicKey, type Connection } from "@solana/web3.js";
+import { ComputeBudgetProgram, PublicKey, type Connection } from "@solana/web3.js";
 import { ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import {
@@ -379,6 +379,13 @@ export class MeteoraAdapter implements VenueAdapter {
    *   Ownership of ATAs stays with the planner, which is also the contract
    *   the Raydium and Orca builders follow.
    *
+   *   The compute budget. `swap()` estimates units and prepends its own
+   *   setComputeUnitLimit. The planner sets one for the whole transaction, and
+   *   Solana rejects a transaction carrying two — "duplicate instruction" —
+   *   so every Meteora trade would have been invalid on submission. The
+   *   budget is a property of the transaction, not of one leg, and belongs to
+   *   the planner for the same reason the ATAs do.
+   *
    * SOL wrapping is kept: a path leg through SOL needs it, and the planner
    * does not do it.
    *
@@ -440,8 +447,10 @@ export class MeteoraAdapter implements VenueAdapter {
         binArraysPubkey,
       });
 
-      /* Drop the SDK's ATA creation; the planner owns that and runs first. */
-      const instructions = tx.instructions.filter((ix) => !ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID));
+      /* Drop what the planner owns: ATA creation and the compute budget. */
+      const instructions = tx.instructions.filter(
+        (ix) => !ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID) && !ix.programId.equals(ComputeBudgetProgram.programId),
+      );
       const swapIxs = instructions.filter((ix) => ix.programId.toBase58() === pool.programId);
       if (swapIxs.length !== 1)
         return refuse("SDK_ERROR", `expected exactly one DLMM instruction, got ${swapIxs.length}`);

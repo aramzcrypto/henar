@@ -21,7 +21,7 @@
  * venue instructions rather than the whole packaged transaction.
  */
 import { writeFile } from "node:fs/promises";
-import { AddressLookupTableAccount, Connection, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { USDC_MINT, loadPoolRegistry, quoteRepresentation, type QuoteContext, type VenueAdapter, type VerifiedPool } from "@henar/router-core";
 import { RaydiumAdapter, RaydiumCpmmAdapter } from "@henar/venue-raydium";
@@ -184,7 +184,12 @@ async function main() {
             const legs = result.route
               ? result.route.legs.map((l) => ({ venue: l.venue, quote: l }))
               : [{ venue: result.best.venue, quote: result.best }];
-            const instructions = [];
+            /* The planner always sets a compute limit; without it the runtime
+               allows 200k units per instruction and a Byreal leg alone has
+               been measured at 215k, so a two-leg route fails with
+               ProgramFailedToComplete for a reason that is nothing to do with
+               the route. Mirror the planner's ceiling. */
+            const instructions = [ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 })];
             const outProgram = await tokenProgramOf(connection, mint);
             instructions.push(
               createAssociatedTokenAccountIdempotentInstruction(owner, getAssociatedTokenAddressSync(new PublicKey(mint), owner, true, outProgram), owner, new PublicKey(mint), outProgram),
