@@ -79,11 +79,16 @@ export type SplitOptions = {
  * does not serialize drops to the best single venue rather than being sent.
  *
  * The cap lifts to three on its own once a router lookup table is configured,
- * and not before. Measured against a table built in memory over the same
- * routes, three legs compile to 530-556 bytes instead of overrunning: 0 of 9
- * fitted without one, 9 of 9 with. A table turns 32-byte account keys into
- * 1-byte indexes, and 88 accounts recur across routes — comfortably inside a
- * table's 256 addresses. See `routerSplitOptions` below.
+ * and not before. With a table three legs fit easily — 530-556 bytes against
+ * the 1232 limit, where 0 of 9 fitted without one — but fitting is not the
+ * same as earning. Measured as a paired difference, the same row quoted at
+ * two legs and at three, the third leg is worth a median of **1 bps**, and
+ * 1 bps at every size from $100 to $50,000.
+ *
+ * An unpaired reading of the same data said 10 bps at $50,000. That was
+ * market movement between two runs minutes apart, not the third leg. The cap
+ * therefore stays at two by default: the machinery is here, gated on a table
+ * that does not exist yet, and there is no price case for creating one.
  *
  * The cap is on legs the optimizer may *open*, not a target. One venue still
  * wins whenever it is genuinely best, and the caller ranks the construction
