@@ -1856,11 +1856,13 @@ export function Stockroom({
                   <Row label="Budget per purchase">{perPurchase} USDC</Row>
                 </div>
               )}
-              <details
-                className="fee-disclosure"
-                key={review?.transaction ?? "no-quote"}
-                open={!!review}
-              >
+              {/* Closed by default, including once a quote is ready. It used
+                  to open itself on review — sixteen rows of fees, route and
+                  Pyth fair value — which is exactly the moment the Swap button
+                  matters most, and it pushed it off the bottom of the screen.
+                  The key still resets it per quote, so it reopens closed
+                  rather than carrying the last quote's disclosure open. */}
+              <details className="fee-disclosure" key={review?.transaction ?? "no-quote"}>
                 <summary>
                   <span>
                     <Info size={14} />{" "}

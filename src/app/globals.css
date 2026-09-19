@@ -704,9 +704,28 @@ main {
   color: var(--text-4);
   margin-top: 5px;
 }
+/* The trade action stays put. On mobile it is a fixed dock; everywhere else it
+   used to flow after the details panel, so expanding the disclosure pushed
+   "Swap" below the fold. Sticky keeps it at the foot of the ticket without
+   taking it out of the layout. */
+.trade-purchase-action {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  padding-block: 10px;
+  background: linear-gradient(to bottom, transparent, var(--bg) 22%);
+}
 .fee-disclosure {
   margin: 12px 3px 23px;
   font-size: 11px;
+}
+/* Open, this is sixteen rows. Capping it keeps the action below reachable
+   without hiding anything: the panel scrolls inside itself rather than growing
+   the ticket past the viewport. */
+.fee-disclosure[open] .trade-details {
+  max-height: min(38vh, 340px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .fee-disclosure summary {
   display: flex;
