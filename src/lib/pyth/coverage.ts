@@ -46,7 +46,11 @@ export function spreadSample<T extends { ticker: string }>(all: T[], size: numbe
   return [...priority, ...spread];
 }
 
-const cache = createReadCache<PythCoverage>(PYTH_CACHE.coverageMs, 2);
+/* Entitlement coverage, not a price. The probe asks Pyth about 119 feeds and
+   takes over twenty seconds, so the request that arrives just after the TTL
+   lapses used to wait the whole probe out. It now gets the previous snapshot
+   and the refresh runs behind it. */
+const cache = createReadCache<PythCoverage>(PYTH_CACHE.coverageMs, 2, { staleWhileRevalidate: true });
 
 export async function pythCoverage(options: { fresh?: boolean; now?: () => number } = {}): Promise<PythCoverage> {
   return cache(
