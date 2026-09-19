@@ -88,8 +88,20 @@ import { FAIR_VALUE_LABELS, formatBps } from "@/lib/pyth/fair-value";
 import type { FairValueAssessment } from "@/lib/pyth/types";
 import { ThemeToggle } from "./theme-toggle";
 
-/** The company whose underlying feed the current Pyth entitlement covers. */
-const DEMO_TICKER = "TSLA";
+/**
+ * The representation the ticket opens on.
+ *
+ * It used to be Backpack's TSLA, chosen because TSLA's underlying feed is
+ * inside the current Pyth entitlement, so the fair-value panel had a reference
+ * to show. That ticker has no market: zero enabled pools and no TVL, so the
+ * first thing anyone saw was a ticket that could not be quoted.
+ *
+ * NVDAx has twelve enabled pools and about $2.6M of liquidity. The cost is
+ * that NVDA's underlying feed is NOT_ENTITLED on the current key, so the
+ * fair-value panel opens without a reference until the entitlement widens. A
+ * ticket that cannot trade is the worse of the two.
+ */
+const OPENING_TICKER = "NVDAx";
 /** Idle long enough that refreshing quotes is spending quota on nobody. */
 const IDLE_PAUSE_MS = 3 * 60_000;
 
@@ -360,7 +372,11 @@ export function Stockroom({
     mode === "market"
       ? MARKET_FEE_BPS
       : (protocol.data?.tradeFeeBps ?? MARKET_FEE_BPS);
-  const [amount, setAmount] = useState("100");
+  /* Empty, not a number. A prefilled amount makes every visit to the page
+     fetch a venue comparison and a router quote for a trade nobody asked for,
+     on a ticket most visitors only look at. The quote effect returns early on
+     an empty value, so nothing is requested until someone types. */
+  const [amount, setAmount] = useState("");
   const [marketPayment, setMarketPayment] =
     useState<PaymentToken>(PAYMENT_USDC);
   const [target, setTarget] = useState("");
@@ -391,7 +407,7 @@ export function Stockroom({
      reporting no reference, which reads as a broken integration rather than
      as an honest one. Falls back to the head of the list. */
   const [marketReceive, setMarketReceive] = useState<PaymentToken>(() => {
-    const opening = stocks.find((candidate) => candidate.ticker === DEMO_TICKER) ?? stocks[0];
+    const opening = stocks.find((candidate) => candidate.ticker === OPENING_TICKER) ?? stocks[0];
     return {
       mint: opening.mint,
       symbol: opening.ticker,
