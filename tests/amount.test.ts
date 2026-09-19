@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseUnits, formatUnits, feeFor } from "../src/lib/amount";
 import { stockFor, stocks } from "../src/lib/registry";
+import { sourceForMint } from "@/lib/stock-sources";
 test("USDC decimal input remains exact beyond floating-point precision", () => {
   assert.equal(parseUnits("9007199254.740993", 6), 9007199254740993n);
   assert.equal(formatUnits(9007199254740993n, 6), "9007199254.740993");
@@ -30,9 +31,13 @@ test("each offered issuer uses explicit, valid Solana mint addresses", async () 
   const { PublicKey } = await import("@solana/web3.js");
   for (const stock of stocks) {
     assert.equal(new PublicKey(stock.mint).toBase58(), stock.mint);
+    /* Provenance lives in stock-sources.json so it is not shipped to browsers
+       with the catalog. Every catalogued mint must still have one, or the
+       split has quietly dropped data. */
+    assert.ok(sourceForMint(stock.mint), `no source recorded for ${stock.ticker}`);
     assert.ok(["xStocks", "Ondo", "Backpack"].includes(stock.provider));
     assert.ok(
-      stock.source.startsWith(
+      sourceForMint(stock.mint)!.startsWith(
         stock.provider === "Ondo"
           ? "https://github.com/ondoprotocol/"
           : stock.provider === "Backpack"

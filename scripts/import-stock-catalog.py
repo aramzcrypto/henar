@@ -112,6 +112,12 @@ assert len(rows)>500,'Unexpected source truncation'
 # imported by client components, so every byte of it shipped to the browser on
 # /trade, /portfolio and /packs. Dropped after the logos are resolved.
 for r in rows: r.pop('logoSource', None)
+# The issuer product URL is provenance, not something any page reads, and it is
+# the largest remaining field. stocks.json is imported by client components, so
+# it travelled to every browser on /trade, /portfolio and /packs for nothing.
+# Kept on disk, keyed by mint, so the provenance is not lost.
+(ROOT/'src/data/stock-sources.json').write_text(json.dumps({r['mint']:r['source'] for r in rows if r.get('source')},indent=2)+'\n')
+for r in rows: r.pop('source', None)
 (ROOT/'src/data/stocks.json').write_text(json.dumps(rows,indent=2)+'\n')
 report={'retrievedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sources':{k:{'url':v,'sha256':hashlib.sha256(raw[k]).hexdigest()} for k,v in SOURCES.items()},'counts':{p:sum(r['provider']==p for r in rows) for p in ['xStocks','Ondo','Backpack']},'total':len(rows),'logos':sum(bool(r['logo']) for r in rows),'missingLogos':[{'provider':r['provider'],'ticker':r['ticker']} for r in rows if not r['logo']],'excluded':excluded,'policy':'Issuer-published Solana addresses are canonical representations even when issuer deposits or withdrawals are disabled. Leveraged/inverse products excluded. Live execution is always verified separately.'}
 (ROOT/'src/data/catalog-report.json').write_text(json.dumps(report,indent=2)+'\n')

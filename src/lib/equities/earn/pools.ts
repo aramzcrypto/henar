@@ -1,3 +1,5 @@
+export { POOL_TYPE_LABELS, type EarnPool } from "./pool-types";
+import type { EarnPool } from "./pool-types";
 import { loadStockEarnCatalog } from "./catalog";
 
 /**
@@ -5,28 +7,6 @@ import { loadStockEarnCatalog } from "./catalog";
  * featured USDC strategy is the only one wired to the protocol today; the rest
  * are verified markets whose integration is not built yet.
  */
-export type EarnPool = {
-  /** URL segment under /earn. */
-  slug: string;
-  name: string;
-  /** Short line under the name in lists and on the detail header. */
-  summary: string;
-  protocol: string;
-  type: "usdc-strategy" | "lending" | "vault" | "liquidity_pool";
-  /** The asset a depositor supplies. */
-  depositAsset: string;
-  /** Company context, absent for the USDC strategy. */
-  ticker: string | null;
-  company: string | null;
-  companyLogo: string | null;
-  representation: string | null;
-  provider: string | null;
-  apy: number | null;
-  tvlUsd: number | null;
-  status: "live" | "coming_soon";
-  sourceUrl: string | null;
-  externalUrl: string | null;
-};
 
 export const FEATURED_SLUG = "usdc-stocks";
 
@@ -105,9 +85,3 @@ export async function findEarnPool(slug: string): Promise<EarnPool | null> {
   return pools.find((pool) => pool.slug === slug) ?? null;
 }
 
-export const POOL_TYPE_LABELS: Record<EarnPool["type"], string> = {
-  "usdc-strategy": "USDC strategy",
-  lending: "Lending",
-  vault: "Vault",
-  liquidity_pool: "LP",
-};

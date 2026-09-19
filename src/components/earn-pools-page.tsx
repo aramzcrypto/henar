@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowRight, Info, Sprout } from "lucide-react";
 import { EquityLogo } from "./equity-logo";
-import {
-  POOL_TYPE_LABELS,
-  type EarnPool,
-} from "@/lib/equities/earn/pools";
+/* The leaf module, not pools.ts: importing the loader pulls the whole
+   equities catalog into the client bundle. */
+import { POOL_TYPE_LABELS, type EarnPool } from "@/lib/equities/earn/pool-types";
 
 type Filter = "all" | "lending" | "vault" | "liquidity_pool";
 

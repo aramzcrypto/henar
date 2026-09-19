@@ -1,4 +1,5 @@
 import rawCatalog from "@/data/stocks.json";
+import sources from "@/data/stock-sources.json";
 import { adaptBackpack } from "./providers/backpack";
 import type { CatalogEntry } from "./providers/common";
 import { adaptOndo } from "./providers/ondo";
@@ -6,7 +7,20 @@ import { adaptXStocks } from "./providers/xstocks";
 import { industryForTicker, sectorForTicker, type Sector } from "./sectors";
 import type { Equity, EquityProvider, Representation } from "./types";
 
-const catalog = rawCatalog as CatalogEntry[];
+/**
+ * The catalog with each issuer's source URL rejoined.
+ *
+ * `source` lives in a side file rather than in stocks.json, because
+ * stocks.json is imported by client components and the field is 136 KB of
+ * provenance that no browser needs. This module is server-side, so it can put
+ * the two back together at no cost to the bundle. Everything downstream —
+ * provider identification, `sourceUrl` on a representation, the issuer link on
+ * a market page — sees exactly the shape it always did.
+ */
+const sourceByMint = sources as Record<string, string>;
+const catalog = (rawCatalog as Omit<CatalogEntry, "source">[]).map(
+  (entry): CatalogEntry => ({ ...entry, source: sourceByMint[entry.mint] ?? "" }),
+);
 const providerOrder: EquityProvider[] = ["backpack", "xstocks", "ondo"];
 
 function adapt(entry: CatalogEntry): Representation {

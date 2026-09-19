@@ -5,7 +5,9 @@ import { useState } from "react";
 import { ArrowLeft, ArrowUpRight, Info } from "lucide-react";
 import { EquityLogo } from "./equity-logo";
 import { StatusTag } from "./earn-pools-page";
-import { POOL_TYPE_LABELS, type EarnPool } from "@/lib/equities/earn/pools";
+/* The leaf module, not pools.ts: importing the loader pulls the whole
+   equities catalog into the client bundle. */
+import { POOL_TYPE_LABELS, type EarnPool } from "@/lib/equities/earn/pool-types";
 
 const PROVIDER_LABELS: Record<string, string> = {
   xstocks: "xStocks",
