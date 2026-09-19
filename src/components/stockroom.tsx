@@ -57,7 +57,12 @@ import { stocks, USDC } from "@/lib/registry";
 import { EarnPage, PacksPage, ProductSummary } from "./earn-products";
 import { percent, type ProductConfig } from "@/lib/product-config";
 import { StockLogo as Logo } from "@/components/stock-logo";
-import { utils } from "@coral-xyz/anchor";
+/* bs58 directly, not Anchor's re-export of it. Both files needed exactly one
+   call — base58-encoding a signature — and importing `utils` from
+   @coral-xyz/anchor pulled the whole framework into the client bundle: the
+   four routes that render this carried 513 kB of first-load JS against a
+   103 kB baseline. */
+import bs58 from "bs58";
 import { formatUnits, parseUnits, feeFor } from "@/lib/amount";
 import {
   commonPayments,
@@ -1286,7 +1291,7 @@ export function Stockroom({
         if (token !== generation.current) throw new Error("Quote changed. Nothing was signed.");
         setStatus("Confirm in your wallet");
         const signedRouterTx = await wallet.signTransaction(routerTx);
-        const routerSig = utils.bytes.bs58.encode(signedRouterTx.signatures[0]);
+        const routerSig = bs58.encode(signedRouterTx.signatures[0]);
         setSignature(routerSig);
         setRouterReview(null);
         /* Protected submission when the server has a transport for it (Jito
@@ -1390,7 +1395,7 @@ export function Stockroom({
         throw new Error(
           "Quote expired before submission. Nothing was submitted.",
         );
-      const sig = utils.bytes.bs58.encode(signed.signatures[0]);
+      const sig = bs58.encode(signed.signatures[0]);
       setSignature(sig);
       setReview(null);
       await connection.sendRawTransaction(signed.serialize(), {

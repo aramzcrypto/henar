@@ -107,6 +107,11 @@ for r in rows:
 rows.sort(key=lambda r:(0 if r['ticker']=='NVDAx' else 1,r['name'].lower(),r['provider']))
 assert len({r['mint'] for r in rows})==len(rows),'Duplicate mint in issuer catalogs'
 assert len(rows)>500,'Unexpected source truncation'
+# logoSource is how a logo was fetched, not something any page reads. It is the
+# single largest field in the catalog — 187 KB of 843 KB — and stocks.json is
+# imported by client components, so every byte of it shipped to the browser on
+# /trade, /portfolio and /packs. Dropped after the logos are resolved.
+for r in rows: r.pop('logoSource', None)
 (ROOT/'src/data/stocks.json').write_text(json.dumps(rows,indent=2)+'\n')
 report={'retrievedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sources':{k:{'url':v,'sha256':hashlib.sha256(raw[k]).hexdigest()} for k,v in SOURCES.items()},'counts':{p:sum(r['provider']==p for r in rows) for p in ['xStocks','Ondo','Backpack']},'total':len(rows),'logos':sum(bool(r['logo']) for r in rows),'missingLogos':[{'provider':r['provider'],'ticker':r['ticker']} for r in rows if not r['logo']],'excluded':excluded,'policy':'Issuer-published Solana addresses are canonical representations even when issuer deposits or withdrawals are disabled. Leveraged/inverse products excluded. Live execution is always verified separately.'}
 (ROOT/'src/data/catalog-report.json').write_text(json.dumps(report,indent=2)+'\n')

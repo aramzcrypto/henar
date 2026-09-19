@@ -10,11 +10,22 @@ import {
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { Buffer } from "buffer";
-import { validateProtocolTransaction, type ProtocolIntent } from "@/lib/protocol-transaction";
+/* The validator is loaded at signing time, not at page load. It carries the
+   188 KB program IDL and Anchor's Borsh coder, and every route rendering this
+   provider shipped both to anyone who merely opened the page — 513 kB of
+   first-load JS against a 103 kB baseline, on pages most visitors never sign
+   from. The check itself is unchanged and still runs before the wallet is
+   asked for a signature; only the moment it arrives has moved. */
+import type { ProtocolIntent } from "@/lib/protocol-transaction";
 import { X } from "lucide-react";
 import type { PreparedAction, ProtocolView } from "@/lib/protocol/view";
 import { awaitConfirmation } from "@/lib/protocol/confirmation";
-import { utils } from "@coral-xyz/anchor";
+/* bs58 directly, not Anchor's re-export of it. Both files needed exactly one
+   call — base58-encoding a signature — and importing `utils` from
+   @coral-xyz/anchor pulled the whole framework into the client bundle: the
+   four routes that render this carried 513 kB of first-load JS against a
+   103 kB baseline. */
+import bs58 from "bs58";
 import { formatUnits } from "@/lib/amount";
 type RequestAction = {
   action: string;
@@ -196,10 +207,12 @@ export function ProtocolProvider({ children }: { children: React.ReactNode }) {
         return table.value;
       }));
       if (current !== generation.current) return;
+      const { validateProtocolTransaction } = await import("@/lib/protocol-transaction");
+      if (current !== generation.current) return;
       validateProtocolTransaction(transaction, owner, intent.current, tables);
       const signed = await wallet.signTransaction(transaction);
       if (current !== generation.current) return;
-      sent = utils.bytes.bs58.encode(signed.signatures[0]);
+      sent = bs58.encode(signed.signatures[0]);
       if (current === generation.current) {
         setSignature(sent);
         setPrepared(null);
