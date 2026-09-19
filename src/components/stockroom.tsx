@@ -64,6 +64,7 @@ import { StockLogo as Logo } from "@/components/stock-logo";
    103 kB baseline. */
 import bs58 from "bs58";
 import { formatUnits, parseUnits, feeFor } from "@/lib/amount";
+import { formatPriceImpact } from "@/lib/format-impact";
 import {
   commonPayments,
   PAYMENT_USDC,
@@ -248,12 +249,29 @@ function PythFairValueRows({ assessment, now }: { assessment: FairValueAssessmen
   const price = (p: string | null | undefined) => (p ? `$${Number(p).toLocaleString("en-US", { maximumFractionDigits: Number(p) < 10 ? 4 : 2 })}` : "Unavailable");
   const session: Record<string, string> = { regular: "Regular", preMarket: "Pre-market", postMarket: "Post-market", overNight: "Overnight", closed: "Closed" };
   const reference = assessment.tokenReference ?? assessment.underlyingReference;
+  const head = (
+    <div className="pyth-trade-head">
+      <span>Pyth fair value</span>
+      <small>Powered by Pyth Pro</small>
+    </div>
+  );
+
+  /* With neither reference, all seven rows say nothing — "No Pyth reference"
+     twice, "Not comparable", then four dashes — directly above the Swap
+     button. That is a lot of empty state pretending to be data. One line says
+     the same thing: the entitlement does not cover this company, which is a
+     fact about our key and not about the trade. */
+  if (!assessment.tokenReference && !assessment.underlyingReference)
+    return (
+      <div className="pyth-trade-rows">
+        {head}
+        <Row label="Reference">Not covered by the current Pyth entitlement</Row>
+      </div>
+    );
+
   return (
     <div className="pyth-trade-rows">
-      <div className="pyth-trade-head">
-        <span>Pyth fair value</span>
-        <small>Powered by Pyth Pro</small>
-      </div>
+      {head}
       <Row label="Token reference">
         {assessment.tokenReference ? `${price(assessment.tokenReference.price)} · ${assessment.tokenReference.freshness === "live" ? "live" : assessment.tokenReference.freshness}` : "No Pyth reference"}
       </Row>
@@ -1882,7 +1900,7 @@ export function Stockroom({
                   </Row>
                   <Row label="Slippage tolerance">0.50%</Row>
                   <Row label="Price impact">
-                    {review ? `${Number(review.priceImpactPct) * 100}%` : "—"}
+                    {review ? formatPriceImpact(Number(review.priceImpactPct)) : "—"}
                   </Row>
                   {mode === "market" && (isPrivateMarket(receive) || isPrivateMarket(payment)) && (
                     <Row label="Token transfer fee">

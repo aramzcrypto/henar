@@ -47,3 +47,18 @@ test("each offered issuer uses explicit, valid Solana mint addresses", async () 
     );
   }
 });
+
+/* Price impact is rendered beside formatted percentages, and a raw float
+   ("0.05048302673706992%") stood out among them. Rounding alone is not enough:
+   a real impact under a hundredth of a percent must not print as "0.00%",
+   which reads as no impact at all. */
+test("price impact formats to two decimals and never rounds a real impact to zero", async () => {
+  const { formatPriceImpact } = await import("@/lib/format-impact");
+  assert.equal(formatPriceImpact(0.0005048302673706992), "0.05%");
+  assert.equal(formatPriceImpact(0.1234), "12.34%");
+  assert.equal(formatPriceImpact(0), "0.00%");
+  assert.equal(formatPriceImpact(0.00000001), "<0.01%", "tiny but real is not zero");
+  assert.equal(formatPriceImpact(-0.00000001), ">-0.01%");
+  assert.equal(formatPriceImpact(Number.NaN), "—");
+  assert.equal(formatPriceImpact(Number.POSITIVE_INFINITY), "—");
+});
