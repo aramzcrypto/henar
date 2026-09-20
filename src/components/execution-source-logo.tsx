@@ -42,7 +42,17 @@ export function ExecutionSourceLogo({ source }: { source: string }) {
   return (
     <span className={`quote-source quote-source-${knownSource}`} aria-hidden="true">
       {brand.logo ? (
-        <Image src={brand.logo} alt="" width={22} height={22} unoptimized />
+        /* Same rule the equity logos use: the optimizer rejects SVG, and
+           passing a bitmap through untouched means a 22px badge pulling the
+           full plate — the Henar mark alone is a 1254px, 564 KB PNG. */
+        <Image
+          src={brand.logo}
+          alt=""
+          width={22}
+          height={22}
+          sizes="22px"
+          unoptimized={brand.logo.endsWith(".svg")}
+        />
       ) : (
         brand.label.slice(0, 1)
       )}

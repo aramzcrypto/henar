@@ -19,6 +19,8 @@ export function PackDelivery({ pack }: { pack: PackView }) {
       className={`pack-delivery ${complete ? "delivered" : ""}`}
       aria-live="polite"
     >
+      {/* The backpack renders at 120px here; unoptimized it pulled the whole
+          2.3 MB plate to do it. */}
       <div className="pack-delivery-art" aria-hidden="true">
         {complete && stock ? (
           <StockLogo stock={stock} />
@@ -28,7 +30,7 @@ export function PackDelivery({ pack }: { pack: PackView }) {
             alt=""
             width={120}
             height={120}
-            unoptimized
+            sizes="120px"
           />
         )}
       </div>
