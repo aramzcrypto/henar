@@ -950,14 +950,21 @@ export function PacksPage({
       <section className="backpack-offer" aria-label="Stock Pack">
         <div className="backpack-stage backpack-render-stage">
           <div className="backpack-render closed">
+            {/* The source is a 1254px, 2.3 MB PNG and this renders it at
+                430px at most, so `unoptimized` meant every visitor downloaded
+                the full plate — 99% of this page's weight, and the last thing
+                to finish loading. Optimized, it is served as WebP at the size
+                actually shown. Quality is raised above the default because
+                this is the page's hero, not a thumbnail. */}
             <Image
               className="closed-backpack"
               src="/art/backpack-closed.png"
               alt="Sealed red backpack"
               width={1280}
               height={1280}
+              sizes="(max-width: 520px) 100vw, 430px"
+              quality={90}
               priority
-              unoptimized
             />
             <span className="backpack-flash" aria-hidden="true" />
           </div>
