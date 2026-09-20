@@ -1,6 +1,6 @@
 # Mainnet setup and operations
 
-Status: the Solana program is deployed, initialized and upgradeable. Earn is unpaused only for pilot wallet `EYVq1MrwT5mfsh8kJLw645ARKK3uP4ja3UcTzb8ULcff`, with a 25 USDC cumulative admission cap (1 USDC already admitted, leaving 24 USDC). Other contract products remain disabled. A restricted 1 USDC Earn deposit and full withdrawal previously passed on mainnet using the admin wallet. See [the deployment record](MAINNET_RELEASE_2026-09-13.md). This is not unrestricted public activation.
+Status: the Solana program is deployed, initialized and upgradeable. Earn is unpaused only for pilot wallet `EYVq1MrwT5mfsh8kJLw645ARKK3uP4ja3UcTzb8ULcff`, with a 25 USDC cumulative admission cap (21 USDC admitted as of 20 September 2026, leaving 4 USDC). Other contract products remain disabled. A restricted 1 USDC Earn deposit and full withdrawal previously passed on mainnet using the admin wallet. See [the deployment record](MAINNET_RELEASE_2026-09-13.md). This is not unrestricted public activation.
 
 Current production website: [Henar](https://henarapp.vercel.app). Website deployment does not deploy or upgrade the Solana program.
 
@@ -40,6 +40,52 @@ Jupiter V2 `/build` does not return the legacy platform-fee object. Market fees 
 6. Run `npm run treasury:plan`, then `npm run treasury:setup` to create missing fee accounts for the V1 manifest. Add `-- --all` to plan/setup for the wider Market catalog; review the larger rent requirement first. It is idempotent and creates accounts with the correct SPL/Token-2022 program.
 7. Run `npm run mainnet:lookup:plan`, then `npm run mainnet:lookup:setup`. This builds the protocol lookup table under the local admin, verifies every address, and saves its public address in `.env.local`. Add `STOCKROOM_LOOKUP_TABLE` to the Vercel preview environment and redeploy. Setup reconciles an uncertain prior signature before submitting a replacement.
 8. Run `npm run protocol:preflight`. It verifies mainnet genesis, deployed executable bytes against the local build, vault/share mint, canonical programs, treasury, sealed manifest, extensions, configured credentials and pack quote authority. Add `-- --with-oracles` to separately check position oracle coverage. It does **not** certify a funded trade or economic safety.
+
+## Raising the pilot admission cap
+
+`admitted_usdc` is cumulative and never decreases — a withdrawal does not give
+the headroom back — so the pilot wallet eventually meets "The mainnet testing
+deposit limit has been reached." Raising the cap is a `configure_access` call
+and needs no program change.
+
+Read the live values first. This writes nothing:
+
+```
+npm run mainnet:access
+```
+
+**`configure_access` overwrites products, pilot owner and cap together.** It
+does not merge with what is on chain. With the environment unset the plan
+prints `products: []` and the admin wallet as pilot — running that would
+disable every product and take access away from the pilot wallet. Always read
+the printed plan before adding `--execute`, and always pass all three:
+
+```
+PROTOCOL_PRODUCTS=earn,limit,dca,stocks,packs,lucky \
+PROTOCOL_PILOT_OWNER=EYVq1MrwT5mfsh8kJLw645ARKK3uP4ja3UcTzb8ULcff \
+PROTOCOL_ADMISSION_LIMIT_USDC_BASE_UNITS=1000000000 \
+STOCKROOM_ADMIN_KEYPAIR_PATH=<admin key> \
+npm run mainnet:access -- --execute
+```
+
+The policy can only change while paused, so the full sequence is
+`mainnet:pause -- --execute`, the call above, then `mainnet:unpause -- --execute`.
+The script refuses a cap below what has already been admitted, requires the key
+file at 0600, and checks the signer against the on-chain admin.
+
+Raising the cap does not open public deposits. `assertAdmission` refuses any
+wallet that is not `pilot_owner`, and that stays pinned to the pilot address;
+the cap only governs how much that one wallet may cumulatively admit.
+
+The operational scripts read `.env.local` only, and `vercel env pull` returns
+several values empty (`STOCKROOM_PROGRAM_ID`, `JUPITER_API_KEY`,
+`STOCKROOM_TREASURY_OWNER`). Without `STOCKROOM_PROGRAM_ID` every one of them
+fails with "Henar mainnet deployment is not configured." It is a public
+address, so set it in `.env.local` on each machine that operates the protocol:
+
+```
+STOCKROOM_PROGRAM_ID=7EMrgJNodNBmuQBg3cv9ASDUmXQFYp1VRiHcCzUMaC7E
+```
 
 ## Worker
 
