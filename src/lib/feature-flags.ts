@@ -17,6 +17,8 @@ export const HENAR_FLAGS = {
   pythStreaming: "HENAR_PYTH_STREAMING",
   /** Markets → Pre-IPO pages and the Pre-IPO selector category. */
   preIpoMarkets: "HENAR_PREIPO_MARKETS",
+  /** Markets → Issuers: the issuer comparison and per-issuer intelligence. */
+  issuerIntelligence: "HENAR_ISSUER_INTELLIGENCE",
   /** Register verified private-market products with the Henar Router. */
   privateMarketsRouting: "HENAR_PRIVATE_MARKETS_ROUTING",
   /** The Earn strategy framework and its pages. */
@@ -40,6 +42,7 @@ const DEFAULT_ON: ReadonlySet<HenarFlag> = new Set<HenarFlag>([
   "pythPro",
   "pythFairValueGuard",
   "preIpoMarkets",
+  "issuerIntelligence",
   "earnStrategies",
   "earnStocks",
   "smartAccumulate",

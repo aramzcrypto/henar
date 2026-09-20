@@ -17,7 +17,7 @@ Henar is not a DEX for tokenized stocks. It is the layer a user goes through bef
 | --- | --- |
 | **Discover** | 1,339 companies and ETFs, 2,212 verified issuer mints, grouped by underlying company |
 | **Research** | Financials, earnings, dividends, filings and news from SEC EDGAR; an earnings and macro calendar |
-| **Compare** | xStocks, Backpack and Ondo side by side — price, spread, liquidity, route, redemption terms |
+| **Compare** | xStocks, Backpack and Ondo side by side — price, spread, liquidity, route, redemption terms, and each issuer's own backing and custody |
 | **Trade** | Market, limit and DCA execution routed across Solana venues |
 | **Pre-IPO** | Private-market exposure from PreStocks and Tessera, priced against provider marks and Henar's own routes |
 | **Earn** | Yield strategies that turn idle USDC into stock exposure |
@@ -27,7 +27,7 @@ The unit of the product is the company, not the mint. Issuer differences are pre
 
 ## Products
 
-- **Markets** — Company-first discovery across every verified representation, public and private. Overview, a full directory with sector classification, and a calendar of earnings and macro events. Company pages carry financials, earnings, news, dividends, filings, and an Onchain tab comparing every issuer representation.
+- **Markets** — Company-first discovery across every verified representation, public and private. Overview, a full directory with sector classification, and a calendar of earnings and macro events. Company pages carry financials, earnings, news, dividends, filings, and an Onchain tab comparing every issuer representation. The overview also compares the issuers themselves on volume and liquidity, and each one has a page covering its backing, custody and what can actually move onchain.
 - **Trade** — Compare supported routes for market swaps, create yield-bearing limit orders, and schedule DCA purchases.
 - **Earn** — A featured USDC strategy that turns yield into stock exposure, plus a directory of verified stock pools across Solana lending markets and vaults. Each pool has its own page and ticket; only the featured strategy is wired to the protocol today, and the rest are explicitly marked Coming soon.
 - **Packs** — Buy or earn sealed stock packs with onchain settlement and ORAO randomness.

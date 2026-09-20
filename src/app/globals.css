@@ -10346,6 +10346,7 @@ footer a {
 .markets-overview > .market-pulse-grid {
   margin-top: 26px;
 }
+.markets-overview > .issuer-compare,
 .markets-overview > .multi-issuer,
 .markets-overview > .overview-events,
 .markets-overview > .sector-blocks,
@@ -11001,6 +11002,45 @@ input:focus-visible,
 .bento-breadth {
   grid-column: span 3;
   grid-row: span 2;
+}
+/* The tile header is a block, so the label and its explanation need a row of
+   their own to sit on. */
+.bento-tile > header:has(.earn-info) {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.bento-tile .earn-info > button {
+  padding: 0;
+  color: var(--text-5);
+  transition: color var(--fast) var(--ease);
+}
+.bento-tile .earn-info > button:hover {
+  color: var(--text-3);
+}
+.bento-tile .earn-info svg {
+  width: 13px;
+  height: 13px;
+}
+/* Tiles clip their own gradients, which would also slice the popover in half.
+   Only a tile carrying one opts out. */
+.bento-tile:has(.earn-info) {
+  overflow: visible;
+}
+/* Opens rightward from the icon, which sits near the tile's left edge, so it
+   stays inside the tile instead of running off its left side. */
+.bento-tile .earn-info-popover {
+  left: -10px;
+  right: auto;
+  text-transform: none;
+  letter-spacing: 0;
+}
+@media (max-width: 620px) {
+  /* Full-width tile: keep the popover inside the viewport gutter. */
+  .bento-tile .earn-info-popover {
+    left: -10px;
+    width: min(235px, calc(100vw - 64px));
+  }
 }
 .bento-breadth .bento-figure-sm {
   margin-top: 14px;
@@ -14709,4 +14749,613 @@ body {
 }
 .open-market-note {
   margin-top: 6px;
+}
+
+/* ---------------------------------------------------------------
+   Issuers: the other axis
+   Henar's unit is the company. These surfaces compare the issuers
+   underneath it, where every figure is reported beside the count of
+   mints it was measured over — the ratio is the story, not the total.
+   --------------------------------------------------------------- */
+.issuer-compare {
+  margin-top: 44px;
+}
+.issuer-compare > header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-1);
+}
+.issuer-compare > header strong {
+  display: block;
+  font-size: 19px;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+}
+.issuer-compare > header small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-4);
+  font-size: 12px;
+}
+.issuer-compare > header a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 560;
+  text-decoration: none;
+  transition: color var(--fast) var(--ease);
+}
+.issuer-compare > header a:hover {
+  color: var(--viz-teal);
+}
+.issuer-compare-grid {
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.issuer-compare-head,
+.issuer-compare-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) 1.1fr 1.1fr 0.9fr 0.9fr 18px;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 20px;
+}
+.issuer-compare-head {
+  color: var(--text-5);
+  font-size: 10px;
+  font-weight: 620;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.issuer-compare-row {
+  color: var(--text);
+  text-decoration: none;
+  border-top: 1px solid var(--border-1);
+  transition: background var(--fast) var(--ease);
+}
+.issuer-compare-row:hover {
+  background: var(--surface-2);
+}
+.issuer-compare-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.issuer-compare-name img {
+  flex: none;
+  border-radius: 6px;
+}
+.issuer-compare-name strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 560;
+}
+.issuer-compare-name small,
+.issuer-compare-count small {
+  display: block;
+  color: var(--text-4);
+  font-size: 11px;
+}
+.issuer-compare-metric b,
+.issuer-compare-count b {
+  display: block;
+  font-family: var(--data);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.issuer-compare-metric small {
+  display: none;
+  margin-top: 3px;
+  color: var(--text-4);
+  font-size: 11px;
+}
+.issuer-compare-metric i {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: var(--viz-teal);
+}
+.issuer-compare-metric i[data-kind="liquidity"] {
+  background: var(--viz-violet);
+}
+.issuer-compare-metric i[data-kind="volume"] {
+  background: var(--viz-teal);
+}
+.issuer-compare-count small {
+  margin-top: 3px;
+}
+.issuer-compare-arrow {
+  color: var(--text-5);
+  opacity: 0;
+  transition:
+    opacity var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.issuer-compare-row:hover .issuer-compare-arrow {
+  color: var(--viz-teal);
+  opacity: 1;
+}
+.issuer-compare-note {
+  margin: 10px 0 0;
+  color: var(--text-5);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.issuer-compare-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.issuer-compare-pending span {
+  height: 54px;
+  background: var(--surface);
+  animation: skeleton-pulse 1.4s var(--ease) infinite;
+}
+.issuer-compare-pending span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.issuer-compare-pending span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---- Issuer profile ---- */
+.issuer-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 20px;
+  color: var(--text-5);
+  font-size: 11.5px;
+}
+.issuer-breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-4);
+  text-decoration: none;
+  transition: color var(--fast) var(--ease);
+}
+.issuer-breadcrumb a:hover {
+  color: var(--viz-teal);
+}
+.issuer-breadcrumb span::before,
+.issuer-breadcrumb strong::before {
+  margin-right: 8px;
+  content: "/";
+  color: var(--text-5);
+}
+.issuer-breadcrumb strong {
+  color: var(--text-2);
+  font-weight: 560;
+}
+.issuer-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.issuer-hero-mark {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: var(--surface);
+}
+.issuer-hero-text {
+  flex: 1;
+  min-width: 0;
+}
+.issuer-hero-text h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 530;
+  letter-spacing: -0.03em;
+}
+.issuer-hero-text p {
+  max-width: 560px;
+  margin: 6px 0 0;
+  color: var(--text-3);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.issuer-hero-text small {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-5);
+  font-size: 11.5px;
+}
+.issuer-hero-links {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+.issuer-hero-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-4);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color var(--fast) var(--ease);
+}
+.issuer-hero-links a:hover {
+  color: var(--viz-teal);
+}
+.issuer-keystats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1px;
+  margin: 0 0 16px;
+  border-radius: 16px;
+  background: var(--border-1);
+  overflow: hidden;
+}
+.issuer-keystats > div {
+  padding: 16px 20px;
+  background: var(--surface);
+}
+.issuer-keystats dt {
+  color: var(--text-5);
+  font-size: 10px;
+  font-weight: 620;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.issuer-keystats dd {
+  margin: 6px 0 0;
+  font-family: var(--data);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+.issuer-peers {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-1);
+}
+.issuer-peers > span {
+  color: var(--text-5);
+  font-size: 10.5px;
+  font-weight: 620;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.issuer-peers a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 560;
+  text-decoration: none;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+.issuer-peers a:hover {
+  background: var(--surface-2);
+  color: var(--viz-teal);
+}
+.issuer-peers a img {
+  border-radius: 5px;
+}
+
+.issuer-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 14px;
+}
+.issuer-panel-grid > section,
+.issuer-reserves,
+.issuer-top,
+.issuer-sources > ul {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--surface);
+}
+.issuer-panel-grid h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 620;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.issuer-measures {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+.issuer-measures > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+.issuer-measures dt {
+  color: var(--text-4);
+  font-size: 12px;
+}
+.issuer-measures dt small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-5);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+.issuer-measures dd {
+  margin: 0;
+  flex: none;
+  color: var(--text-1);
+  font-family: var(--data);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.issuer-status {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 620;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.issuer-status.is-available {
+  color: var(--viz-green);
+  background: rgba(79, 201, 138, 0.14);
+}
+.issuer-status.is-unavailable {
+  color: var(--viz-rose);
+  background: rgba(224, 96, 127, 0.14);
+}
+.issuer-status.is-not_configured {
+  color: var(--text-4);
+  background: var(--surface-2);
+}
+
+.issuer-reserves,
+.issuer-top {
+  margin-top: 14px;
+}
+/* The global `header` rule is an 82px flex bar for the app chrome. These are
+   section captions, so they opt out of it the same way the bento tiles do. */
+.issuer-reserves > header,
+.issuer-top > header,
+.issuer-sources > header {
+  display: block;
+  height: auto;
+  padding: 0;
+  gap: 0;
+  margin-bottom: 14px;
+}
+.issuer-reserves > header strong,
+.issuer-top > header strong,
+.issuer-sources > header strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 580;
+}
+.issuer-reserves > header small,
+.issuer-top > header small,
+.issuer-sources > header small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-4);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.issuer-reserves .issuer-measures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px 26px;
+}
+.issuer-top ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.issuer-top li a {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--text);
+  text-decoration: none;
+  border-top: 1px solid var(--border-1);
+}
+.issuer-top li:first-child a {
+  border-top: none;
+}
+.issuer-top li span {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+.issuer-top li b {
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.issuer-top li i {
+  overflow: hidden;
+  color: var(--text-4);
+  font-size: 11px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.issuer-top li u {
+  color: var(--viz-teal);
+  font-family: var(--data);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+.issuer-top li em {
+  min-width: 62px;
+  color: var(--text-4);
+  font-family: var(--data);
+  font-size: 12px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.issuer-top li a:hover b {
+  color: var(--viz-teal);
+}
+
+.issuer-sources {
+  margin-top: 44px;
+}
+.issuer-sources > ul {
+  margin: 0;
+  padding: 6px 20px;
+  list-style: none;
+}
+.issuer-sources li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 13px 0;
+  border-top: 1px solid var(--border-1);
+}
+.issuer-sources li:first-child {
+  border-top: none;
+}
+.issuer-sources li > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.issuer-sources li strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 560;
+}
+.issuer-sources li small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-4);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.issuer-sources li em {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-5);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.5;
+}
+.issuer-sources li a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-4);
+  font-size: 11.5px;
+  text-decoration: none;
+}
+.issuer-sources li a:hover {
+  color: var(--viz-teal);
+}
+.issuer-sources .issuer-status {
+  margin-top: 1px;
+  min-width: 96px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .issuer-compare-head {
+    display: none;
+  }
+  /* The header carried these names; without it each number carries its own. */
+  .issuer-compare-metric small {
+    display: block;
+  }
+  .issuer-compare-arrow {
+    display: none;
+  }
+  .issuer-compare-row {
+    grid-template-columns: minmax(0, 1.2fr) 1fr 1fr;
+    row-gap: 12px;
+  }
+  .issuer-compare-row .issuer-compare-count {
+    grid-column: span 1;
+  }
+  .issuer-hero {
+    flex-wrap: wrap;
+  }
+  .issuer-hero-links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+}
+@media (max-width: 620px) {
+  .issuer-compare-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .issuer-compare-arrow {
+    display: none;
+  }
+  .issuer-keystats dd {
+    font-size: 19px;
+  }
+  .issuer-top li a {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+  .issuer-top li em {
+    display: none;
+  }
+  .issuer-sources li {
+    flex-wrap: wrap;
+  }
 }

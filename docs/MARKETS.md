@@ -25,10 +25,22 @@ Raydium, Orca, and Meteora pool records are queried by exact verified mint pair 
 
 Research interfaces and the corporate-action schema are active, but no external research/indexing source is connected. Those endpoints return explicit unavailable or empty verified states. Corporate actions must include an issuer, SEC, or provider source before ingestion. Sector filters remain disabled until verified sector classifications are connected.
 
+## Issuers
+
+The Markets overview compares the three issuers on the axis the company pages
+cannot: 24h volume, pooled liquidity, live markets and holders, each reported
+beside the mints it was measured over. Every row links to that issuer's own
+page at `/markets/issuers/<issuer>`, which carries its catalog, its onchain
+market, its own disclosures and — where it publishes any — its proof of
+reserves. Issuers are not a tab: a reader arrives at one from a figure, not
+from a menu. Each block names its source and its own availability. See
+[issuers](ISSUERS.md).
+
 ## API
 
 - `GET /api/equities`
 - `GET /api/equities/overview`
+- `GET /api/markets/issuers`
 - `GET /api/equities/NVDA`
 - `GET /api/equities/NVDA/representations`
 - `GET /api/equities/NVDA/onchain`
@@ -37,8 +49,12 @@ Research interfaces and the corporate-action schema are active, but no external 
 
 Static issuer metadata is cached longer than Jupiter market data. Quote responses are private, not cached, and bounded per client instance. Production should also retain a distributed Vercel Firewall limit. No admin, solver, RPC, or Jupiter credentials are returned to the browser.
 
-Ranked market views currently rank the fetched verified result window and disclose that coverage in the UI. Complete-universe rankings require a persistent market-data snapshot or indexer.
+Ranked market views rank the whole verified universe. One cached pass reads every mint in the catalog — Jupiter answers for a hundred at a time, so 2,212 mints is about twenty-three calls — and most traded and most liquid rank against all of it. The same pass powers the liquidity filter and the issuer comparison, so none of the three costs an extra request. Execution never reads it: `/trade` quotes fresh.
+
+The All markets liquidity filter states its rule rather than implying it. "Traded in 24h" means at least one verified mint traded; "Liquid onchain" additionally requires $10,000 or more of pooled liquidity behind it. Measured on 20 September 2026 that is 101 and 75 companies respectively, of 1,339. The filter is scoped to a selected provider, so narrowing to Ondo asks about Ondo's own token rather than the company's best token across all three issuers. A partial market read may reorder but never exclude: if the pass is short or fails, the filter reports itself unavailable instead of returning an empty list.
 
 The Recently tokenized view remains disabled until verified provider tokenization timestamps are available.
+
+Breadth on the overview is the share of companies that rose over 24 hours, counted across those with a live onchain price rather than across the catalog. It carries an explanation on the tile itself, because the denominator is not the obvious one and the word is the only piece of jargon on the page. The control is `InfoTip`, lifted out of the Earn products page where it already served nine of these: it opens on hover and on focus, closes on Escape, and is announced through `aria-describedby` rather than a `title` attribute, which never reaches a keyboard or a screen reader.
 
 The default Markets overview intersects Jupiter's public 24-hour top-traded token feed with exact verified registry mints. It does not infer companies from token symbols or names. News remains unavailable until a verified feed is connected.

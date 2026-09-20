@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { AppSelect } from "./app-select";
+import { IssuerComparison } from "./issuer-comparison";
 import { MarketsBento } from "./markets-bento";
 import { MarketsTabs } from "./markets-tabs";
 import { EquityLogo } from "./equity-logo";
@@ -23,11 +24,33 @@ type MarketsResponse = {
   total: number;
   offset: number;
   limit: number;
+  liquidity?: LiquidityFilter | null;
+  /** False when the filter was asked for but the market could not be read. */
+  liquidityAvailable?: boolean | null;
+  /** Matches before the liquidity filter, so the ratio compares like with like. */
+  matchedBeforeLiquidity?: number;
   rankingScope?: {
     evaluated: number;
     total: number;
     complete: boolean;
   } | null;
+};
+
+type LiquidityFilter = "traded" | "liquid";
+
+/* What "liquid" means, said plainly. A filter whose rule is hidden is an
+   opinion with a checkbox, and the floor is a real threshold someone may
+   disagree with, so it is stated rather than implied. */
+const LIQUIDITY_OPTIONS = [
+  { value: "all", label: "All companies" },
+  { value: "traded", label: "Traded in 24h" },
+  { value: "liquid", label: "Liquid onchain" },
+] as const;
+
+const LIQUIDITY_RULE: Record<LiquidityFilter, string> = {
+  traded: "Companies with at least one verified mint that traded in the last 24 hours.",
+  liquid:
+    "Companies with at least one verified mint that traded in the last 24 hours and holds $10,000 or more of pooled liquidity.",
 };
 
 type UniverseStats = {
@@ -466,6 +489,8 @@ function MarketsOverviewView({
         onOpenAll={openAll}
       />
 
+      <IssuerComparison />
+
       <MultiIssuerBlock summary={multiIssuer} onOpen={openAll} />
 
       <SectorBlocks sectors={sectors} onOpenSector={filterSector} />
@@ -523,12 +548,13 @@ export function MarketsPage({
   const [assetType, setAssetType] = useState("all");
   const [provider, setProvider] = useState("all");
   const [sector, setSector] = useState("all");
+  const [liquidity, setLiquidity] = useState("all");
   const [sort, setSort] = useState("ticker");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const requestKey = useMemo(
-    () => JSON.stringify({ query, assetType, provider, sector, sort }),
-    [query, assetType, provider, sector, sort],
+    () => JSON.stringify({ query, assetType, provider, sector, liquidity, sort }),
+    [query, assetType, provider, sector, liquidity, sort],
   );
 
   useEffect(() => {
@@ -538,6 +564,7 @@ export function MarketsPage({
       assetType === "all" &&
       provider === "all" &&
       sector === "all" &&
+      liquidity === "all" &&
       sort === "ticker"
     ) {
       setData(initial);
@@ -551,6 +578,7 @@ export function MarketsPage({
       if (assetType !== "all") params.set("assetType", assetType);
       if (provider !== "all") params.set("provider", provider);
       if (sector !== "all") params.set("sector", sector);
+      if (liquidity !== "all") params.set("liquidity", liquidity);
       try {
         const response = await fetch(`/api/equities?${params}`, {
           signal: controller.signal,
@@ -568,7 +596,17 @@ export function MarketsPage({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [requestKey, initial, pageView, query, assetType, provider, sector, sort]);
+  }, [
+    requestKey,
+    initial,
+    pageView,
+    query,
+    assetType,
+    provider,
+    sector,
+    liquidity,
+    sort,
+  ]);
 
   const filterAll = (kind: "asset" | "provider", value: string) => {
     if (kind === "asset") setAssetType(value);
@@ -633,6 +671,15 @@ export function MarketsPage({
               ]}
             />
             <AppSelect
+              label="Liquidity"
+              value={liquidity}
+              onChange={setLiquidity}
+              options={LIQUIDITY_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
+            <AppSelect
               label="Sector"
               value={sector}
               onChange={setSector}
@@ -664,6 +711,13 @@ export function MarketsPage({
               </button>
             ))}
           </div>
+          {liquidity !== "all" ? (
+            <p className="markets-ranking-scope">
+              {data.liquidityAvailable === false
+                ? "The liquidity filter is unavailable: the onchain market could not be read, so every company is shown."
+                : `${LIQUIDITY_RULE[liquidity as LiquidityFilter]} ${data.total.toLocaleString()} of ${(data.matchedBeforeLiquidity ?? initial.total).toLocaleString()} match.`}
+            </p>
+          ) : null}
           {data.rankingScope && !data.rankingScope.complete ? (
             <p className="markets-ranking-scope">
               Live ranking covers {data.rankingScope.evaluated} of{" "}

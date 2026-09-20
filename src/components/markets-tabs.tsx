@@ -11,6 +11,11 @@ const items: { value: MarketsView; label: string; href: string }[] = [
   { value: "calendar", label: "Calendar", href: "/markets/calendar" },
 ];
 
+/* Neither market data nor issuers is a tab. An issuer page is somewhere a
+   reader arrives at from a figure they were already reading — the issuer
+   comparison on the overview links straight to it — rather than a category
+   they browse to. The same reasoning applies to market data below. */
+
 /* Market data is deliberately not a tab. It is a provenance surface — what
    the price feeds are and what this key can read — which is evidence, not a
    destination someone browsing companies is looking for. It is reached from
