@@ -25,7 +25,8 @@ const PAGE_SIZE = 100;
 /** Bounded so a paging bug cannot walk forever. The catalog is ~10 pages. */
 const MAX_PAGES = 20;
 const REQUEST_TIMEOUT_MS = 12_000;
-const CACHE_MS = 10 * 60_000;
+const CACHE_SECONDS = 10 * 60;
+const CACHE_MS = CACHE_SECONDS * 1_000;
 
 const pageSchema = z.object({ hasNextPage: z.boolean().optional() }).optional();
 
@@ -83,10 +84,13 @@ function hasNextPage(payload: unknown) {
 async function readAll<T>(path: string, schema: z.ZodType<T>, fetchImpl: typeof fetch): Promise<T[]> {
   const collected: T[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
+    /* Through the shared data cache: this is an issuer catalog, not a price,
+       and the twenty-one calls a full read costs should be paid once per
+       window for the deployment rather than once per serverless instance. */
     const response = await fetchImpl(`${XSTOCKS_API}/${path}?page=${page}&pageSize=${PAGE_SIZE}`, {
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      cache: "no-store",
+      next: { revalidate: CACHE_SECONDS },
     });
     if (!response.ok) throw new Error(`xStocks ${path} returned ${response.status}`);
     const payload = await response.json();
@@ -229,7 +233,7 @@ export async function xstocksDisclosure(
           fetchImpl(`${XSTOCKS_API}/oracles`, {
             headers: { accept: "application/json" },
             signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-            cache: "no-store",
+            next: { revalidate: CACHE_SECONDS },
           })
             .then(async (response) => (response.ok ? nodesOf(await response.json(), oracleSchema) : []))
             .catch(() => [] as XStocksOracle[]),

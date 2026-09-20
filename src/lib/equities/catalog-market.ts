@@ -23,7 +23,8 @@ export const JUPITER_TOKEN_API = "https://dev.jup.ag/docs/token-api";
 export const BATCH_SIZE = 100;
 const CONCURRENCY = 4;
 const REQUEST_TIMEOUT_MS = 12_000;
-const CACHE_MS = 5 * 60_000;
+const CACHE_SECONDS = 5 * 60;
+const CACHE_MS = CACHE_SECONDS * 1_000;
 
 const statsSchema = z
   .object({
@@ -78,11 +79,25 @@ export function tradedVolume(entry: TokenMarketEntry | undefined): number | null
   return (buy ?? 0) + (sell ?? 0);
 }
 
+/**
+ * One batch, served through Next's data cache rather than fetched per render.
+ *
+ * `createReadCache` below is a Map inside one process, so on serverless every
+ * instance keeps its own and a cold one pays the whole pass. Twenty-three
+ * uncached calls per instance is how a keyless Jupiter host starts answering
+ * 429 under load, which it did during development. The data cache is shared
+ * across instances and survives them, so the pass is paid once per window for
+ * the whole deployment instead of once per instance.
+ *
+ * The window is the same one the in-process cache already applied, so nothing
+ * about freshness changes. This is a ranking and activity snapshot, never a
+ * price: execution quotes fresh and does not read it.
+ */
 async function readBatch(mints: string[], fetchImpl: typeof fetch): Promise<TokenMarketEntry[]> {
   const response = await fetchImpl(`${SEARCH_URL}?query=${mints.join(",")}`, {
     headers: { accept: "application/json" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    cache: "no-store",
+    next: { revalidate: CACHE_SECONDS },
   });
   if (!response.ok) throw new Error(`Jupiter token search returned ${response.status}`);
   return parseSearchPayload(await response.json());

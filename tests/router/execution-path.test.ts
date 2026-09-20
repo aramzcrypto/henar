@@ -175,3 +175,93 @@ test("a DLMM pool's pair is confirmed from its own account, so private-market ma
   assert.equal(wrong.verification, "VERIFICATION_FAILED");
   assert.match(wrong.detail, /pool trades .*, registry says/);
 });
+
+test("the validator refuses a smuggled token instruction and a server-chosen program", async () => {
+  /* The token programs were allowed wholesale and only TransferChecked was
+     ever read, so a plan carrying an extra SetAuthority on the owner's own
+     account validated, simulated cleanly and reached the wallet. The owner is
+     a legitimate signer, so the foreign-signer check never fired either. */
+  const plan = singleBuyPlan();
+  const smuggle = (programId: PublicKey, data: Buffer) => async (
+    leg: { programId: string; poolAddress: string },
+    options: { minimumAmountOut: string },
+  ) => ({
+    instructions: [
+      new TransactionInstruction({
+        programId: new PublicKey(leg.programId),
+        keys: [
+          { pubkey: new PublicKey(OWNER), isSigner: true, isWritable: true },
+          { pubkey: new PublicKey(leg.poolAddress), isSigner: false, isWritable: true },
+        ],
+        data: Buffer.from(options.minimumAmountOut),
+      }),
+      new TransactionInstruction({
+        programId,
+        keys: [
+          { pubkey: new PublicKey(key(7)), isSigner: false, isWritable: true },
+          { pubkey: new PublicKey(key(8)), isSigner: false, isWritable: false },
+          { pubkey: new PublicKey(OWNER), isSigner: true, isWritable: false },
+        ],
+        data,
+      }),
+    ],
+    lookupTables: [],
+    reason: null,
+    detail: null,
+  });
+  const summary = {
+    owner: plan.owner, side: plan.side, legs: plan.legs, totals: plan.totals,
+    henarFee: plan.henarFee, requiredPrograms: plan.requiredPrograms,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  };
+  const expected = { owner: OWNER, inputMint: USDC_MINT, outputMint: rep.mint, amount: 100_000_000n };
+
+  // SetAuthority (6) retargeting one of the owner's own token accounts.
+  for (const [label, opcode] of [["SetAuthority", 6], ["Approve", 4], ["Transfer", 3], ["Burn", 8], ["CloseAccount", 9]] as const) {
+    const data = Buffer.alloc(10);
+    data[0] = opcode;
+    const built = await buildTransaction(plan, {
+      executionEnabled: true, blockhash: fixtureBlockhashProvider(),
+      legBuilder: smuggle(TOKEN_PROGRAM_ID, data), now: NOW,
+    });
+    assert.equal(built.ok, true, `${label}: fixture should build`);
+    if (!built.ok) return;
+    assert.throws(
+      () => validateRouterTransaction(built.built.transaction, summary, expected, []),
+      /token instruction/,
+      `${label} must be refused`,
+    );
+  }
+
+  // Token-2022 is held to the same rule.
+  const t22 = Buffer.alloc(10);
+  t22[0] = 6;
+  const built2022 = await buildTransaction(plan, {
+    executionEnabled: true, blockhash: fixtureBlockhashProvider(),
+    legBuilder: smuggle(TOKEN_2022_PROGRAM_ID, t22), now: NOW,
+  });
+  if (built2022.ok)
+    assert.throws(() => validateRouterTransaction(built2022.built.transaction, summary, expected, []), /token instruction/);
+
+  // An aggregator leg may narrow the allowlist, never extend it.
+  const good = await buildTransaction(plan, {
+    executionEnabled: true, blockhash: fixtureBlockhashProvider(),
+    legBuilder: async (leg: { programId: string; poolAddress: string }, options: { minimumAmountOut: string }) => ({
+      instructions: [new TransactionInstruction({ programId: new PublicKey(leg.programId), keys: [{ pubkey: new PublicKey(OWNER), isSigner: true, isWritable: true }], data: Buffer.from(options.minimumAmountOut) })],
+      lookupTables: [], reason: null, detail: null,
+    }),
+    now: NOW,
+  });
+  if (!good.ok) return;
+  assert.throws(
+    () =>
+      validateRouterTransaction(
+        good.built.transaction,
+        { ...summary, legs: [{ ...summary.legs[0], programId: "aggregator:x", programIds: [key(9)] }] },
+        expected,
+        [],
+      ),
+    /aggregator program/,
+    "a program named only by the server must not become allowed",
+  );
+});

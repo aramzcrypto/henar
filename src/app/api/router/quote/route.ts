@@ -8,6 +8,9 @@ import { NextResponse } from "next/server";
 import { flagEnabled, routerRepresentationForMint, telemetrySinkFromEnv } from "@henar/router-core";
 import { RouterApi } from "@henar/router-app";
 import { rateLimitedConnection } from "@/lib/rpc-limiter";
+import { z } from "zod";
+import { boundedJson } from "@/lib/request-body";
+import { consumePublicQuoteBudget } from "@/lib/equities/rate-limit";
 import { pythGuardInputFor } from "@/lib/pyth/guard-input";
 import { jupiterAdapter } from "@henar/venue-jupiter";
 import { raydiumAdapter, raydiumCpmmAdapter } from "@henar/venue-raydium";
@@ -22,6 +25,18 @@ import { rfqAdapter } from "@henar/venue-rfq";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
+
+const schema = z.object({
+  mint: z.string().min(32).max(44),
+  side: z.enum(["buy", "sell"]),
+  amount: z.string().regex(/^\d+(\.\d+)?$/).max(30),
+  /* A caller may ask for a longer venue deadline for diagnosis. Clamped, and
+     never the default: production times out Raydium and Orca at exactly
+     6000ms on calls that take under two seconds locally, and without being
+     able to let one run longer there is no way to learn what they actually
+     cost in that environment. */
+  deadlineMs: z.coerce.number().int().min(0).max(25_000).optional(),
+});
 
 let api: RouterApi | null = null;
 function routerApi() {
@@ -41,20 +56,28 @@ function routerApi() {
 export async function POST(request: Request) {
   if (!flagEnabled("routerQuotes") || process.env.HENAR_ROUTER_UI !== "1")
     return NextResponse.json({ error: "router comparison is disabled" }, { status: 404 });
-  let body: { mint?: string; side?: "buy" | "sell"; amount?: string; deadlineMs?: number };
+  /* One quote here fans out to ten venue adapters, several of which do bulk
+     RPC reads, and the caller may ask for a deadline of up to 25 seconds. Its
+     three sibling quote routes are budgeted; this one was not, so an
+     unauthenticated caller could hold a lambda and the RPC quota open at
+     will. The product refreshes a ticket about five times a minute against a
+     budget of sixty, so nothing the interface does comes close to it. */
+  if (!consumePublicQuoteBudget(request))
+    return NextResponse.json(
+      { error: "Quote limit reached. Please wait a minute." },
+      { status: 429, headers: { "Cache-Control": "private, no-store", "Retry-After": "60" } },
+    );
+  /* Validated rather than cast, the way the sibling build route does it:
+     `side` and `amount` reached the router as whatever was sent. */
+  let body: z.infer<typeof schema>;
   try {
-    body = await request.json();
+    body = schema.parse(await boundedJson(request));
   } catch {
-    return NextResponse.json({ error: "invalid json" }, { status: 400 });
+    return NextResponse.json({ error: "invalid request" }, { status: 400 });
   }
-  const rep = body.mint ? routerRepresentationForMint(body.mint) : null;
-  if (!rep || !body.side || !body.amount) return NextResponse.json({ error: "mint, side and amount are required" }, { status: 400 });
-  /* A caller may ask for a longer venue deadline for diagnosis. Clamped, and
-     never the default: production times out Raydium and Orca at exactly
-     6000ms on calls that take under two seconds locally, and without being
-     able to let one run longer there is no way to learn what they actually
-     cost in that environment. */
-  const deadlineMs = Math.min(Math.max(Number(body.deadlineMs) || 0, 0), 25_000) || undefined;
+  const rep = routerRepresentationForMint(body.mint);
+  if (!rep) return NextResponse.json({ error: "unknown representation" }, { status: 404 });
+  const deadlineMs = body.deadlineMs || undefined;
   const r = await routerApi().quote({ representationId: rep.id, side: body.side, amount: body.amount, deadlineMs });
   return NextResponse.json(r.body, { status: r.status });
 }

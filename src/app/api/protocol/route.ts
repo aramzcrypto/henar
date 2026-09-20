@@ -5,14 +5,21 @@ import { protocolContext } from "@/lib/protocol/context";
 import { displayStockUnits } from "@/lib/protocol/pricing";
 import { jsonAccount, pda, ata } from "@/lib/protocol/client";
 import { createReadCache } from "@/lib/read-cache";
+import { consumePublicQuoteBudget } from "@/lib/equities/rate-limit";
 import { principalTvl } from "@/lib/protocol/display";
 export const dynamic = "force-dynamic";
 const readCache = createReadCache<unknown>(10000);
 const tvlCache = createReadCache<string>(15000, 1);
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const fresh = url.searchParams.get("fresh") === "1";
   const owner = url.searchParams.get("owner") ?? "";
+  /* `fresh=1` skipped the read cache, the TVL cache and the CDN all at once,
+     and each miss runs several getProgramAccounts scans against the RPC plan
+     the trading paths share. Rotating the owner defeated the per-key
+     coalescing too, so one caller could keep every layer cold. Nothing in the
+     product asks for it — it is a diagnostic — so it now costs a budget slot
+     like every other unauthenticated read. */
+  const fresh = url.searchParams.get("fresh") === "1" && consumePublicQuoteBudget(request);
   try {
     if (owner) new PublicKey(owner);
     const value = await readCache(

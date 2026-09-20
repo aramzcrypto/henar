@@ -88,3 +88,46 @@ test("fresh: true always bypasses the stale value", async () => {
   assert.equal(await cache("k", read), 1);
   assert.equal(await cache("k", read, true), 2, "an explicit fresh read is never served stale");
 });
+
+test("a failing upstream is retried once per window, not once per request", async () => {
+  /* The failure path used to leave `expires` in the past, so every later
+     request started another refresh. For the catalog pass that is
+     twenty-three upstream calls per request, aimed at an upstream already
+     refusing us. */
+  let reads = 0;
+  // A window long enough that the burst below lands inside one of them.
+  const cache = createReadCache<number>(400, 128, { staleWhileRevalidate: true });
+  const read = async () => {
+    reads += 1;
+    if (reads > 1) throw new Error("rate limited");
+    return 1;
+  };
+  assert.equal(await cache("k", read), 1);
+  await new Promise((r) => setTimeout(r, 410));
+
+  // First request past the TTL: serves stale, starts one refresh, which fails.
+  assert.equal(await cache("k", read), 1);
+  await tick();
+  assert.equal(reads, 2);
+
+  // Every request behind it is served stale without starting another.
+  for (let i = 0; i < 20; i += 1) {
+    assert.equal(await cache("k", read), 1);
+    await tick();
+  }
+  assert.equal(reads, 2, "the failing upstream was asked once, not twenty-one times");
+});
+
+test("the backoff never masks a refresh that did succeed", async () => {
+  let reads = 0;
+  const cache = createReadCache<number>(400, 128, { staleWhileRevalidate: true });
+  const read = async () => {
+    reads += 1;
+    return reads;
+  };
+  assert.equal(await cache("k", read), 1);
+  await new Promise((r) => setTimeout(r, 410));
+  assert.equal(await cache("k", read), 1, "stale while it refreshes");
+  await tick();
+  assert.equal(await cache("k", read), 2, "the successful value is served, not the held one");
+});

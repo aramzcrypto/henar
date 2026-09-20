@@ -14,6 +14,7 @@ import multihop from "./fixtures/jupiter-multihop-build.json";
 import { validateWalletRoute } from "../src/lib/route-policy";
 import { boundedJson } from "../src/lib/request-body";
 import { rpcRequest } from "../src/lib/rpc-policy";
+import { safeError } from "../src/lib/protocol/errors";
 import { assertAdmission, productMask } from "../src/lib/protocol/access";
 const terms = (q: {
   inputMint: string;
@@ -258,4 +259,46 @@ test("route simulation must preserve wallet token ownership and delegate authori
       owner,
     ),
   );
+});
+
+test("error redaction covers every credential, not a remembered list", () => {
+  const env = {
+    SOLANA_RPC_URL: "https://mainnet.helius-rpc.com/?api-key=abcdef0123456789",
+    PYTH_PRO_API_KEY: "pyth_live_0123456789abcdef",
+    TITAN_API_KEY: "titan_live_0123456789abcdef",
+    TOKENTERMINAL_API_KEY: "tt_live_0123456789abcdef",
+    SUPABASE_SERVICE_ROLE_KEY: "sb_service_0123456789abcdef",
+    NODE_ENV: "production",
+    PORT: "3000",
+  };
+
+  // The variable the old list named does not exist; the real one is covered.
+  assert.match(safeError(new Error("upstream rejected pyth_live_0123456789abcdef"), "x", env), /\[redacted\]/);
+  assert.doesNotMatch(safeError(new Error("upstream rejected pyth_live_0123456789abcdef"), "x", env), /pyth_live/);
+
+  // Credentials that were never on the list.
+  for (const secret of [env.TITAN_API_KEY, env.TOKENTERMINAL_API_KEY, env.SUPABASE_SERVICE_ROLE_KEY])
+    assert.doesNotMatch(safeError(new Error(`failed with ${secret}`), "x", env), new RegExp(secret));
+
+  // A key on a wss:// URL: the scheme the http-only pattern skipped.
+  const wss = safeError(new Error("socket closed: wss://titan.example/stream?auth=titan_live_0123456789abcdef"), "x", env);
+  assert.doesNotMatch(wss, /titan_live/);
+  assert.doesNotMatch(wss, /wss:\/\//);
+
+  // Short, public values stay readable so messages remain useful.
+  assert.match(safeError(new Error("boot failed in production on 3000"), "x", env), /production/);
+  assert.match(safeError(new Error("boot failed in production on 3000"), "x", env), /3000/);
+});
+
+test("the RPC method allowlist rejects inherited property names", () => {
+  /* `schemas[method]` walked the prototype chain, so these were truthy and
+     survived the guard, failing only when `.parse` turned out to be missing. */
+  for (const method of ["constructor", "toString", "__proto__", "valueOf", "hasOwnProperty"])
+    assert.throws(
+      () => rpcRequest({ jsonrpc: "2.0", id: 1, method, params: [] }),
+      /Method unavailable/,
+      `${method} must be rejected as an unknown method`,
+    );
+  // A real method still works.
+  assert.ok(rpcRequest({ jsonrpc: "2.0", id: 1, method: "getLatestBlockhash", params: [] }));
 });
