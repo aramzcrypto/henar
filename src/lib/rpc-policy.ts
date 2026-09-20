@@ -110,7 +110,12 @@ export function rpcRequest(raw: unknown) {
     })
     .strict()
     .parse(raw);
-  const schema = schemas[body.method];
+  /* Own properties only: a plain object literal inherits `constructor`,
+     `toString` and `__proto__`, so `schemas[method]` is truthy for names that
+     were never allowlisted. They were rejected a line later when `.parse`
+     turned out not to be a function, which is safe by accident rather than by
+     construction. */
+  const schema = Object.hasOwn(schemas, body.method) ? schemas[body.method] : undefined;
   if (!schema) throw new Error("Method unavailable.");
   const params = body.params.slice();
   if (["getLatestBlockhash", "getBlockHeight"].includes(body.method) && params.length === 0) params.push({});

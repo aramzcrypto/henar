@@ -15,7 +15,7 @@ import {
   groupRepresentationHoldings,
 } from "../src/lib/equities/compatibility";
 import type { CatalogEntry } from "../src/lib/equities/providers/common";
-import { consumePublicQuoteBudget } from "../src/lib/equities/rate-limit";
+import { clientKey, consumePublicQuoteBudget } from "../src/lib/equities/rate-limit";
 import { tradeFee } from "@/lib/trade-fee";
 
 test("canonical registry groups verified provider mints under one company", () => {
@@ -260,4 +260,31 @@ test("quote aggregation compares representations and includes the fixed protocol
     if (previousKey) process.env.JUPITER_API_KEY = previousKey;
     else delete process.env.JUPITER_API_KEY;
   }
+});
+
+test("a rate-limit bucket cannot be chosen by the caller", () => {
+  /* The leftmost x-forwarded-for entry is an assertion by the client; the
+     last is what the platform observed. Keying on the first meant one header
+     bought a fresh budget per request, so the ceiling never engaged. */
+  const req = (headers: Record<string, string>) =>
+    new Request("https://henar.test/api/quote", { headers });
+
+  // A spoofed leading hop is ignored in favour of the observed one.
+  assert.equal(clientKey(req({ "x-forwarded-for": "1.2.3.4, 203.0.113.9" })), "203.0.113.9");
+  assert.equal(clientKey(req({ "x-forwarded-for": "9.9.9.9" })), "9.9.9.9");
+
+  // The platform header wins outright, whatever the client claims.
+  assert.equal(
+    clientKey(req({ "x-vercel-forwarded-for": "203.0.113.9", "x-forwarded-for": "1.2.3.4" })),
+    "203.0.113.9",
+  );
+  assert.equal(clientKey(req({ "x-real-ip": "198.51.100.7" })), "198.51.100.7");
+  assert.equal(clientKey(req({})), "local");
+
+  // Two requests differing only in the spoofable prefix share one bucket.
+  const rotating = (n: number) => req({ "x-forwarded-for": `10.0.0.${n}, 203.0.113.9` });
+  const now = Date.now();
+  let allowed = 0;
+  for (let i = 0; i < 80; i += 1) if (consumePublicQuoteBudget(rotating(i), now)) allowed += 1;
+  assert.ok(allowed <= 60, `rotating the claimed hop must not lift the ceiling (allowed ${allowed})`);
 });

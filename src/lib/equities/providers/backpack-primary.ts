@@ -45,8 +45,10 @@ const cached = createReadCache<BackpackSnapshot>(30_000, 1);
 export async function backpackSnapshot(): Promise<BackpackSnapshot> {
   return cached("public", async () => {
     const read = async (path: string) => {
+      /* Issuer metadata, not a quote. Shared across instances so a cold one
+         does not re-read the whole asset and securities catalog. */
       const response = await fetch(`${API}/api/v1/${path}`, {
-        cache: "no-store",
+        next: { revalidate: 30 },
         signal: AbortSignal.timeout(6_000),
       });
       if (!response.ok)

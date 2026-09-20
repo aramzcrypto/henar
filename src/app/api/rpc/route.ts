@@ -2,7 +2,16 @@ import { boundedJson } from "@/lib/request-body";
 import { rpcRequest } from "@/lib/rpc-policy";
 import { NextResponse } from "next/server";
 import { assertApplicationRelay } from "@/lib/relay-policy";
+import { consumePublicQuoteBudget } from "@/lib/equities/rate-limit";
 export async function POST(req: Request) {
+  /* The policy allowlist bounds what may be asked; it never bounded how
+     often. This relay spends our RPC quota, so it gets the same budget the
+     quote routes use. */
+  if (!consumePublicQuoteBudget(req))
+    return NextResponse.json(
+      { error: { code: -32005, message: "Rate limit reached." }, jsonrpc: "2.0", id: 1 },
+      { status: 429, headers: { "Cache-Control": "private, no-store", "Retry-After": "60" } },
+    );
   if (!process.env.SOLANA_RPC_URL)
     return NextResponse.json(
       {

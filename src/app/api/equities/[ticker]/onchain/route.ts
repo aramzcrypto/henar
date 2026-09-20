@@ -15,7 +15,12 @@ export async function GET(
     return NextResponse.json(await companyComparison(equity), {
       headers: {
         "Cache-Control":
-          "public, max-age=0, s-maxage=10, stale-while-revalidate=5",
+          /* One miss here is ~48 aggregator calls plus RPC reads, and the
+             company page refreshes on a 30s cadence, so a 10s shared window
+             left most of that cadence hitting the origin. Widening it to 15s
+             with a 30s stale window halves origin hits without changing what
+             the page shows or how often it asks. */
+          "public, max-age=0, s-maxage=15, stale-while-revalidate=30",
       },
     });
   } catch {

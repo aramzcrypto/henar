@@ -14,6 +14,21 @@
  *
  * Opt in per cache, never globally, and never for a price.
  */
+
+/**
+ * How long a failed background refresh holds the value it already has.
+ *
+ * A failed read never replaces a good snapshot, which is right, but it also
+ * leaves `expires` in the past — so the next request starts another refresh,
+ * and the next, and the next. For the catalog pass that is twenty-three
+ * upstream calls per request, aimed at an upstream that is already refusing
+ * us. The hardest we push is exactly when we are being asked to stop.
+ *
+ * A short floor turns that into one attempt per window while still serving
+ * the stale value, which is what stale-while-revalidate promised.
+ */
+const FAILED_REFRESH_BACKOFF_MS = 30_000;
+
 export function createReadCache<T>(
   ttlMs: number,
   maximum = 128,
@@ -31,7 +46,17 @@ export function createReadCache<T>(
          swallowed here because the read below already records failures the
          same way, and an unhandled rejection would take the process down for
          a background refresh nobody is waiting on. */
-      void refresh().catch(() => undefined);
+      void refresh().catch(() => {
+        /* Hold what we have for a short window rather than re-attempting on
+           every subsequent request. Never over a value a concurrent refresh
+           has since succeeded in writing. */
+        const latest = values.get(key);
+        if (!latest || latest.expires <= Date.now())
+          values.set(key, {
+            value: current.value,
+            expires: Date.now() + Math.min(ttlMs, FAILED_REFRESH_BACKOFF_MS),
+          });
+      });
       return current.value;
     }
     return refresh();

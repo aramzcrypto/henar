@@ -13,6 +13,13 @@ import { PublicKey, type AddressLookupTableAccount, type VersionedTransaction } 
 import { MARKET_FEE_BPS } from "@/lib/trade-fee";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
+/**
+ * The one SPL-Token opcode a Henar router transaction may carry: the fee
+ * transfer the builder emits. Named rather than written as a bare 12 so the
+ * constraint reads as a rule instead of a magic number.
+ */
+const TOKEN_TRANSFER_CHECKED = 12;
+
 const COMPUTE_BUDGET = "ComputeBudget111111111111111111111111111111";
 const ATA_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 const VENUE_PROGRAMS = new Set([
@@ -56,11 +63,18 @@ export function validateRouterTransaction(
   for (const leg of plan.legs) {
     if (BigInt(leg.minimumAmountOut) <= 0n) fail("leg floor");
     if (leg.programId.startsWith("aggregator:")) {
-      // Aggregator leg: the server lists the programs its instructions invoke;
-      // they are allowed for this transaction only. Signer, payer and fee
-      // checks below still apply to every instruction.
+      /* Aggregator leg: the server lists the programs its instructions invoke.
+         Those names came from the server, so honouring them as given would let
+         the thing being checked choose what the check allows — the one thing a
+         client-side validator exists to prevent. They must already be programs
+         this client knows, which makes the list a narrowing of the allowlist
+         rather than an extension of it. Adding a venue stays a deliberate
+         change here, not something a response can do. */
       if (!leg.programIds?.length) fail("aggregator programs");
-      for (const p of leg.programIds!) aggregatorPrograms.add(p);
+      for (const p of leg.programIds!) {
+        if (!VENUE_PROGRAMS.has(p)) fail(`aggregator program ${p}`);
+        aggregatorPrograms.add(p);
+      }
     } else if (!VENUE_PROGRAMS.has(leg.programId)) fail("leg program");
   }
   if (plan.henarFee.bps !== MARKET_FEE_BPS) fail("fee bps");
@@ -99,7 +113,19 @@ export function validateRouterTransaction(
     // Any account the message marks as signer must be the owner.
     for (let i = 0; i < ix.accountKeyIndexes.length; i += 1)
       if (msg.isAccountSigner(ix.accountKeyIndexes[i]) && !accounts[i].equals(owner)) fail("foreign signer");
-    if ((program === TOKEN_PROGRAM_ID.toBase58() || program === TOKEN_2022_PROGRAM_ID.toBase58()) && ix.data[0] === 12) {
+    if (program === TOKEN_PROGRAM_ID.toBase58() || program === TOKEN_2022_PROGRAM_ID.toBase58()) {
+      /* The token programs were allowed wholesale, and only TransferChecked
+         was ever inspected. Everything else went through unread — and the
+         owner is a legitimate signer, so the foreign-signer check above does
+         not catch it either. A plan carrying an extra SetAuthority, Approve or
+         Burn on the owner's own account would validate, simulate cleanly and
+         be signed.
+         The builder emits exactly one token-program instruction, the fee
+         transfer, so anything else is not something we asked for. Unknown
+         opcodes fail rather than pass: a venue that legitimately needs one is
+         a deliberate addition here, discovered in testing, not a silent
+         capability in a signing path. */
+      if (ix.data[0] !== TOKEN_TRANSFER_CHECKED) fail(`token instruction ${ix.data[0]}`);
       // TransferChecked: [source, mint, destination, owner]
       const amount = Buffer.from(ix.data).readBigUInt64LE(1);
       const decimals = ix.data[9];
