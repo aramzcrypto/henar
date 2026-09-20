@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { EquityLogo } from "./equity-logo";
+import { InfoTip } from "./info-tip";
 import type { EquitySummary, MarketsOverview } from "@/lib/equities/types";
 
 type Universe = {
@@ -308,6 +309,16 @@ export function MarketsBento({
       <section className="bento-tile bento-breadth">
         <header>
           <span>Breadth</span>
+          {/* The one piece of jargon on this page, and the denominator is not
+              the catalog — so both are said rather than assumed. */}
+          <InfoTip label="What breadth means">
+            The share of companies that rose over the last 24 hours, counted
+            across the{" "}
+            {breadth.total ? breadth.total.toLocaleString() : ""} with a live
+            onchain price rather than the whole catalog. A market can climb on a
+            few large names while most of it falls, and breadth is what tells
+            those apart.
+          </InfoTip>
         </header>
         {breadth.share === null ? (
           <p className="bento-empty">Unavailable</p>

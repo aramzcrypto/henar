@@ -1,13 +1,12 @@
 "use client";
 import { productAvailable } from "@/lib/protocol/access";
 import { AppSelect } from "./app-select";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { LuckyAllocation, LuckyMode, type OpeningMode } from "./lucky-mode";
 import { batchPackQuote, giftDraft } from "@/lib/pack-actions";
 import {
-  Info,
   ArrowLeft,
   ChartNoAxesCombined,
   ArrowUpRight,
@@ -27,49 +26,11 @@ import { backpackPackCandidates } from "@/lib/pack-catalog";
 import { EarnHistory } from "./earn-history";
 import { useProtocol } from "./protocol-provider";
 import { ProtocolInventory, ProtocolPositions } from "./protocol-inventory";
+import { InfoTip as EarnInfo } from "./info-tip";
 import { StockLogo } from "./stock-logo";
 import { compactUsdc, exactDecimal } from "@/lib/protocol/display";
 
 type Balances = Record<string, { amount: string; decimals: number }>;
-function EarnInfo({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  return (
-    <span
-      className="earn-info"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") setOpen(false);
-      }}
-    >
-      <button
-        type="button"
-        aria-label={label}
-        aria-expanded={open}
-        aria-describedby={open ? id : undefined}
-        onClick={() => setOpen(true)}
-        onFocus={() => setOpen(true)}
-      >
-        <Info size={15} />
-      </button>
-      {open && (
-        <span id={id} role="tooltip" className="earn-info-popover">
-          {children}
-        </span>
-      )}
-    </span>
-  );
-}
 function Detail({
   label,
   children,
