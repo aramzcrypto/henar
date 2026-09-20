@@ -4,12 +4,12 @@ import { PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { connection, assertMainnet } from "@/lib/solana";
 import { SOL_MINT } from "@/lib/payment-tokens";
-import { consumePublicQuoteBudget } from "@/lib/equities/rate-limit";
+import { consumeRelayBudget } from "@/lib/equities/rate-limit";
 export async function GET(req: Request) {
   /* Two getParsedTokenAccountsByOwner calls per request against a paid RPC,
      for any owner the caller names. Without a bound, wallet enumeration runs
      on our quota. */
-  if (!consumePublicQuoteBudget(req))
+  if (!consumeRelayBudget(req))
     return NextResponse.json(
       { error: "Rate limit reached. Please wait a minute." },
       { status: 429, headers: { "Cache-Control": "private, no-store", "Retry-After": "60" } },
