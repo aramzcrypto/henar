@@ -15,7 +15,7 @@ import {
   groupRepresentationHoldings,
 } from "../src/lib/equities/compatibility";
 import type { CatalogEntry } from "../src/lib/equities/providers/common";
-import { clientKey, consumePublicQuoteBudget } from "../src/lib/equities/rate-limit";
+import { clientKey, consumePublicQuoteBudget, consumeRelayBudget } from "../src/lib/equities/rate-limit";
 import { tradeFee } from "@/lib/trade-fee";
 
 test("canonical registry groups verified provider mints under one company", () => {
@@ -287,4 +287,22 @@ test("a rate-limit bucket cannot be chosen by the caller", () => {
   let allowed = 0;
   for (let i = 0; i < 80; i += 1) if (consumePublicQuoteBudget(rotating(i), now)) allowed += 1;
   assert.ok(allowed <= 60, `rotating the claimed hop must not lift the ceiling (allowed ${allowed})`);
+});
+
+test("wallet traffic is bounded on its own counter, not the quote budget", () => {
+  /* One trade spends a blockhash read, a simulation, a submission and several
+     status polls, and a page spends balance reads before any of that. Holding
+     the relay to the quote ceiling would refuse ordinary use behind a shared
+     address. It is bounded, just not at the same number, and spending one
+     never spends the other. */
+  const req = () => new Request("https://henar.test/api/rpc", { headers: { "x-vercel-forwarded-for": "203.0.113.55" } });
+  const now = Date.now();
+  let relay = 0;
+  for (let i = 0; i < 300; i += 1) if (consumeRelayBudget(req(), now)) relay += 1;
+  assert.ok(relay > 60, `the relay must clear the quote ceiling (allowed ${relay})`);
+  assert.ok(relay <= 240, `but it is still bounded (allowed ${relay})`);
+
+  // Exhausting the relay leaves the quote budget for that client untouched.
+  assert.equal(consumeRelayBudget(req(), now), false, "relay is exhausted");
+  assert.equal(consumePublicQuoteBudget(req(), now), true, "quotes are unaffected");
 });
