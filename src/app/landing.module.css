@@ -52,7 +52,12 @@
   gap: 12px;
 }
 
+/* The one action on the page, so it is the one thing allowed to light up.
+   A sweep of the brand colour crosses it on hover, under the label rather
+   than over it, and the arrow steps forward. Restrained on purpose: this is a
+   finance product, and a control that glows too hard reads as a game. */
 .launchLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -61,10 +66,54 @@
   background: var(--selected-bg);
   color: var(--text-1);
   font-size: 12px;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    background var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
 }
-
-.launchLink:hover {
+/* The sweep. Sits behind the text and is the only thing that moves, so the
+   label never shifts under the reader's eye. */
+.launchLink::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    color-mix(in srgb, var(--accent) 34%, transparent) 50%,
+    transparent 80%
+  );
+  transform: translateX(-120%);
+  opacity: 0;
+  transition:
+    transform 0.62s var(--ease-out-soft),
+    opacity 0.26s var(--ease);
+}
+.launchLink:hover,
+.launchLink:focus-visible {
   background: var(--surface-3);
+}
+.launchLink:hover::before,
+.launchLink:focus-visible::before {
+  transform: translateX(120%);
+  opacity: 1;
+}
+.launchLink svg {
+  transition: transform var(--fast) var(--ease);
+}
+.launchLink:hover svg,
+.launchLink:focus-visible svg {
+  transform: translateX(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .launchLink::before {
+    display: none;
+  }
+  .launchLink svg {
+    transition: none;
+  }
 }
 
 .main {

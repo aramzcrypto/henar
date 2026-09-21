@@ -10538,6 +10538,9 @@ h3 {
    --------------------------------------------------------------- */
 :root {
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* A longer tail than --ease: the element decelerates into place rather than
+     stopping at it. Used where something travels far enough to be watched. */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --fast: 130ms;
 }
 
@@ -12561,23 +12564,67 @@ body {
    <ScrollReveal />; elements opt in with data-reveal and keep
    data-in once seen. Data attributes rather than module classes so
    server components can mark themselves without importing styles. */
-[data-reveal] {
+[data-reveal],
+[data-reveal-group] > * {
   opacity: 0;
-  transform: translateY(20px);
+  /* A little scale under the lift. Translation alone reads as a slide; the
+     two together read as something arriving from behind the page, which is
+     the difference between movement and depth. Kept small — at this size it
+     is felt rather than seen, and anything larger looks like a slideshow. */
+  transform: translateY(22px) scale(0.988);
   transition:
-    opacity 0.75s var(--ease),
-    transform 0.75s var(--ease);
+    opacity 0.7s var(--ease),
+    transform 0.9s var(--ease-out-soft);
   transition-delay: var(--reveal-delay, 0ms);
   will-change: opacity, transform;
 }
-[data-reveal][data-in] {
+[data-reveal][data-in],
+[data-reveal-group] > [data-in] {
   opacity: 1;
   transform: none;
 }
 /* Each will-change pins a compositor layer for the life of the page. Once an
    element has arrived it never animates again, so hand the layer back. */
-[data-reveal][data-settled] {
+[data-reveal][data-settled],
+[data-reveal-group] > [data-settled] {
   will-change: auto;
+}
+
+/* A section arrives as a sequence rather than a block: the label, then the
+   heading, then the body, then whatever sits under them. The delays are on
+   the children so a server component can opt a whole group in with one
+   attribute and no per-element bookkeeping. */
+[data-reveal-group] > * {
+  --reveal-delay: 0ms;
+}
+[data-reveal-group] > *:nth-child(2) {
+  --reveal-delay: 70ms;
+}
+[data-reveal-group] > *:nth-child(3) {
+  --reveal-delay: 140ms;
+}
+[data-reveal-group] > *:nth-child(4) {
+  --reveal-delay: 210ms;
+}
+[data-reveal-group] > *:nth-child(n + 5) {
+  --reveal-delay: 280ms;
+}
+
+/* Scroll-linked depth, driven by --depth from <LandingMotion />. Without the
+   script the variable is absent, the fallbacks hold, and the hero simply sits
+   still — which is also exactly what reduced motion gets. */
+[data-scroll-depth] .hero-depth-copy {
+  transform: translate3d(0, calc(var(--depth, 0) * -26px), 0);
+  opacity: calc(1 - var(--depth, 0) * 0.9);
+}
+/* The globe sinks and dissolves from inside <HeroGlobe />; the copy rises
+   against it, which is what separates them in space. Composited throughout:
+   transform and opacity only, no layout and no paint. */
+@media (prefers-reduced-motion: reduce) {
+  [data-scroll-depth] .hero-depth-copy {
+    transform: none;
+    opacity: 1;
+  }
 }
 
 /* The fanned company deck. */
