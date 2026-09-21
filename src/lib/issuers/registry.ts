@@ -19,6 +19,7 @@ import { ondoDisclosure, ONDO_API } from "./providers/ondo";
 import { xstocksDisclosure, XSTOCKS_API } from "./providers/xstocks";
 import { issuerCatalog, issuerProfiles } from "./profiles";
 import { issuerMarkets } from "./market";
+import { issuerOnchainPresence } from "./onchain-presence";
 import { JUPITER_TOKEN_API } from "@/lib/equities/catalog-market";
 import { issuerProfile } from "./profiles";
 import { aggregateIssuerMarket } from "./market";
@@ -27,6 +28,7 @@ import type {
   IssuerDisclosure,
   IssuerId,
   IssuerIntelligence,
+  IssuerOnchainPresence,
   IssuerProfileData,
   IssuerSnapshot,
   IssuerSourceStatus,
@@ -53,14 +55,16 @@ export async function issuerIntelligence(
   options: { fetch?: typeof fetch; fresh?: boolean; external?: boolean } = {},
 ): Promise<IssuerIntelligence> {
   const wantsExternal = options.external ?? Boolean(tokenTerminalApiKey());
-  const [markets, published] = await Promise.all([
+  const [markets, presence, published] = await Promise.all([
     issuerMarkets(options).catch(() => null),
+    issuerOnchainPresence(options).catch(() => null),
     disclosures(options),
   ]);
   const issuers: IssuerSnapshot[] = await Promise.all(
     issuerProfiles.map(async (profile) => ({
       profile,
       catalog: issuerCatalog(profile.id),
+      presence: presence?.[profile.id] ?? unreadPresence(profile.id),
       market:
         markets?.[profile.id] ??
         ({
@@ -161,15 +165,21 @@ export async function issuerIntelligence(
 }
 
 /**
- * The comparison the Markets overview shows: one row per issuer, volume and
- * liquidity against the mints they came from. Cheap — the catalog pass only.
+ * The comparison the Markets overview shows: one row per issuer, with what it
+ * has actually issued on chain beside what it has registered, and the volume
+ * and liquidity that sit on top. Both reads are shared and cached, so the
+ * comparison costs no request of its own.
  */
 export async function issuerComparison(options: { fetch?: typeof fetch; fresh?: boolean } = {}) {
-  const markets = await issuerMarkets(options);
+  const [markets, presence] = await Promise.all([
+    issuerMarkets(options),
+    issuerOnchainPresence(options).catch(() => null),
+  ]);
   return {
     issuers: issuerProfiles.map((profile) => ({
       profile,
       catalog: issuerCatalog(profile.id),
+      presence: presence?.[profile.id] ?? unreadPresence(profile.id),
       market: markets[profile.id],
     })),
     generatedAt: new Date().toISOString(),
@@ -207,9 +217,12 @@ export async function issuerSnapshot(
   const profile = issuerProfile(id);
   if (!profile) return null;
   const wantsExternal = options.external ?? Boolean(tokenTerminalApiKey());
-  const [market, disclosure, external] = await Promise.all([
+  const [market, presence, disclosure, external] = await Promise.all([
     catalogMarket(options)
       .then((pass) => aggregateIssuerMarket(id, pass))
+      .catch(() => null),
+    issuerOnchainPresence(options)
+      .then((all) => all[id])
       .catch(() => null),
     disclosureFor(id, options),
     wantsExternal ? issuerExternalCoverage(id, options).catch(() => null) : Promise.resolve(null),
@@ -223,6 +236,14 @@ export async function issuerSnapshot(
       url: null,
       reason: null,
       role: "Verified mints grouped by company, with this issuer's own source recorded",
+    },
+    {
+      id: "solana",
+      label: "Solana mainnet",
+      status: presence?.status ?? "unavailable",
+      url: null,
+      reason: presence?.reason ?? null,
+      role: "Mint supply, which separates an issued token from a registered address",
     },
     {
       id: "jupiter",
@@ -252,6 +273,7 @@ export async function issuerSnapshot(
   return {
     profile,
     catalog,
+    presence: presence ?? unreadPresence(id),
     market:
       market ??
       ({
@@ -283,5 +305,23 @@ export async function issuerSnapshot(
       .filter((peer) => peer.id !== id)
       .map((peer) => ({ id: peer.id, label: peer.label, logo: peer.logo })),
     generatedAt: new Date().toISOString(),
+  };
+}
+
+
+/** An unread chain leaves registered mints as registered, never as live. */
+function unreadPresence(id: IssuerId): IssuerOnchainPresence {
+  return {
+    status: "unavailable",
+    registered: issuerCatalog(id).representations,
+    live: null,
+    read: 0,
+    reason: "Mint supply could not be read from mainnet.",
+    provenance: {
+      source: "Solana mainnet",
+      provider: "solana",
+      sourceType: "onchain",
+      observedAt: new Date().toISOString(),
+    },
   };
 }

@@ -32,6 +32,9 @@ import { summarizeBackpack, tokenizedSecurities } from "../src/lib/issuers/provi
 import { ondoDisclosure, summarizeOndo } from "../src/lib/issuers/providers/ondo";
 import type { BackpackSnapshot } from "../src/lib/equities/providers/backpack-primary";
 import { ISSUER_IDS } from "../src/lib/issuers/types";
+import { PublicKey } from "@solana/web3.js";
+import { MINT_SIZE, MintLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { chunkMints, supplyFromAccount, supplyToNumber } from "../src/lib/equities/mint-supply";
 
 const AT = "2026-09-20T07:00:00.000Z";
 
@@ -358,4 +361,53 @@ test("Ondo with a key maps its published addresses to verified mints", () => {
   assert.equal(value("assetClasses"), 2);
   assert.equal(value("marketStatus"), "Open");
   assert.equal(summarizeOndo([], [], null, new Set()).find((m) => m.id === "marketStatus")!.value, null);
+});
+
+test("supply separates an issued token from a registered address", () => {
+  /* Backpack publishes a Solana address for more than a thousand securities,
+     but a token exists only once someone withdraws an entitlement. Sampled
+     against mainnet on 21 September 2026, 5.5% of its mints held any supply;
+     xStocks was at 100% and Ondo at 94%. A catalog count cannot see that, and
+     neither can AMM liquidity: it cannot tell a token nobody trades from a
+     token that does not exist. */
+  const mint = (supply: bigint, decimals: number, program = TOKEN_PROGRAM_ID) => {
+    const data = Buffer.alloc(MINT_SIZE);
+    MintLayout.encode(
+      {
+        mintAuthorityOption: 0,
+        mintAuthority: PublicKey.default,
+        supply,
+        decimals,
+        isInitialized: true,
+        freezeAuthorityOption: 0,
+        freezeAuthority: PublicKey.default,
+      },
+      data,
+    );
+    return { owner: program, data, executable: false, lamports: 1, rentEpoch: 0 };
+  };
+
+  const issued = supplyFromAccount("A", mint(321_571_164_500n, 8));
+  assert.equal(issued.live, true);
+  assert.ok(Math.abs(issued.supply! - 3215.711645) < 1e-6);
+
+  // A registered address nobody has withdrawn against.
+  const empty = supplyFromAccount("B", mint(0n, 6));
+  assert.equal(empty.live, false);
+  assert.equal(empty.supply, 0);
+
+  // An account we could not read is unknown, never empty.
+  const missing = supplyFromAccount("C", null);
+  assert.equal(missing.live, null);
+  assert.equal(missing.supply, null);
+
+  // The scaled-UI multiplier is part of the displayed supply, not decoration.
+  assert.equal(supplyToNumber(1_000_000n, 6, null), 1);
+  assert.equal(supplyToNumber(1_000_000n, 6, "1"), 1);
+  assert.ok(Math.abs(supplyToNumber(1_000_000n, 6, "1.0009180758490996")! - 1.0009180758) < 1e-9);
+  assert.equal(supplyToNumber(1_000_000n, 6, "not-a-number"), 1);
+
+  // Batching matches what getMultipleAccounts will accept.
+  assert.equal(chunkMints(new Array(250).fill("m")).length, 3);
+  assert.equal(chunkMints([]).length, 0);
 });

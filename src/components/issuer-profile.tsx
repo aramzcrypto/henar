@@ -54,7 +54,7 @@ function Measures({ measures }: { measures: IssuerMeasure[] }) {
  * the issuer's claim about itself from Henar's measurement of it.
  */
 export function IssuerProfile({ data }: { data: IssuerProfileData }) {
-  const { profile, catalog, market, disclosure, external, sources, peers } = data;
+  const { profile, catalog, presence, market, disclosure, external, sources, peers } = data;
   const reserves = disclosure.reserves;
   return (
     <section className="markets-shell">
@@ -99,6 +99,10 @@ export function IssuerProfile({ data }: { data: IssuerProfileData }) {
         <div>
           <dt>Representations</dt>
           <dd>{catalog.representations.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Issued onchain</dt>
+          <dd>{presence.live === null ? "—" : presence.live.toLocaleString()}</dd>
         </div>
         <div>
           <dt>24h volume</dt>
@@ -147,7 +151,24 @@ export function IssuerProfile({ data }: { data: IssuerProfileData }) {
               <dt>Represented by all three</dt>
               <dd>{catalog.sharedWithAll.toLocaleString()}</dd>
             </div>
+            <div>
+              <dt>
+                Issued onchain
+                <small>
+                  Mints holding supply on mainnet. A registered mint is an
+                  address; a token exists once someone holds one.
+                </small>
+              </dt>
+              <dd>
+                {presence.live === null
+                  ? "—"
+                  : `${presence.live.toLocaleString()} of ${presence.registered.toLocaleString()}`}
+              </dd>
+            </div>
           </dl>
+          {presence.status !== "available" && presence.reason ? (
+            <p className="onchain-method">{presence.reason}</p>
+          ) : null}
           {profile.redemptionModel ? (
             <p className="onchain-method">Redemption · {profile.redemptionModel}</p>
           ) : null}

@@ -4,9 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
-import type { IssuerCatalog, IssuerMarket, IssuerProfile } from "@/lib/issuers/types";
+import type {
+  IssuerCatalog,
+  IssuerMarket,
+  IssuerOnchainPresence,
+  IssuerProfile,
+} from "@/lib/issuers/types";
 
-type Row = { profile: IssuerProfile; catalog: IssuerCatalog; market: IssuerMarket };
+type Row = {
+  profile: IssuerProfile;
+  catalog: IssuerCatalog;
+  presence: IssuerOnchainPresence;
+  market: IssuerMarket;
+};
 type Payload = { issuers: Row[]; generatedAt: string };
 
 function usd(value: number | null) {
@@ -70,8 +80,8 @@ export function IssuerComparison() {
         <div>
           <strong>Issuers on Solana</strong>
           <small>
-            24h volume and pooled liquidity across every verified mint, per issuer.
-            Select one for its profile.
+            What each issuer has actually issued on Solana, and what trades on
+            top of it. Select one for its profile.
           </small>
         </div>
       </header>
@@ -91,13 +101,19 @@ export function IssuerComparison() {
             <span>Holders</span>
             <span />
           </div>
-          {rows.map(({ profile, catalog, market }) => (
+          {rows.map(({ profile, catalog, presence, market }) => (
             <Link key={profile.id} href={`/markets/issuers/${profile.id}`} className="issuer-compare-row">
               <span className="issuer-compare-name">
                 <Image src={profile.logo} alt="" width={22} height={22} />
                 <span>
                   <strong>{profile.label}</strong>
-                  <small>{catalog.representations.toLocaleString()} mints</small>
+                  {/* Registered alone invites the wrong comparison: Backpack
+                      publishes the most mints and has issued the fewest. */}
+                  <small>
+                    {presence.live === null
+                      ? `${catalog.representations.toLocaleString()} mints`
+                      : `${presence.live.toLocaleString()} of ${catalog.representations.toLocaleString()} issued`}
+                  </small>
                 </span>
               </span>
               {/* The caption is carried on every row and hidden where the
@@ -127,8 +143,10 @@ export function IssuerComparison() {
         </div>
       )}
       <p className="issuer-compare-note">
-        Measured across all verified mints, not a sample. Liquidity is pooled
-        depth on Solana AMMs; an issuer&apos;s own order book is not counted here.
+        Issued counts mints holding supply on mainnet: a registered mint is an
+        address, not a token. Liquidity is pooled depth on Solana AMMs, so an
+        issuer whose tokens are held rather than traded reads low here without
+        being small.
       </p>
     </section>
   );
