@@ -58,10 +58,14 @@ test("a price cache makes the request after expiry wait for a fresh read", async
 
 test("with staleWhileRevalidate the expired request is served at once and refreshed behind it", async () => {
   let reads = 0;
-  const cache = createReadCache<number>(10, 128, { staleWhileRevalidate: true });
+  /* The window has to outlast the assertions, not just the sleep. At 10ms a
+     loaded CI runner could cross it again between the refresh landing and the
+     next read, which starts a third one and fails on the count — a race in
+     the test, not in the cache. */
+  const cache = createReadCache<number>(400, 128, { staleWhileRevalidate: true });
   const read = async () => { reads += 1; return reads; };
   assert.equal(await cache("k", read), 1);
-  await new Promise((r) => setTimeout(r, 15));
+  await new Promise((r) => setTimeout(r, 410));
   // The stale value comes back immediately rather than waiting on the read.
   assert.equal(await cache("k", read), 1);
   await tick();
@@ -72,10 +76,10 @@ test("with staleWhileRevalidate the expired request is served at once and refres
 
 test("a failing background refresh never replaces or rejects the stale snapshot", async () => {
   let reads = 0;
-  const cache = createReadCache<number>(10, 128, { staleWhileRevalidate: true });
+  const cache = createReadCache<number>(400, 128, { staleWhileRevalidate: true });
   const read = async () => { reads += 1; if (reads > 1) throw new Error("probe failed"); return 1; };
   assert.equal(await cache("k", read), 1);
-  await new Promise((r) => setTimeout(r, 15));
+  await new Promise((r) => setTimeout(r, 410));
   assert.equal(await cache("k", read), 1, "stale value survives a failing refresh");
   await tick();
   assert.equal(await cache("k", read), 1, "and is still served afterwards");
