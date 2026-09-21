@@ -17,6 +17,7 @@ import {
 import type { CatalogEntry } from "../src/lib/equities/providers/common";
 import { clientKey, consumePublicQuoteBudget, consumeRelayBudget } from "../src/lib/equities/rate-limit";
 import { tradeFee } from "@/lib/trade-fee";
+import { tokenizedShare } from "@/components/market-detail";
 
 test("canonical registry groups verified provider mints under one company", () => {
   assert.equal(equityRegistry.length, 1_339);
@@ -305,4 +306,27 @@ test("wallet traffic is bounded on its own counter, not the quote budget", () =>
   // Exhausting the relay leaves the quote budget for that client untouched.
   assert.equal(consumeRelayBudget(req(), now), false, "relay is exhausted");
   assert.equal(consumePublicQuoteBudget(req(), now), true, "quotes are unaffected");
+});
+
+test("the company's market cap and its tokenized value are different quantities", () => {
+  /* The company page showed the most liquid mint's token cap under the label
+     "Market cap". For NVIDIA that is about $72M against a real $5.4T — four
+     orders of magnitude out, under a label every reader takes at face value.
+     They are never summed either: the tokens are claims on shares already
+     counted inside the company's own cap. */
+  const NVDA_COMPANY = 5_367_153_690_000;
+  const NVDA_TOKENIZED = 75_652_385;
+
+  assert.equal(tokenizedShare(NVDA_COMPANY, NVDA_TOKENIZED), "0.0014%");
+  // Two decimals would have printed "0.00%", which reads as none rather than early.
+  assert.notEqual(tokenizedShare(NVDA_COMPANY, NVDA_TOKENIZED), "0.00%");
+  assert.equal(tokenizedShare(687_502_081_724, 74_536_530), "0.011%");
+  assert.equal(tokenizedShare(1_000, 250), "25.0%");
+
+  // Missing either side is unavailable, never zero and never a guess.
+  assert.equal(tokenizedShare(null, NVDA_TOKENIZED), "—");
+  assert.equal(tokenizedShare(NVDA_COMPANY, null), "—");
+  assert.equal(tokenizedShare(0, NVDA_TOKENIZED), "—");
+  assert.equal(tokenizedShare(Number.NaN, 1), "—");
+  assert.equal(tokenizedShare(NVDA_COMPANY, 0), "—");
 });

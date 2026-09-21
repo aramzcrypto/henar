@@ -48,6 +48,23 @@ const providerLogos = {
   ondo: "/logos/issuers/ondo.svg",
 } as const;
 
+/**
+ * How much of the company exists on Solana.
+ *
+ * The number is very small — NVIDIA's tokens are about 0.0014% of NVIDIA —
+ * so the usual two decimals would print "0.00%", which reads as none at all
+ * rather than as early. Two significant figures keep it honest at any scale.
+ */
+export function tokenizedShare(companyCap: number | null, tokenized: number | null) {
+  if (companyCap === null || tokenized === null) return "—";
+  if (!Number.isFinite(companyCap) || !Number.isFinite(tokenized)) return "—";
+  if (companyCap <= 0) return "—";
+  const percent = (tokenized / companyCap) * 100;
+  if (percent >= 1) return `${percent.toFixed(1)}%`;
+  if (percent <= 0) return "—";
+  return `${Number(percent.toPrecision(2))}%`;
+}
+
 function value(
   number: number | null,
   kind: "money" | "percent" | "compact" = "money",
@@ -998,7 +1015,13 @@ type Headline = {
   change: number | null;
   volume: number | null;
   liquidity: number | null;
+  /** The company's own market cap, from the underlying security. */
   marketCap: number | null;
+  /** Every verified mint of this company, summed. A different quantity. */
+  tokenized: number | null;
+  /** Mints that had an observable cap, and mints in total. */
+  tokenizedFrom: number | null;
+  representations: number;
   holders: number | null;
 };
 
@@ -1035,6 +1058,19 @@ function KeyStats({
     ["Price", value(headline.price)],
     ["Market cap", value(headline.marketCap, "compact")],
     [
+      /* A mint with no on-chain market has no observable cap, so it is absent
+         from the sum rather than counted as zero. Backpack's tokens trade on
+         its own book rather than an AMM, so most of them sit outside this
+         figure — saying which representations it covers is the difference
+         between a measurement and a claim about the whole company. */
+      headline.tokenizedFrom === null ||
+      headline.tokenizedFrom === headline.representations
+        ? "Tokenized onchain"
+        : `Tokenized onchain (${headline.tokenizedFrom}/${headline.representations})`,
+      value(headline.tokenized, "compact"),
+    ],
+    ["Share tokenized", tokenizedShare(headline.marketCap, headline.tokenized)],
+    [
       "24h change",
       headline.change === null ? "—" : `${headline.change.toFixed(2)}%`,
     ],
@@ -1070,6 +1106,8 @@ function KeyStatsPending() {
       {[
         "Price",
         "Market cap",
+        "Tokenized onchain",
+        "Share tokenized",
         "24h change",
         "24h volume",
         "Liquidity",
@@ -1303,8 +1341,19 @@ export function MarketDetail({
       change: deepest?.priceChange24hPct ?? null,
       volume: sum((row) => row.volume24hUsd),
       liquidity: sum((row) => row.liquidityUsd),
-      // Market cap is a property of the company, not a sum across mints.
-      marketCap: deepest?.marketCapUsd ?? null,
+      /* The company's own market cap, from the underlying security. This used
+         to show the most liquid mint's token cap under the same label, which
+         is a different quantity by four or five orders of magnitude: NVIDIA
+         read as $72M rather than $5.4T. */
+      marketCap: comparison?.companyMarketCapUsd ?? null,
+      /* What the company is worth on Solana: every verified mint summed.
+         Never added to the figure above — these tokens are claims on shares
+         already counted inside it. */
+      tokenized: comparison?.tokenizedMarketCapUsd ?? null,
+      tokenizedFrom: rows.length
+        ? rows.filter((row) => row.marketCapUsd !== null).length
+        : null,
+      representations: rows.length,
       holders: sum((row) => row.holderCount),
     };
   }, [comparison]);
