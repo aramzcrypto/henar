@@ -90,6 +90,25 @@ export type IssuerMarket = {
   provenance: DataProvenance;
 };
 
+/**
+ * Registered versus actually issued.
+ *
+ * A mint address in a catalog is a promise; supply on the mint is the thing
+ * itself. The gap between them is the single most informative number about an
+ * issuer, and it exists nowhere except the chain.
+ */
+export type IssuerOnchainPresence = {
+  status: SourceStatus;
+  /** Verified mints Henar holds for this issuer. */
+  registered: number;
+  /** Of those, the ones holding any supply. Null when unread. */
+  live: number | null;
+  /** Mints whose account was actually read. */
+  read: number;
+  reason: string | null;
+  provenance: DataProvenance;
+};
+
 /** Token-backing evidence, where the issuer publishes it. */
 export type IssuerReserves = {
   status: SourceStatus;
@@ -143,6 +162,7 @@ export type IssuerProfile = {
 export type IssuerSnapshot = {
   profile: IssuerProfile;
   catalog: IssuerCatalog;
+  presence: IssuerOnchainPresence;
   market: IssuerMarket;
   disclosure: IssuerDisclosure;
   /** Token Terminal asset coverage for this issuer, when a key is configured. */
