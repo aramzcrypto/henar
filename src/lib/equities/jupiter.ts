@@ -32,9 +32,13 @@ const priceEntrySchema = z.object({
   decimals: z.number().int().min(0).max(18).optional(),
   priceChange24h: z.number().finite().optional(),
   createdAt: z.string().optional(),
+  /* `stockData` describes the underlying security, not the token: every
+     representation of one company reports the same figures here, which is
+     what distinguishes it from the token-level `mcap` below. */
   stockData: z
     .object({
       price: z.number().positive().optional(),
+      mcap: z.number().nonnegative().optional(),
       updatedAt: z.string().optional(),
     })
     .optional(),
@@ -78,6 +82,8 @@ export type PriceWindows = {
 type JupiterMetadata = {
   price: number | null;
   referencePrice: number | null;
+  /** The underlying company's market cap, not this token's. */
+  companyMarketCapUsd: number | null;
   liquidity: number | null;
   priceChange24h: number | null;
   volume24h: number | null;
@@ -176,6 +182,7 @@ export async function jupiterMetadata(representations: Representation[]) {
           },
           price: price?.usdPrice ?? null,
           referencePrice: price?.stockData?.price ?? null,
+          companyMarketCapUsd: price?.stockData?.mcap ?? null,
           liquidity: price?.liquidity ?? token?.liquidity ?? null,
           priceChange24h: price?.priceChange24h ?? null,
           volume24h: volume,
@@ -487,6 +494,10 @@ export async function onchainComparison(equity: Equity): Promise<{
   executionQuotes: QuoteAlternative[];
   comparisonNotionalUsd: number;
   bestExecutionNotionalUsd: number;
+  /** The underlying company's market cap. Not a sum of its tokens. */
+  companyMarketCapUsd: number | null;
+  /** What all of this company's verified mints are worth on Solana. */
+  tokenizedMarketCapUsd: number | null;
   asOf: string;
 }> {
   let metadata = new Map<string, JupiterMetadata>();
@@ -580,6 +591,14 @@ export async function onchainComparison(equity: Equity): Promise<{
   const companyReference =
     quoteSets.find(({ live }) => (live?.referencePrice ?? 0) > 0)?.live
       ?.referencePrice ?? null;
+  /* Read the same way and for the same reason: the company's market cap
+     belongs to the security, so every representation reporting it reports the
+     same number. Taking it from one mint alone leaves it blank whenever that
+     mint has no feed. It is never summed across mints — the tokens are claims
+     on shares already inside it, so adding them would count them twice. */
+  const companyMarketCapUsd =
+    quoteSets.find(({ live }) => (live?.companyMarketCapUsd ?? 0) > 0)?.live
+      ?.companyMarketCapUsd ?? null;
   const rows = quoteSets.map(
     ({ representation, live, settled }, rowIndex): LiveRepresentation => {
       const value = (index: number) =>
@@ -712,6 +731,10 @@ export async function onchainComparison(equity: Equity): Promise<{
     bestExecution: execution?.representationId ?? null,
     comparisonNotionalUsd: 1000,
     bestExecutionNotionalUsd: 10000,
+    companyMarketCapUsd,
+    /* This one *is* a sum: each issuer's token is a separate instrument, and
+       together they are what the company is worth on Solana. */
+    tokenizedMarketCapUsd: sumAvailable(rows.map((row) => row.marketCapUsd)),
     asOf: new Date().toISOString(),
   };
 }
