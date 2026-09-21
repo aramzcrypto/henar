@@ -13,8 +13,10 @@ const SETTLE_MS = 1300;
 
 export function ScrollReveal() {
   useEffect(() => {
+    /* A group marks its children rather than itself, so a section can arrive
+       as a sequence without every element being annotated by hand. */
     const targets = document.querySelectorAll<HTMLElement>(
-      "[data-reveal]:not([data-in])",
+      "[data-reveal]:not([data-in]), [data-reveal-group] > *:not([data-in])",
     );
     if (!targets.length) return;
 

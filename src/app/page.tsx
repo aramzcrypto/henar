@@ -13,6 +13,7 @@ import { LandingEarn } from "@/components/landing-earn";
 import { LandingBuiltOn } from "@/components/landing-built-on";
 import { LandingRing } from "@/components/landing-ring";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { LandingMotion } from "@/components/landing-motion";
 import {
   equityForTicker,
   multiIssuerEquities,
@@ -90,9 +91,12 @@ export default function Home() {
       </header>
 
       <main className={styles.main}>
-        <section className={styles.hero}>
+        {/* The globe already swells and dissolves on scroll from inside
+            <HeroGlobe />. The copy lifts against it, so the two separate in
+            space rather than leaving together. Transform and opacity only. */}
+        <section className={styles.hero} data-scroll-depth>
           <HeroGlobe />
-          <div className={styles.heroCopy}>
+          <div className={`${styles.heroCopy} hero-depth-copy`}>
             <h1>Stocks, unified.</h1>
             <p>
               The market and intelligence layer for stocks on Solana.
@@ -122,7 +126,7 @@ export default function Home() {
 
         {example ? (
         <section className={styles.marketsSection}>
-          <div className={styles.sectionCopy} data-reveal>
+          <div className={styles.sectionCopy} data-reveal-group>
             <span className={styles.eyebrow}>Markets</span>
             <h2>One company.<br />Every market.</h2>
             <p>
@@ -163,7 +167,7 @@ export default function Home() {
             position instead of a timer, so the reader drives it. */}
         <section className={styles.companiesSection} data-fan-track>
           <div className={styles.companiesStage}>
-            <div className={styles.sectionCopy} data-reveal>
+            <div className={styles.sectionCopy} data-reveal-group>
               <span className={styles.eyebrow}>Coverage</span>
               <h2>Every company you know.</h2>
               <p>
@@ -176,7 +180,7 @@ export default function Home() {
         </section>
 
         <section className={styles.researchSection}>
-          <div className={styles.sectionCopy} data-reveal>
+          <div className={styles.sectionCopy} data-reveal-group>
             <span className={styles.eyebrow}>Research</span>
             <h2>Know what you own.</h2>
             <p>Filed fundamentals and events, straight from the source.</p>
@@ -194,7 +198,7 @@ export default function Home() {
         </section>
 
         <section className={styles.tradeSection}>
-          <div className={styles.sectionCopy} data-reveal>
+          <div className={styles.sectionCopy} data-reveal-group>
             <span className={styles.eyebrow}>Trade</span>
             <h2>Every venue, one ticket.</h2>
             <p>
@@ -206,7 +210,7 @@ export default function Home() {
         </section>
 
         <section className={styles.earnSection}>
-          <div className={styles.sectionCopy} data-reveal>
+          <div className={styles.sectionCopy} data-reveal-group>
             <span className={styles.eyebrow}>Earn</span>
             <h2>Yield into stocks.</h2>
             <p>
@@ -218,7 +222,7 @@ export default function Home() {
         </section>
 
         <section className={styles.tradeSection}>
-          <div className={styles.sectionCopy} data-reveal>
+          <div className={styles.sectionCopy} data-reveal-group>
             <span className={styles.eyebrow}>Built on</span>
             <h2>Where the data comes from.</h2>
             <p>
@@ -234,6 +238,7 @@ export default function Home() {
         </section>
       </main>
       <ScrollReveal />
+      <LandingMotion />
 
       <footer className={styles.footer}>
         <span>Henar · Solana stock markets</span>
