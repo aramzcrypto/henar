@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { USDC_MINT, unavailableQuote, type QuoteRequest, type VenueAdapter, type VenueQuote } from "@henar/router-core";
-import { RouterApi, RouterHealth, capabilityOf, selectRoute, type QuoteApiResponse } from "@henar/router-app";
+import { RouterApi, RouterHealth, capabilityOf, obtainableNet, selectRoute, type QuoteApiResponse } from "@henar/router-app";
 import type { GuardVerdict } from "@henar/execution-guard";
 import { NOW, OWNER, SHARES, key, rep } from "./fixtures/plan";
 import { tradeFee } from "@/lib/trade-fee";
@@ -195,4 +195,42 @@ test("a materially better approved external route beats Henar Native", () => {
   assert.equal(capabilityOf(native(1n)), "HENAR_NATIVE");
   assert.equal(capabilityOf(external(1n)), "EXTERNAL_EXECUTABLE");
   assert.equal(capabilityOf(quoteOnly(1n)), "QUOTE_ONLY");
+});
+
+/**
+ * Regression: Henar's own route must beat what the user could otherwise get.
+ *
+ * The incumbent test asked whether the best quote was natively executable.
+ * Jupiter is approved and reachable through the reviewed /api/market path but
+ * reports EXTERNAL_EXECUTABLE rather than mode "execute", so it counted as no
+ * incumbent at all, and a split or path was adopted even when it paid less.
+ * Measured on production: VIDAx selected a two-leg path paying 1144.59 while
+ * an approved Jupiter quote paid 1146.43.
+ *
+ * A quote-only venue is the opposite case: it is a price nobody can fill, so
+ * it must never hold off a route that can be.
+ */
+test("a route we build is selected only when it beats the best obtainable quote", () => {
+  const verdict = (venue: string, net: bigint, mode: "execute" | "quote-only", path: string): GuardVerdict =>
+    ({
+      approved: true,
+      mode,
+      checks: [],
+      quote: { venue, netOutput: net.toString(), executionPath: path },
+    }) as unknown as GuardVerdict;
+
+  const jupiter = verdict("jupiter", 1_146_431_500n, "quote-only", "legacy-market-api");
+  const native = verdict("raydium", 1_100_000_000n, "execute", "henar-native");
+  const quoteOnly = verdict("openocean", 9_999_999_999n, "quote-only", "none");
+  const refused = { ...jupiter, approved: false } as unknown as GuardVerdict;
+
+  // Jupiter is reachable, so it is an incumbent a path has to beat.
+  assert.equal(obtainableNet(jupiter), 1_146_431_500n);
+  assert.equal(obtainableNet(native), 1_100_000_000n);
+
+  // A quote-only venue is not obtainable at any price, and neither is a
+  // refused one, so neither may hold off a route that can be executed.
+  assert.equal(obtainableNet(quoteOnly), null);
+  assert.equal(obtainableNet(refused), null);
+  assert.equal(obtainableNet(null), null);
 });

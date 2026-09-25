@@ -182,6 +182,18 @@ type CachedQuote = { response: QuoteApiResponse; verdict: GuardVerdict | null; l
  */
 export type ExecutionCapability = "HENAR_NATIVE" | "EXTERNAL_EXECUTABLE" | "QUOTE_ONLY";
 
+/**
+ * The best output a user can actually obtain from a single quote.
+ *
+ * A route only counts as the incumbent if it can be reached: natively, or
+ * through the reviewed Jupiter path. A quote-only venue is a price nobody can
+ * fill, so it must never hold off a route that can be.
+ */
+export function obtainableNet(verdict: GuardVerdict | null | undefined): bigint | null {
+  if (!verdict || !verdict.approved) return null;
+  return capabilityOf(verdict) === "QUOTE_ONLY" ? null : fromRaw(verdict.quote.netOutput);
+}
+
 export function capabilityOf(verdict: GuardVerdict): ExecutionCapability {
   if (!verdict.approved) return "QUOTE_ONLY";
   if (verdict.mode === "execute") return "HENAR_NATIVE";
@@ -329,7 +341,13 @@ export class RouterApi {
       }
       // It is selected only when it actually beats the best approved
       // executable quote: reporting it and choosing it are different things.
-      if (allApproved && (!selected || selected.mode !== "execute" || splitNet > fromRaw(selected.quote.netOutput))) {
+      /* Only take the split if it beats what the user could otherwise get.
+         This asked whether the incumbent was natively executable, so whenever
+         the best quote was Jupiter — approved and reachable through
+         /api/market, but not mode "execute" — the incumbent read as nothing
+         and the split was adopted even when it paid the user less. */
+      const splitIncumbent = obtainableNet(selected);
+      if (allApproved && (splitIncumbent === null || splitNet > splitIncumbent)) {
         legVerdicts = verdicts;
         routeLegs = legs;
         // Represent the route by its first leg for single-quote fields; totals come from the route.
@@ -385,7 +403,12 @@ export class RouterApi {
         reason: executable ? null : !allApproved ? (verdicts.find((v) => !v.approved)?.reason ?? "leg is quote-only") : "guard floor on the first hop differs from the amount the path was sized on",
         failedChecks: verdicts.map((v, leg) => ({ leg, venue: v.quote.venue, checks: v.checks.filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail}`) })).filter((f) => f.checks.length),
       };
-      const incumbent = legVerdicts ? fromRaw(result.route!.netOutput) : selected && selected.mode === "execute" ? fromRaw(selected.quote.netOutput) : null;
+      /* Same rule for the path: it must beat the best route the user could
+         actually obtain, Jupiter included. Measured on production, VIDAx
+         selected a two-leg path paying 1144.59 while an approved Jupiter
+         quote paid 1146.43, because Jupiter is EXTERNAL_EXECUTABLE rather
+         than mode "execute" and so was not counted as an incumbent at all. */
+      const incumbent = legVerdicts ? fromRaw(result.route!.netOutput) : obtainableNet(selected);
       if (executable && (incumbent === null || fromRaw(path.netOutput) > incumbent)) {
         pathVerdicts = verdicts;
         legVerdicts = null;
