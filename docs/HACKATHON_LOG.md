@@ -192,3 +192,50 @@ the repository rather than left standing.
 - Pool verification was reported as complete at 587 of 587 before the pass
   actually checked the pair each pool trades. The number was the same
   afterwards, but only the second one meant anything.
+
+## 25 September 2026 — best execution, verified against production
+
+Final session before submission. No new layer: the work was checking that the
+routing built over the preceding week actually pays the user, and it did not.
+
+### The router preferred its own route over a better one
+
+`/api/router/quote` on production selected a two-leg path for VIDAx paying
+**1144.59** while an approved Jupiter quote paid **1146.43** — 16 bps of the
+user's money — and MSTRx showed the same shape. The cause: when no *native*
+route is executable, the incumbent falls back to the best approved quote,
+which is Jupiter. Jupiter is reachable through the reviewed `/api/market` path
+but reports `EXTERNAL_EXECUTABLE` rather than mode `execute`, and both the
+split and the path adoption tested `mode !== "execute"` and read that as *no
+incumbent at all*, then took over regardless of paying less.
+
+This is the native-preference trap fixed for single routes in September,
+reappearing one layer up. Both adoptions now compare against the best route
+the user can actually obtain, native or Jupiter, through one helper
+(`obtainableNet`). A quote-only venue is a price nobody can fill, so it still
+never holds off a route that can be. Verified after deploying: VIDAx now
+selects Jupiter, MSTRx selects Raydium, and the path is still *reported* in
+both, visible without being passed off as best.
+
+### What the slippage ceiling is worth
+
+The session opened with the opposite hypothesis: that the second-hop slippage
+ceiling was suppressing good paths, since `henarPath` was refused on several
+assets with `needs more slippage than policy allows`. Measuring before
+loosening it showed the refusals were correct. BROS, whose SOL pool holds
+$153,140 against a $2,433 USDC pool, would have routed through a second leg at
+**912 bps** of price impact and delivered **44.25** against Jupiter's
+**51.74** — about 14.5% worse. DFDVx and AAPLx were refused on legs at 235,
+285, 238 and 164 bps. The ceiling is protecting users and was left untouched.
+
+### Reachability is a capability
+
+`bestQuote` decided executability by asking whether the venue was literally
+named `jupiter`: correct today, wrong the moment a second external executable
+venue appears. It now asks the capability. A sweep of the remaining
+`mode === "execute"` sites found the rest correct by design — path legs and
+the build endpoints genuinely do require a native builder.
+
+State at submission: 503 tests passing, typecheck and lint clean, 1,512
+verified pools across four quoting venues, deployed and verified on
+production.
