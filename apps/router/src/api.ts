@@ -473,8 +473,22 @@ export class RouterApi {
             stateSlot: v.quote.slot ?? null,
           }))
         : null,
+      /* Reachability is a capability, not a venue name. This asked whether
+         the venue was literally called "jupiter", so a second external
+         executable venue would have been reported as unreachable, and the
+         same idea was already spelled three different ways in this file. */
       bestQuote: bestApproved
-        ? { venue: bestApproved.quote.venue, netOutput: bestApproved.quote.netOutput, executable: bestApproved.mode === "execute" || bestApproved.quote.venue === "jupiter", via: bestApproved.mode === "execute" ? "henar-router" : bestApproved.quote.venue === "jupiter" ? "review-swap" : "none" }
+        ? {
+            venue: bestApproved.quote.venue,
+            netOutput: bestApproved.quote.netOutput,
+            executable: obtainableNet(bestApproved) !== null,
+            via:
+              capabilityOf(bestApproved) === "HENAR_NATIVE"
+                ? "henar-router"
+                : capabilityOf(bestApproved) === "EXTERNAL_EXECUTABLE"
+                  ? "review-swap"
+                  : "none",
+          }
         : null,
       liveValidation: "LIVE_VALIDATION_PENDING",
     };
