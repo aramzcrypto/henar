@@ -60,7 +60,8 @@ export const DEFAULT_EXECUTION_POLICY: ExecutionPolicy = {
   dbcMaxGraduationProgressBps: 9_800,
   maxLegs: 2,
   minSplitImprovementBps: 5,
-  intermediateHopSlippageBps: 10,
+  intermediateHopMaxSlippageBps: 10,
+  intermediateHopMarginBps: 3,
   /* Verified live (16 September 2026): Meteora DLMM's `swapQuote` and
      Jupiter's quote both return transfer-fee-excluded output for a
      fee-bearing Token-2022 mint, to the unit. Raydium and Orca SDKs net the
@@ -158,9 +159,26 @@ export function effectiveSlippageBps(
   return { slippageBps: required <= ceiling ? required : null, required };
 }
 
-/** The fixed slippage of a USDC ↔ intermediate hop, still bounded by every ceiling. */
-export function intermediateHopSlippage(policy: ExecutionPolicy, userMaxSlippageBps: number | null | undefined) {
-  const required = Math.ceil(policy.intermediateHopSlippageBps);
+/**
+ * Slippage of a USDC ↔ intermediate hop, bounded by every ceiling.
+ *
+ * The hop asks for what it costs: its own price impact plus a margin for the
+ * market moving between quote and landing. Held flat instead, it handed the
+ * difference to the user as dust, because the second hop is sized on this
+ * hop's floor and whatever the first hop returns above that is never
+ * converted. A flat 10 bps on a 1 bp hop was 9 bps of stock the user asked
+ * for and did not get.
+ */
+export function intermediateHopSlippage(
+  policy: ExecutionPolicy,
+  userMaxSlippageBps: number | null | undefined,
+  priceImpactBps: number | null,
+) {
+  const impact = Math.max(0, priceImpactBps ?? 0);
+  const required = Math.min(
+    Math.ceil(impact + policy.intermediateHopMarginBps),
+    Math.ceil(policy.intermediateHopMaxSlippageBps),
+  );
   const ceiling = Math.min(policy.maxSlippageBps, userMaxSlippageBps ?? policy.maxSlippageBps);
   return { slippageBps: required <= ceiling ? required : null, required };
 }
@@ -317,7 +335,7 @@ export function guardQuote(quote: RankedQuote, policy: ExecutionPolicy, ctx: Gua
   // 4. Price impact and slippage.
   checks.push(check("price.impact", quote.priceImpactBps !== null && quote.priceImpactBps <= policy.maxPriceImpactBps, "PRICE_IMPACT_TOO_HIGH", quote.priceImpactBps === null ? "impact unknown" : `impact ${quote.priceImpactBps} bps`));
   const slip = pathLeg?.hop === "intermediate"
-    ? intermediateHopSlippage(policy, ctx.userMaxSlippageBps)
+    ? intermediateHopSlippage(policy, ctx.userMaxSlippageBps, quote.priceImpactBps)
     : effectiveSlippageBps(policy, quote.priceImpactBps, ctx.userMaxSlippageBps);
   checks.push(check("slippage.withinLimits", slip.slippageBps !== null, "SLIPPAGE_LIMIT_EXCEEDED", `required ${slip.required} bps, ceiling ${policy.maxSlippageBps} bps`));
 

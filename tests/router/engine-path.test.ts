@@ -7,6 +7,7 @@
  * the Henar fee exactly once.
  */
 import { test } from "node:test";
+import { DEFAULT_EXECUTION_POLICY, intermediateHopSlippage } from "@henar/execution-guard";
 import assert from "node:assert/strict";
 import { PublicKey } from "@solana/web3.js";
 import {
@@ -83,7 +84,7 @@ test("SOL is a qualified intermediate in the committed universe", () => {
 test("buy: the path through SOL beats a thin direct pool, is sized on the first hop floor, and reports the residual", async () => {
   const a = adapter([direct, solLeg, solUsdc]);
   const amount = USDC(1_000n).toString();
-  const result = await quoteRepresentation(buy(amount), { adapters: [a], enabled: true, splitRouting: true, poolsOverride: registryPools, intermediatePoolsOverride: solPools, pathFloors: { intermediateHopBps: 10, representationHopBps: () => 30 } });
+  const result = await quoteRepresentation(buy(amount), { adapters: [a], enabled: true, splitRouting: true, poolsOverride: registryPools, intermediatePoolsOverride: solPools, pathFloors: { intermediateHopBps: () => 10, representationHopBps: () => 30 } });
   assert.ok(result.best, "direct quote expected");
   assert.ok(result.path, `path expected: ${result.pathReason}`);
   const path = result.path;
@@ -116,7 +117,7 @@ test("buy: the path through SOL beats a thin direct pool, is sized on the first 
 test("sell: the path sells into SOL, converts the floor to USDC, and takes the fee on the USDC output", async () => {
   const a = adapter([direct, solLeg, solUsdc]);
   const amount = (10n * 1_000_000n).toString(); // 10 shares
-  const result = await quoteRepresentation(sell(amount), { adapters: [a], enabled: true, splitRouting: true, poolsOverride: registryPools, intermediatePoolsOverride: solPools, pathFloors: { intermediateHopBps: 10, representationHopBps: () => 30 } });
+  const result = await quoteRepresentation(sell(amount), { adapters: [a], enabled: true, splitRouting: true, poolsOverride: registryPools, intermediatePoolsOverride: solPools, pathFloors: { intermediateHopBps: () => 10, representationHopBps: () => 30 } });
   assert.ok(result.path, `path expected: ${result.pathReason}`);
   const [first, second] = result.path.legs;
   assert.equal(first.inputMint, rep.mint);
@@ -146,4 +147,35 @@ test("path routing can be switched off", async () => {
   const result = await quoteRepresentation(buy(USDC(1_000n).toString()), { adapters: [a], enabled: true, splitRouting: true, pathRouting: false, poolsOverride: registryPools, intermediatePoolsOverride: solPools });
   assert.equal(result.path, null);
   assert.equal(result.pathReason, "path routing is off");
+});
+
+/**
+ * Regression: the intermediate hop asks for what it costs.
+ *
+ * The second hop is sized on the first hop's floor, so whatever the first hop
+ * returns above that floor is left as dust in the intermediate and never
+ * becomes the asset the user asked for. Held flat at 10 bps, that was the
+ * whole reason a path never won: measured on production, an MSTRx path left
+ * exactly 10 bps of SOL on a first hop whose price impact was 1 bp, against a
+ * 12.6 bps shortfall versus the best route the user could obtain.
+ */
+test("the intermediate hop floor follows its impact, and is capped", () => {
+  const policy = DEFAULT_EXECUTION_POLICY;
+  const bps = (impact: number | null) => intermediateHopSlippage(policy, null, impact).required;
+
+  // A deep hop costs almost nothing, so it gives almost nothing away.
+  assert.equal(bps(0), policy.intermediateHopMarginBps);
+  assert.equal(bps(1), policy.intermediateHopMarginBps + 1);
+
+  // A thin hop asks for more, up to the ceiling and no further.
+  assert.equal(bps(5), 8);
+  assert.equal(bps(50), policy.intermediateHopMaxSlippageBps);
+  assert.equal(bps(5_000), policy.intermediateHopMaxSlippageBps);
+
+  // An unknown impact is treated as none, never as licence for the cap.
+  assert.equal(bps(null), policy.intermediateHopMarginBps);
+
+  // The margin exists so the first leg does not revert on a normal tick; it
+  // is never zero, or the trade fails whenever the price moves at all.
+  assert.ok(policy.intermediateHopMarginBps > 0);
 });

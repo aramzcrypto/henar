@@ -134,7 +134,7 @@ test("planner refuses mismatched legs: wrong pair, different fee, unregistered p
     const fee = (userInput * BigInt(MARKET_FEE_BPS)) / 10_000n;
     const venueInput = userInput - fee;
     const solOut = 500_000_000n; // 0.5 SOL
-    const solFloor = solOut - (solOut * BigInt(DEFAULT_EXECUTION_POLICY.intermediateHopSlippageBps)) / 10_000n;
+    const solFloor = solOut - (solOut * BigInt(DEFAULT_EXECUTION_POLICY.intermediateHopMaxSlippageBps)) / 10_000n;
     const legA = approvePath(pathLeg({ ...buy(userInput.toString()), inputMint: USDC_MINT, outputMint: SOL }, venueInput, solOut, key(31), { inputFee: fee, outputFee: 0n }), "intermediate");
     assert.equal(legA.minimumAmountOut, solFloor.toString());
     const legB = approvePath(pathLeg({ ...buy(solFloor.toString()), inputMint: SOL, outputMint: rep.mint }, solFloor, SHARES(20n), key(32), { inputFee: 0n, outputFee: 0n }), "representation");

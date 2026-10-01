@@ -703,12 +703,28 @@ export type ExecutionPolicy = {
   maxLegs: number;
   minSplitImprovementBps: number;
   /**
-   * Slippage on the USDC ↔ intermediate hop of a path. Fixed rather than
-   * impact-scaled: the intermediates are the deepest markets on the chain,
-   * and every basis point here is intermediate the user keeps instead of
-   * stock, because the second hop is sized on this hop's floor.
+   * Ceiling on the slippage of the USDC ↔ intermediate hop of a path.
+   *
+   * Every basis point here is intermediate the user keeps instead of stock,
+   * because the second hop is sized on this hop's floor and the difference is
+   * never converted. Held flat at 10 bps, that was the whole story of why a
+   * path never won: measured on production, an MSTRx path left exactly 10 bps
+   * of SOL as dust on a first hop whose price impact was 1 bp, against a
+   * total shortfall of 12.6 bps versus the best route the user could get.
+   *
+   * The hop now asks for what it costs — its own impact plus a margin for the
+   * price moving between quote and landing — and this value is the cap rather
+   * than the answer.
    */
-  intermediateHopSlippageBps: number;
+  intermediateHopMaxSlippageBps: number;
+  /**
+   * Margin added to the intermediate hop's price impact, in bps.
+   *
+   * It buys tolerance for the market moving between quote and execution, not
+   * for depth. Too tight and the first leg reverts and the trade fails; too
+   * loose and the user silently keeps dust instead of stock.
+   */
+  intermediateHopMarginBps: number;
   /**
    * Venues whose quoted output is already net of a Token-2022 transfer fee on
    * the representation mint. A fee-bearing mint may only be routed through

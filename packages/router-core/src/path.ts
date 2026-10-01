@@ -44,15 +44,23 @@ import {
 } from "./types";
 
 export type PathFloors = {
-  /** Fixed slippage of the USDC ↔ intermediate hop, in bps. */
-  intermediateHopBps: number;
+  /**
+   * Slippage of the USDC ↔ intermediate hop for its price impact, in bps.
+   *
+   * The second hop is sized on this hop's floor, so whatever the first hop
+   * returns above it is left as dust in the intermediate rather than
+   * converted into what the user asked for. The guard computes the same
+   * number from the same quote; if the two ever drift, the API refuses the
+   * path rather than execute a plan sized on a floor nobody agreed to.
+   */
+  intermediateHopBps: (priceImpactBps: number | null) => number;
   /** Slippage of a representation-side leg for its price impact; null refuses the leg. */
   representationHopBps: (priceImpactBps: number | null) => number | null;
 };
 
 /** Mirrors DEFAULT_EXECUTION_POLICY; the API passes the live policy instead. */
 export const DEFAULT_PATH_FLOORS: PathFloors = {
-  intermediateHopBps: 10,
+  intermediateHopBps: (impact) => Math.min(Math.ceil(Math.max(0, impact ?? 0) + 3), 10),
   representationHopBps: (impact) => {
     const required = Math.ceil(30 + Math.max(0, impact ?? 0) * 0.5);
     return required <= 100 ? required : null;
@@ -170,7 +178,8 @@ async function buyPath(input: QuoteRequest, venueAmount: bigint, intermediate: s
   const quoteA = a.curve.quoteFor!(venueAmount);
   if (!usable(quoteA, venueAmount)) return { route: null, reason: `first hop could not be re-quoted: ${quoteA.unavailableReason ?? "terms drifted"}` };
   const aOut = fromRaw(quoteA.expectedAmountOut);
-  const aFloor = aOut - bpsOf(aOut, floors.intermediateHopBps);
+  const hopBps = floors.intermediateHopBps(quoteA.priceImpactBps);
+  const aFloor = aOut - bpsOf(aOut, hopBps);
   if (aFloor <= 0n) return { route: null, reason: "first hop floor rounds to zero" };
 
   const requestB: QuoteRequest = { ...input, amount: toRaw(aFloor), inputMint: intermediate, outputMint: input.outputMint };
@@ -191,7 +200,7 @@ async function buyPath(input: QuoteRequest, venueAmount: bigint, intermediate: s
       kind: "path",
       legs: [legA, ...legsB],
       intermediate: describe(intermediate),
-      residual: { mint: intermediate, expected: toRaw(aOut - aFloor), floorBps: floors.intermediateHopBps },
+      residual: { mint: intermediate, expected: toRaw(aOut - aFloor), floorBps: hopBps },
       fees: {
         inputMint: USDC_MINT,
         outputMint: input.outputMint,

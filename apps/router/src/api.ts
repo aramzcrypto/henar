@@ -34,7 +34,7 @@ import {
   type VenueAdapter,
 } from "@henar/router-core";
 import { DEFAULT_SPLIT_OPTIONS } from "@henar/router-core";
-import { DEFAULT_EXECUTION_POLICY, effectiveSlippageBps, guardQuote, guardResult, type GuardVerdict, type PythGuardInput, type PythGuardVerdict } from "@henar/execution-guard";
+import { DEFAULT_EXECUTION_POLICY, effectiveSlippageBps, guardQuote, guardResult, intermediateHopSlippage, type GuardVerdict, type PythGuardInput, type PythGuardVerdict } from "@henar/execution-guard";
 import { buildTransaction, normalizeSimulation, planExecution, type BlockhashProvider, type LegInstructionBuilder, type LookupTableProvider, type Simulator } from "@henar/tx-builder";
 import type { RouterHealth } from "./health";
 
@@ -281,7 +281,10 @@ export class RouterApi {
       // The path is sized on the floors the guard will set, so both must
       // come from the same policy; the guard's verdict is re-checked below.
       pathFloors: {
-        intermediateHopBps: policy.intermediateHopSlippageBps,
+        /* The same number the guard will compute for this hop, from the same
+           quote. Passing the policy through one function keeps the path's
+           sizing and the guard's floor from drifting apart. */
+        intermediateHopBps: (impact: number | null) => intermediateHopSlippage(policy, body.maxSlippageBps ?? null, impact).required,
         representationHopBps: (impact) => effectiveSlippageBps(policy, impact, body.maxSlippageBps ?? null).slippageBps,
       },
     });
