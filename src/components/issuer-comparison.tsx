@@ -146,7 +146,11 @@ export function IssuerComparison() {
         Issued counts mints holding supply on mainnet: a registered mint is an
         address, not a token. Liquidity is pooled depth on Solana AMMs, so an
         issuer whose tokens are held rather than traded reads low here without
-        being small.
+        being small. Volume is every trade the venues report, which is not the
+        same as demand: Arrakis Research attributes 26% of onchain tokenised
+        equity volume to rewards farming and a further 27% to automated
+        trading, and a reward programme paid by volume bracket lifts whoever
+        runs one. Read it beside liquidity rather than on its own.
       </p>
     </section>
   );
