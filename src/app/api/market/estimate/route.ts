@@ -9,6 +9,7 @@ import { safeError } from "@/lib/protocol/errors";
 import { aggregateIndicativeQuotes } from "@/lib/execution/aggregate";
 import { consumePublicQuoteBudget } from "@/lib/equities/rate-limit";
 import { MARKET_FEE_BPS, grossForNet, tradeFee } from "@/lib/trade-fee";
+import { underlyingMarketWindow } from "@/lib/equities/market-hours";
 import { feeOnInput } from "@/lib/payment-tokens";
 import { fairValueForMint } from "@/lib/pyth/company";
 import { routerEngineQuote } from "@/lib/private-markets/liquidity";
@@ -188,6 +189,12 @@ export async function POST(request: Request) {
         quotedAt: q.quotedAt,
         expiresAt: q.expiresAt,
         feeBps: MARKET_FEE_BPS,
+        /* Whether the share behind this quote can be traded or hedged right
+           now. A maker who cannot offset a position until Sunday widens the
+           quote or steps back, so the price a user sees over the weekend is
+           not the price they would see on a weekday, and they should be told
+           which one they are looking at. */
+        underlying: await underlyingMarketWindow(),
       },
       { headers: { "Cache-Control": "no-store" } },
     );

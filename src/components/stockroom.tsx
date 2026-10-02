@@ -480,6 +480,8 @@ export function Stockroom({
     quotedAt?: string;
     expiresAt?: string | null;
     feeBps?: number;
+    /** Whether the share behind the quote can be traded or hedged right now. */
+    underlying?: { phase: "regular" | "extended" | "overnight" | "weekend"; hedgeable: boolean; label: string } | null;
     /** Pyth Fair Value Engine finding for a USDC ↔ representation pair; null when Pyth has nothing. */
     pyth?: FairValueAssessment | null;
   } | null>(null);
@@ -2185,6 +2187,16 @@ export function Stockroom({
                   ) : (
                     <div className="quote-empty">
                       {estimateError || (estimating ? "Comparing live routes…" : "Enter an amount to compare routes")}
+                    </div>
+                  )}
+                  {estimate?.underlying?.hedgeable === false && receiveStock && (
+                    /* A maker who cannot offset a position until Sunday widens
+                       the quote or steps back, so a weekend price is not a
+                       weekday price. Say which one this is rather than letting
+                       the spread speak for itself. */
+                    <div className="quote-session-note" role="note">
+                      {estimate.underlying.label}. Spreads on tokenised equities
+                      are typically wider while the share cannot be traded.
                     </div>
                   )}
                   <div className="quote-fee-note">
