@@ -193,6 +193,35 @@ the repository rather than left standing.
   actually checked the pair each pool trades. The number was the same
   afterwards, but only the second one meant anything.
 
+### Correction, 17 October 2026
+
+**The MEASUREMENT figures above are withdrawn.** "Selected on 18 percent of
+buys and 27 percent of sells, ahead of Jupiter in 58 percent of paired
+comparisons" was measured against a Jupiter that was being understated, in two
+independent ways, both favouring Henar.
+
+- The adapter asked Jupiter only at `swap/v2/order`, which prices its answer
+  net of Jupiter's own 10 bps platform fee. `swap/v1/quote` charges nothing.
+  Jupiter was recorded about 10 bps below its own price on every liquid pair.
+  25 of the 79 paired rows sat at exactly +10.01 bps in Henar's favour, on the
+  same pool Jupiter had routed through. That was the fee, not a route.
+- Ranking admission treated a null pool address as the mark of an aggregator.
+  Jupiter reports the pool whenever it routes through one, so it was excluded
+  from the comparison outright on 116 of 196 observations — all single-hop,
+  which is where it competes hardest.
+
+Re-measured on 17 October with both fixed
+([BENCHMARK_2026-10-17.md](router/BENCHMARK_2026-10-17.md)): **Henar is ahead
+of Jupiter on 0 of 75 paired observations.** It ties exactly, to the integer,
+on 23 of them, and in every one of those 23 both engines had picked the same
+pool — so the pool math is right and the gap is route search breadth. Henar
+native is still selected on 27 of 196 observations, but on availability: those
+are rows where Jupiter did not quote or was itself refused.
+
+The earlier correction in this section, which concluded "a genuine routing gap
+of about 10 bps", was itself resting on the first defect above. The gap is real
+but it is not 10 bps and it does not run in Henar's favour at any size.
+
 ## 25 September 2026 — best execution, verified against production
 
 Final session before submission. No new layer: the work was checking that the
@@ -202,19 +231,19 @@ routing built over the preceding week actually pays the user, and it did not.
 
 `/api/router/quote` on production selected a two-leg path for VIDAx paying
 **1144.59** while an approved Jupiter quote paid **1146.43** — 16 bps of the
-user's money — and MSTRx showed the same shape. The cause: when no *native*
+user's money — and MSTRx showed the same shape. The cause: when no _native_
 route is executable, the incumbent falls back to the best approved quote,
 which is Jupiter. Jupiter is reachable through the reviewed `/api/market` path
 but reports `EXTERNAL_EXECUTABLE` rather than mode `execute`, and both the
-split and the path adoption tested `mode !== "execute"` and read that as *no
-incumbent at all*, then took over regardless of paying less.
+split and the path adoption tested `mode !== "execute"` and read that as _no
+incumbent at all_, then took over regardless of paying less.
 
 This is the native-preference trap fixed for single routes in September,
 reappearing one layer up. Both adoptions now compare against the best route
 the user can actually obtain, native or Jupiter, through one helper
 (`obtainableNet`). A quote-only venue is a price nobody can fill, so it still
 never holds off a route that can be. Verified after deploying: VIDAx now
-selects Jupiter, MSTRx selects Raydium, and the path is still *reported* in
+selects Jupiter, MSTRx selects Raydium, and the path is still _reported_ in
 both, visible without being passed off as best.
 
 ### What the slippage ceiling is worth

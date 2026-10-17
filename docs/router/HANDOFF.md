@@ -26,9 +26,9 @@ qualified intermediate (SOL, USDT, …). Fee is 10 bps (`MARKET_FEE_BPS`).
   reachable only inside Jupiter's order flow, already ranked as `jupiter`).
 - **Engine:** every enabled pool quoted, split routing across pools, and the
   new **two-leg path** (`packages/router-core/src/path.ts`): buy
-  USDC → intermediate → equity over ROUTING_LEG pools, the USDC-side hop over
+  USDC → intermediate → equity over ROUTING*LEG pools, the USDC-side hop over
   INTERMEDIATE_ROUTE pools (SOL, USDT, JUP … from `router:discover:intermediates`).
-  The second hop is sized on the first hop's _floor_; whatever the first hop
+  The second hop is sized on the first hop's \_floor*; whatever the first hop
   returns above it stays in the wallet as `residual`. Reported as
   `henarPath` and selected when it beats the split and every direct quote.
   `HENAR_PATH_ROUTING=0` turns it off.
@@ -67,14 +67,16 @@ JITO_BLOCK_ENGINE_URL, HENAR_RFQ_URL.
 
 ## Next
 
-1. **Re-measure the benchmark against Jupiter.** Every published win rate
-   comes from runs that predate `fc705f9`, when the adapter asked Jupiter only
-   at `swap/v2/order` and so recorded it net of Jupiter's own 10 bps platform
-   fee. The structural findings (who is reachable, at what size, why) survive;
-   the margins do not. Re-run
-   `HENAR_ROUTER_MATRIX_LOG=logs/router-matrix-v4.jsonl BENCH_SIZES="10,1000,10000,50000" npm run router:benchmark:matrix -- 25`
-   and write the result up as `BENCHMARK_MATRIX_V4.md`. Until then no win rate
-   is quoted in the README or the architecture doc.
+1. **Close the route-search gap, not the pricing gap.**
+   [BENCHMARK_2026-10-17.md](BENCHMARK_2026-10-17.md) re-measured everything
+   with Jupiter quoted properly and ranked: Henar is ahead on 0 of 75 paired
+   observations, ties exactly on 23 of them (same pool, identical to the
+   integer), and loses the rest to routes it never considers. The pricing
+   engine is correct; the search is narrow. Jupiter found a multi-hop route on
+   56 of 196 rows, Henar's split opened a second leg on 24, and its two-leg
+   path produced nothing. That is the gap worth working on. Earlier win rates
+   are withdrawn, not superseded — they were measured against a discounted and
+   partly excluded Jupiter.
 2. **Owner:** first live router trade ($10 BA or AMC); keep the signature;
    run `npm run router:trace -- <sig>` and record in `LIVE_VALIDATION.md`.
 3. Confirm on production that INTERMEDIATE_ROUTE pools verified at build

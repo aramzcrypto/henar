@@ -680,10 +680,15 @@ about 10 bps below what Jupiter itself would quote on any liquid pair: 25 of
 the 79 paired rows sit at exactly +10.01 bps in Henar's favour on the same
 pool. Those are an artifact of the endpoint, not an edge.
 
-`bestOfJupiterEndpoints` now asks both endpoints and takes the better answer,
-so the comparison is sound going forward, but the aggregate has to be measured
-again on current code before any win rate is quoted. A re-run is the first
-item in [HANDOFF.md](HANDOFF.md).
+`bestOfJupiterEndpoints` now asks both endpoints and takes the better answer.
+Re-measuring then exposed a second defect in the same direction: ranking
+admission read `poolAddress === null` as the mark of an aggregator, so Jupiter
+was excluded as `VENUE_NOT_EXECUTABLE` on 116 of 196 observations, every one a
+single-hop route. With both fixed, the honest result is in
+[BENCHMARK_2026-10-17.md](BENCHMARK_2026-10-17.md): Henar is ahead on 0 of 75
+paired observations, exactly ties 23 of them on the same pool, and is selected
+only where Jupiter has no route. The pool math is right; the route search is
+narrow.
 
 ### Supporting fixes
 
