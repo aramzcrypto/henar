@@ -20,7 +20,10 @@ import { flagEnabled } from "./flags";
 import { requestScopedConnection } from "./request-cache";
 import { optimizeSplit, routerSplitOptions, type SplitOptions } from "./split";
 import { adapterForPool, composePath, type PathFloors } from "./path";
-import { privateMarketsRoutingEnabled, routerRepresentation } from "./representations";
+import {
+  privateMarketsRoutingEnabled,
+  routerRepresentation,
+} from "./representations";
 import { benchmarkRecord, type TelemetrySink } from "./telemetry";
 import {
   bpsOf,
@@ -93,7 +96,10 @@ export type EngineOptions = {
 };
 
 export function routerQuotesEnabled() {
-  return process.env.HENAR_ROUTER_QUOTES === "1" || process.env.HENAR_ROUTER_QUOTES === "true";
+  return (
+    process.env.HENAR_ROUTER_QUOTES === "1" ||
+    process.env.HENAR_ROUTER_QUOTES === "true"
+  );
 }
 
 type Validated =
@@ -106,28 +112,65 @@ type Validated =
  */
 export function validateQuoteRequest(request: QuoteRequest): Validated {
   const rep = routerRepresentation(request.representationId);
-  if (!rep) return { ok: false, reason: "INVALID_REQUEST", detail: "unknown representation" };
+  if (!rep)
+    return {
+      ok: false,
+      reason: "INVALID_REQUEST",
+      detail: "unknown representation",
+    };
   if (rep.status !== "ACTIVE")
-    return { ok: false, reason: "REPRESENTATION_RESTRICTED", detail: `representation is ${rep.status}` };
-  if (rep.assetClass === "PRIVATE_MARKET_EXPOSURE" && !privateMarketsRoutingEnabled())
-    return { ok: false, reason: "REPRESENTATION_RESTRICTED", detail: "private-market routing is off (HENAR_PRIVATE_MARKETS_ROUTING)" };
+    return {
+      ok: false,
+      reason: "REPRESENTATION_RESTRICTED",
+      detail: `representation is ${rep.status}`,
+    };
+  if (
+    rep.assetClass === "PRIVATE_MARKET_EXPOSURE" &&
+    !privateMarketsRoutingEnabled()
+  )
+    return {
+      ok: false,
+      reason: "REPRESENTATION_RESTRICTED",
+      detail: "private-market routing is off (HENAR_PRIVATE_MARKETS_ROUTING)",
+    };
   if (request.amountType !== "input")
-    return { ok: false, reason: "NOT_IMPLEMENTED", detail: "exact-out quotes are not supported yet" };
+    return {
+      ok: false,
+      reason: "NOT_IMPLEMENTED",
+      detail: "exact-out quotes are not supported yet",
+    };
   let amount: bigint;
   try {
     amount = fromRaw(request.amount);
   } catch (error) {
-    return { ok: false, reason: "INVALID_REQUEST", detail: (error as Error).message };
+    return {
+      ok: false,
+      reason: "INVALID_REQUEST",
+      detail: (error as Error).message,
+    };
   }
-  if (amount <= 0n) return { ok: false, reason: "INVALID_REQUEST", detail: "amount must be positive" };
+  if (amount <= 0n)
+    return {
+      ok: false,
+      reason: "INVALID_REQUEST",
+      detail: "amount must be positive",
+    };
   const expectedIn = request.side === "buy" ? USDC_MINT : rep.mint;
   const expectedOut = request.side === "buy" ? rep.mint : USDC_MINT;
   if (request.inputMint !== expectedIn || request.outputMint !== expectedOut)
-    return { ok: false, reason: "INVALID_REQUEST", detail: "mints do not match side and representation" };
+    return {
+      ok: false,
+      reason: "INVALID_REQUEST",
+      detail: "mints do not match side and representation",
+    };
   return { ok: true, request };
 }
 
-function withDeadline(promise: Promise<VenueQuote>, ms: number, fallback: () => VenueQuote) {
+function withDeadline(
+  promise: Promise<VenueQuote>,
+  ms: number,
+  fallback: () => VenueQuote,
+) {
   return new Promise<VenueQuote>((resolve) => {
     const timer = setTimeout(() => resolve(fallback()), ms);
     promise.then(
@@ -161,8 +204,10 @@ export function rankQuote(
   const grossVenueOutput = fromRaw(quote.expectedAmountOut);
   const venueInput = fromRaw(quote.amountIn);
 
-  const henarInputFee = request.side === "buy" ? bpsOf(userInput, henarFeeBps) : 0n;
-  const henarOutputFee = request.side === "sell" ? bpsOf(grossVenueOutput, henarFeeBps) : 0n;
+  const henarInputFee =
+    request.side === "buy" ? bpsOf(userInput, henarFeeBps) : 0n;
+  const henarOutputFee =
+    request.side === "sell" ? bpsOf(grossVenueOutput, henarFeeBps) : 0n;
   const netUserOutput = grossVenueOutput - henarOutputFee;
 
   if (venueInput + henarInputFee !== userInput)
@@ -171,7 +216,8 @@ export function rankQuote(
     );
   if (henarInputFee > 0n && henarOutputFee > 0n)
     throw new Error("fee accounting: Henar fee on both sides");
-  if (netUserOutput < 0n) throw new Error("fee accounting: negative net output");
+  if (netUserOutput < 0n)
+    throw new Error("fee accounting: negative net output");
 
   const fees: FeeBreakdown = {
     inputMint: request.inputMint,
@@ -192,8 +238,10 @@ export function rankQuote(
     ...quote,
     fees,
     henarFeeBps,
-    henarFeeAmount: request.side === "buy" ? fees.henarInputFee : fees.henarOutputFee,
-    henarFeeMint: request.side === "buy" ? request.inputMint : request.outputMint,
+    henarFeeAmount:
+      request.side === "buy" ? fees.henarInputFee : fees.henarOutputFee,
+    henarFeeMint:
+      request.side === "buy" ? request.inputMint : request.outputMint,
     swapInput: fees.venueInput,
     netOutput: fees.netUserOutput,
   };
@@ -219,7 +267,9 @@ export async function quoteRepresentation(
   const result = await quoteRepresentationUnrecorded(input, options);
   if (options.telemetry) {
     try {
-      await options.telemetry.record(benchmarkRecord(result, { tags: options.telemetryTags }));
+      await options.telemetry.record(
+        benchmarkRecord(result, { tags: options.telemetryTags }),
+      );
     } catch {
       // Telemetry is observational; a sink failure must never fail a quote.
     }
@@ -276,7 +326,10 @@ async function quoteRepresentationUnrecorded(
 
   // Venues quote the amount that will actually be swapped.
   const requested = fromRaw(input.amount);
-  const venueAmount = input.side === "buy" ? requested - bpsOf(requested, henarFeeBps) : requested;
+  const venueAmount =
+    input.side === "buy"
+      ? requested - bpsOf(requested, henarFeeBps)
+      : requested;
   if (venueAmount <= 0n)
     return {
       ...base,
@@ -297,9 +350,13 @@ async function quoteRepresentationUnrecorded(
      the deepest one: an adapter would pick it for a USDC request and lose the
      quote to a terms mismatch. A pool is offered for the pair it trades and
      no other. */
-  const allPools = options.poolsOverride ?? poolsForRepresentation(input.representationId);
+  const allPools =
+    options.poolsOverride ?? poolsForRepresentation(input.representationId);
   const requestedPair = new Set([input.inputMint, input.outputMint]);
-  const pools = allPools.filter((pool) => requestedPair.has(pool.baseMint) && requestedPair.has(pool.quoteMint));
+  const pools = allPools.filter(
+    (pool) =>
+      requestedPair.has(pool.baseMint) && requestedPair.has(pool.quoteMint),
+  );
   /* Every adapter and every curve fetch in this request reads through one
      memoizing view of the connection. Five pools each re-read the same two
      mint accounts and asked for their own slot, and the split optimizer then
@@ -307,7 +364,9 @@ async function quoteRepresentationUnrecorded(
      five native quotes timing out and the optimizer short of the two curves a
      split needs. Freshness is unchanged, since all of it already happened
      inside a single request. */
-  const scoped = options.connection ? requestScopedConnection(options.connection) : null;
+  const scoped = options.connection
+    ? requestScopedConnection(options.connection)
+    : null;
   scoped?.begin();
   const ctx: QuoteContext = {
     connection: scoped?.connection ?? options.connection ?? null,
@@ -318,7 +377,11 @@ async function quoteRepresentationUnrecorded(
 
   const latencyMs: Partial<Record<Venue, number>> = {};
   // Split routing is on by default once the router quotes; HENAR_SPLIT_ROUTING=0 turns it off.
-  const splitRouting = options.splitRouting ?? (process.env.HENAR_SPLIT_ROUTING === undefined ? true : flagEnabled("splitRouting"));
+  const splitRouting =
+    options.splitRouting ??
+    (process.env.HENAR_SPLIT_ROUTING === undefined
+      ? true
+      : flagEnabled("splitRouting"));
   // One call per venue by default (the adapter picks its deepest pool); with
   // split routing on, one call per enabled pool so every pool is compared.
   const calls = options.adapters.flatMap((adapter) => {
@@ -330,8 +393,13 @@ async function quoteRepresentationUnrecorded(
        for no quotes. An adapter that declares no pool type still receives the
        venue's pools, which is how the aggregators keep working. */
     const declared = adapter.capabilities().poolTypes;
-    const venuePools = pools.filter((p) => p.venue === adapter.venue && (!declared.length || declared.includes(p.poolType)));
-    if (splitRouting && venuePools.length > 1) return venuePools.map((pool) => ({ adapter, pools: [pool] }));
+    const venuePools = pools.filter(
+      (p) =>
+        p.venue === adapter.venue &&
+        (!declared.length || declared.includes(p.poolType)),
+    );
+    if (splitRouting && venuePools.length > 1)
+      return venuePools.map((pool) => ({ adapter, pools: [pool] }));
     return [{ adapter, pools: venuePools }];
   });
   const quotes = await Promise.all(
@@ -340,9 +408,20 @@ async function quoteRepresentationUnrecorded(
       const quote = await withDeadline(
         adapter.getQuote(venueRequest, { ...ctx, pools: callPools }),
         deadlineMs,
-        () => unavailableQuote(adapter.venue, venueRequest, "VENUE_TIMEOUT", `no quote within ${deadlineMs}ms`, callPools[0]?.address ?? null, now),
+        () =>
+          unavailableQuote(
+            adapter.venue,
+            venueRequest,
+            "VENUE_TIMEOUT",
+            `no quote within ${deadlineMs}ms`,
+            callPools[0]?.address ?? null,
+            now,
+          ),
       );
-      latencyMs[adapter.venue] = Math.max(latencyMs[adapter.venue] ?? 0, Date.now() - started);
+      latencyMs[adapter.venue] = Math.max(
+        latencyMs[adapter.venue] ?? 0,
+        Date.now() - started,
+      );
       return quote;
     }),
   );
@@ -362,8 +441,19 @@ async function quoteRepresentationUnrecorded(
     if (isPoolVenue(caps)) poolVenues.add(caps.venue);
     if (executableAsNativeLeg(caps)) buildableVenues.add(caps.venue);
   }
+  /* Whether a quote belongs in the ranking is a question about the venue, not
+     about whether its answer happened to name a pool. This used to read
+     `poolAddress === null && !poolVenues.has(venue)`, taking a null pool as
+     the mark of an aggregator. Jupiter reports `ammKey` whenever it routes
+     through a single pool, so that test dropped Jupiter from the ranking on
+     exactly the simple routes where it competes hardest: 116 of 196
+     observations in the 17 October matrix, every one of them single-hop. The
+     invariant `executableAsNativeLeg` documents was never in doubt — a pool
+     venue must be able to build what it prices — so ask that of pool venues
+     and let aggregators, which execute through their own builder, be ranked
+     and then judged by capability as they always were. */
   const executableQuote = (q: { venue: Venue; poolAddress: string | null }) =>
-    q.poolAddress === null && !poolVenues.has(q.venue) ? true : buildableVenues.has(q.venue);
+    poolVenues.has(q.venue) ? buildableVenues.has(q.venue) : true;
 
   for (const quote of quotes) {
     if (quote.unavailableReason) {
@@ -414,20 +504,38 @@ async function quoteRepresentationUnrecorded(
   diagnostics.sort(compareRanked);
 
   const slot = ranked.reduce<number | null>(
-    (acc, q) => (q.slot === null ? acc : acc === null ? q.slot : Math.max(acc, q.slot)),
+    (acc, q) =>
+      q.slot === null ? acc : acc === null ? q.slot : Math.max(acc, q.slot),
     null,
   );
 
   let route: RankedRoute | null = null;
-  let splitReason: string | null = splitRouting ? (ranked.length > 1 ? null : "only one venue quoted; nothing to split across") : "split routing is off";
+  let splitReason: string | null = splitRouting
+    ? ranked.length > 1
+      ? null
+      : "only one venue quoted; nothing to split across"
+    : "split routing is off";
   if (splitRouting && ranked.length > 1) {
     try {
-      const outcome = await splitAcrossPools(input, venueRequest, options, ctx, ranked, henarFeeBps, deadlineMs);
+      const outcome = await splitAcrossPools(
+        input,
+        venueRequest,
+        options,
+        ctx,
+        ranked,
+        henarFeeBps,
+        deadlineMs,
+      );
       route = outcome.route;
       splitReason = outcome.reason;
     } catch (error) {
       splitReason = `split routing failed: ${(error as Error).message}`;
-      exclusions.push({ venue: ranked[0].venue, poolAddress: null, reason: "SDK_ERROR", detail: `split routing failed: ${(error as Error).message}` });
+      exclusions.push({
+        venue: ranked[0].venue,
+        poolAddress: null,
+        reason: "SDK_ERROR",
+        detail: `split routing failed: ${(error as Error).message}`,
+      });
     }
   }
 
@@ -436,8 +544,13 @@ async function quoteRepresentationUnrecorded(
      against every direct quote and the split. */
   let path: RankedRoute | null = null;
   let pathReason: string | null = null;
-  const pathRouting = options.pathRouting ?? (splitRouting && process.env.HENAR_PATH_ROUTING !== "0" && process.env.HENAR_PATH_ROUTING !== "false");
-  if (!pathRouting) pathReason = splitRouting ? "path routing is off" : "split routing is off";
+  const pathRouting =
+    options.pathRouting ??
+    (splitRouting &&
+      process.env.HENAR_PATH_ROUTING !== "0" &&
+      process.env.HENAR_PATH_ROUTING !== "false");
+  if (!pathRouting)
+    pathReason = splitRouting ? "path routing is off" : "split routing is off";
   else {
     try {
       const outcome = await composePath(input, venueAmount, allPools, {
@@ -453,7 +566,10 @@ async function quoteRepresentationUnrecorded(
       pathReason = outcome.reason;
       if (path && ranked[0]) {
         const direct = fromRaw(ranked[0].netOutput);
-        path.improvementBps = direct > 0n ? Number(((fromRaw(path.netOutput) - direct) * 10_000n) / direct) : null;
+        path.improvementBps =
+          direct > 0n
+            ? Number(((fromRaw(path.netOutput) - direct) * 10_000n) / direct)
+            : null;
       }
     } catch (error) {
       pathReason = `path routing failed: ${(error as Error).message}`;
@@ -493,7 +609,9 @@ async function splitAcrossPools(
   const curves: VenueCurve[] = [];
   await Promise.all(
     ranked.map(async (q) => {
-      const pool = q.poolAddress ? ctx.pools.find((p) => p.address === q.poolAddress) : null;
+      const pool = q.poolAddress
+        ? ctx.pools.find((p) => p.address === q.poolAddress)
+        : null;
       // Same venue, and an adapter that declares this pool type: Raydium
       // CLMM and CPMM share a venue id but not a curve.
       const adapter = pool ? adapterForPool(options.adapters, pool) : null;
@@ -504,36 +622,69 @@ async function splitAcrossPools(
       if (!executableAsNativeLeg(adapter.capabilities())) return;
       const curve = await new Promise<VenueCurve | null>((resolve) => {
         const timer = setTimeout(() => resolve(null), deadlineMs);
-        adapter.curve!(venueRequest, pool, ctx).then((c) => { clearTimeout(timer); resolve(c); }, () => { clearTimeout(timer); resolve(null); });
+        adapter.curve!(venueRequest, pool, ctx).then(
+          (c) => {
+            clearTimeout(timer);
+            resolve(c);
+          },
+          () => {
+            clearTimeout(timer);
+            resolve(null);
+          },
+        );
       });
       if (curve) curves.push(curve);
     }),
   );
   if (curves.length < 2)
-    return { route: null, reason: `only ${curves.length} venue curve${curves.length === 1 ? "" : "s"} could be built; a split needs two` };
+    return {
+      route: null,
+      reason: `only ${curves.length} venue curve${curves.length === 1 ? "" : "s"} could be built; a split needs two`,
+    };
   const venueAmount = fromRaw(venueRequest.amount);
-  const split = optimizeSplit(curves, venueAmount, options.splitOptions ?? routerSplitOptions());
+  const split = optimizeSplit(
+    curves,
+    venueAmount,
+    options.splitOptions ?? routerSplitOptions(),
+  );
   if (split.kind !== "split") return { route: null, reason: split.reason };
   /* Economically meaningless splits are suppressed here, and only here. The
      optimizer reports every construction it finds; this is the smallest gain
      worth an extra leg at all. Anything above it is handed up so the caller
      can rank it against quotes the optimizer cannot split across — that
      comparison, not this one, decides whether the split is used. */
-  if ((split.netImprovementBps ?? 0) < (options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS))
-    return { route: null, reason: `${split.reason}; below the ${options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS} bp floor for an extra leg` };
+  if (
+    (split.netImprovementBps ?? 0) <
+    (options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS)
+  )
+    return {
+      route: null,
+      reason: `${split.reason}; below the ${options.minSplitEmitBps ?? MIN_SPLIT_EMIT_BPS} bp floor for an extra leg`,
+    };
   const legs: RankedQuote[] = [];
   const userInput = fromRaw(input.amount);
   const totalFeeIn = input.side === "buy" ? bpsOf(userInput, henarFeeBps) : 0n;
   let feeAllocated = 0n;
   for (const [i, leg] of split.legs.entries()) {
-    const curve = curves.find((c) => c.venue === leg.venue && c.poolAddress === leg.poolAddress);
-    if (!curve?.quoteFor) return { route: null, reason: `no re-quotable curve for ${leg.venue}` };
+    const curve = curves.find(
+      (c) => c.venue === leg.venue && c.poolAddress === leg.poolAddress,
+    );
+    if (!curve?.quoteFor)
+      return { route: null, reason: `no re-quotable curve for ${leg.venue}` };
     const quote = curve.quoteFor(fromRaw(leg.amountIn));
     if (quote.unavailableReason || quote.amountIn !== leg.amountIn)
-      return { route: null, reason: `leg ${leg.venue} could not be re-quoted at its allocation: ${quote.unavailableReason ?? "terms drifted"}` };
+      return {
+        route: null,
+        reason: `leg ${leg.venue} could not be re-quoted at its allocation: ${quote.unavailableReason ?? "terms drifted"}`,
+      };
     // Apportion the input-side fee by leg share (last leg takes the remainder) so
     // per-leg identities hold and the sum equals the route fee exactly.
-    const legFeeIn = input.side === "buy" ? (i === split.legs.length - 1 ? totalFeeIn - feeAllocated : (totalFeeIn * fromRaw(leg.amountIn)) / venueAmount) : 0n;
+    const legFeeIn =
+      input.side === "buy"
+        ? i === split.legs.length - 1
+          ? totalFeeIn - feeAllocated
+          : (totalFeeIn * fromRaw(leg.amountIn)) / venueAmount
+        : 0n;
     feeAllocated += legFeeIn;
     const gross = fromRaw(quote.expectedAmountOut);
     const legFeeOut = input.side === "sell" ? bpsOf(gross, henarFeeBps) : 0n;
@@ -559,7 +710,10 @@ async function splitAcrossPools(
       netOutput: toRaw(gross - legFeeOut),
     });
   }
-  const grossTotal = legs.reduce((s, l) => s + fromRaw(l.fees.grossVenueOutput), 0n);
+  const grossTotal = legs.reduce(
+    (s, l) => s + fromRaw(l.fees.grossVenueOutput),
+    0n,
+  );
   const feeOut = input.side === "sell" ? bpsOf(grossTotal, henarFeeBps) : 0n;
   const net = grossTotal - feeOut;
   /* The construction is kept even when another source beats it.
@@ -575,28 +729,36 @@ async function splitAcrossPools(
      The only bar here is that the construction beat the best single native
      pool, which the optimizer has already established, net of Henar's fee.
      The fee is proportional on both sides, so it cannot reorder them. */
-  const bestNativeSingle = split.bestSingleOut ? fromRaw(split.bestSingleOut) : null;
+  const bestNativeSingle = split.bestSingleOut
+    ? fromRaw(split.bestSingleOut)
+    : null;
   if (bestNativeSingle !== null && grossTotal <= bestNativeSingle)
-    return { route: null, reason: `the split does not beat the best single native pool (${split.reason})` };
-  return { route: {
-    kind: "split",
-    legs,
-    fees: {
-      inputMint: input.inputMint,
-      outputMint: input.outputMint,
-      userInput: toRaw(userInput),
-      henarInputFee: toRaw(totalFeeIn),
-      venueInput: venueRequest.amount,
-      grossVenueOutput: toRaw(grossTotal),
-      venueFee: null,
-      venueFeeMint: null,
-      henarOutputFee: toRaw(feeOut),
-      netUserOutput: toRaw(net),
-      henarFeeBps,
+    return {
+      route: null,
+      reason: `the split does not beat the best single native pool (${split.reason})`,
+    };
+  return {
+    route: {
+      kind: "split",
+      legs,
+      fees: {
+        inputMint: input.inputMint,
+        outputMint: input.outputMint,
+        userInput: toRaw(userInput),
+        henarInputFee: toRaw(totalFeeIn),
+        venueInput: venueRequest.amount,
+        grossVenueOutput: toRaw(grossTotal),
+        venueFee: null,
+        venueFeeMint: null,
+        henarOutputFee: toRaw(feeOut),
+        netUserOutput: toRaw(net),
+        henarFeeBps,
+      },
+      netOutput: toRaw(net),
+      improvementBps: split.improvementBps,
+      costBps: split.costBps,
+      reason: split.reason,
     },
-    netOutput: toRaw(net),
-    improvementBps: split.improvementBps,
-    costBps: split.costBps,
     reason: split.reason,
-  }, reason: split.reason };
+  };
 }
