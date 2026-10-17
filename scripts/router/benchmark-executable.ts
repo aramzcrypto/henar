@@ -21,9 +21,28 @@
  * venue instructions rather than the whole packaged transaction.
  */
 import { writeFile } from "node:fs/promises";
-import { AddressLookupTableAccount, ComputeBudgetProgram, Connection, PublicKey, TransactionMessage, VersionedTransaction, type TransactionInstruction } from "@solana/web3.js";
-import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { DEFAULT_SPLIT_OPTIONS, USDC_MINT, loadPoolRegistry, quoteRepresentation, type QuoteContext, type VenueAdapter, type VerifiedPool } from "@henar/router-core";
+import {
+  AddressLookupTableAccount,
+  ComputeBudgetProgram,
+  Connection,
+  PublicKey,
+  TransactionMessage,
+  VersionedTransaction,
+  type TransactionInstruction,
+} from "@solana/web3.js";
+import {
+  createAssociatedTokenAccountIdempotentInstruction,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
+import {
+  DEFAULT_SPLIT_OPTIONS,
+  USDC_MINT,
+  loadPoolRegistry,
+  quoteRepresentation,
+  type QuoteContext,
+  type VenueAdapter,
+  type VerifiedPool,
+} from "@henar/router-core";
 import { RaydiumAdapter, RaydiumCpmmAdapter } from "@henar/venue-raydium";
 import { MeteoraAdapter } from "@henar/venue-meteora";
 import { OrcaAdapter } from "@henar/venue-orca";
@@ -75,11 +94,20 @@ type Row = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function jupiterOut(mint: string, sizeUsd: number): Promise<bigint | null> {
+async function jupiterOut(
+  mint: string,
+  sizeUsd: number,
+): Promise<bigint | null> {
   const amount = BigInt(sizeUsd) * 1_000_000n;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const res = await fetch(`${JUP}/quote?inputMint=${USDC_MINT}&outputMint=${mint}&amount=${amount}&slippageBps=50`, { signal: AbortSignal.timeout(20_000) }).catch(() => null);
-    if (res?.status === 429) { await sleep(2_000 * (attempt + 1)); continue; }
+    const res = await fetch(
+      `${JUP}/quote?inputMint=${USDC_MINT}&outputMint=${mint}&amount=${amount}&slippageBps=50`,
+      { signal: AbortSignal.timeout(20_000) },
+    ).catch(() => null);
+    if (res?.status === 429) {
+      await sleep(2_000 * (attempt + 1));
+      continue;
+    }
     if (!res?.ok) return null;
     const body = (await res.json()) as { outAmount?: string };
     return body.outAmount ? BigInt(body.outAmount) : null;
@@ -95,15 +123,21 @@ function median(xs: number[]): number | null {
 }
 
 async function tokenProgramOf(connection: Connection, mint: string) {
-  const info = await connection.getAccountInfo(new PublicKey(mint), "confirmed");
+  const info = await connection.getAccountInfo(
+    new PublicKey(mint),
+    "confirmed",
+  );
   if (!info) throw new Error(`mint ${mint} not found`);
   return info.owner;
 }
 
 async function main() {
   const rpc = process.env.SOLANA_RPC_URL;
-  if (!rpc) throw new Error("SOLANA_RPC_URL is required; this never runs on fixtures.");
-  const owner = process.env.HENAR_SIM_OWNER ? new PublicKey(process.env.HENAR_SIM_OWNER) : null;
+  if (!rpc)
+    throw new Error("SOLANA_RPC_URL is required; this never runs on fixtures.");
+  const owner = process.env.HENAR_SIM_OWNER
+    ? new PublicKey(process.env.HENAR_SIM_OWNER)
+    : null;
   const connection = new Connection(rpc, "confirmed");
   const registry = loadPoolRegistry();
 
@@ -126,7 +160,10 @@ async function main() {
      it does not move between two configurations of the same row. */
   const configs: { name: string; adapters: VenueAdapter[] }[] = [
     { name: "all", adapters: build([]) },
-    { name: THREE_LEG_CONFIG, adapters: build([]) },
+    /* The third leg is opt-in, as the header says: it doubles the arms and
+       the question it answers (is a lookup table worth creating?) is only
+       asked deliberately. It ran unconditionally while THREE_LEG went unread. */
+    ...(THREE_LEG ? [{ name: THREE_LEG_CONFIG, adapters: build([]) }] : []),
     { name: "-meteora", adapters: build(["meteora"]) },
     { name: "-byreal", adapters: build(["byreal"]) },
   ];
@@ -137,7 +174,10 @@ async function main() {
   for (const p of registry.pools) {
     if (!p.enabled || p.eligibility !== "ROUTER_ELIGIBLE") continue;
     if (!["raydium", "orca", "meteora", "byreal"].includes(p.venue)) continue;
-    byRep.set(p.representationId, [...(byRep.get(p.representationId) ?? []), p]);
+    byRep.set(p.representationId, [
+      ...(byRep.get(p.representationId) ?? []),
+      p,
+    ]);
   }
   /* Deepest first. Taking the head of the registry order gives micro-caps
      whose only pools are thin, where Henar loses to Jupiter for reasons that
@@ -145,9 +185,15 @@ async function main() {
      the sample, not the router. */
   const candidates = [...byRep.entries()]
     .filter(([, pools]) => pools.length >= 2)
-    .sort((a, b) => b[1].reduce((s, p) => s + (p.tvlUsd ?? 0), 0) - a[1].reduce((s, p) => s + (p.tvlUsd ?? 0), 0))
+    .sort(
+      (a, b) =>
+        b[1].reduce((s, p) => s + (p.tvlUsd ?? 0), 0) -
+        a[1].reduce((s, p) => s + (p.tvlUsd ?? 0), 0),
+    )
     .slice(0, 10);
-  process.stdout.write(`${candidates.length} representations with two or more native pools, ${SIZES.length} sizes, ${configs.length} configurations\n\n`);
+  process.stdout.write(
+    `${candidates.length} representations with two or more native pools, ${SIZES.length} sizes, ${configs.length} configurations\n\n`,
+  );
 
   const rows: Row[] = [];
 
@@ -158,19 +204,51 @@ async function main() {
       const mint = pools[0].mint;
       for (const sizeUsd of SIZES) {
         const amount = (BigInt(sizeUsd) * 1_000_000n).toString();
-        const request = { representationId, side: "buy" as const, amount, amountType: "input" as const, inputMint: USDC_MINT, outputMint: mint };
+        const request = {
+          representationId,
+          side: "buy" as const,
+          amount,
+          amountType: "input" as const,
+          inputMint: USDC_MINT,
+          outputMint: mint,
+        };
         const row: Row = {
-          config: name, ticker, sizeUsd, bestSingleVenue: null, bestSingleOut: null, routeKind: null, routeVenues: [],
-          henarGrossOut: null, henarNetOut: null, jupiterOut: null, splitGainBps: null,
-          grossVsJupiterBps: null, netVsJupiterBps: null, productNetVsJupiterBps: null, simulated: null, simulationDetail: null,
-          txBytes: null, lookupTablesUsed: 0,
+          config: name,
+          ticker,
+          sizeUsd,
+          bestSingleVenue: null,
+          bestSingleOut: null,
+          routeKind: null,
+          routeVenues: [],
+          henarGrossOut: null,
+          henarNetOut: null,
+          jupiterOut: null,
+          splitGainBps: null,
+          grossVsJupiterBps: null,
+          netVsJupiterBps: null,
+          productNetVsJupiterBps: null,
+          simulated: null,
+          simulationDetail: null,
+          txBytes: null,
+          lookupTablesUsed: 0,
         };
 
         const result = await quoteRepresentation(request, {
-          adapters, enabled: true, splitRouting: true, pathRouting: false,
-          poolsOverride: pools, connection, deadlineMs: 30_000,
-          splitOptions: name === THREE_LEG_CONFIG ? { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3 } : undefined,
-        }).catch((e) => { row.simulationDetail = `quote failed: ${(e as Error).message}`; return null; });
+          adapters,
+          enabled: true,
+          splitRouting: true,
+          pathRouting: false,
+          poolsOverride: pools,
+          connection,
+          deadlineMs: 30_000,
+          splitOptions:
+            name === THREE_LEG_CONFIG
+              ? { ...DEFAULT_SPLIT_OPTIONS, maxLegs: 3 }
+              : undefined,
+        }).catch((e) => {
+          row.simulationDetail = `quote failed: ${(e as Error).message}`;
+          return null;
+        });
 
         if (result?.best) {
           row.bestSingleVenue = result.best.venue;
@@ -178,25 +256,45 @@ async function main() {
         }
         /* The route the product would use: the split when it wins, else the
            best single venue. Both are executable by construction now. */
-        const chosen = result?.route ?? (result?.best ? { kind: "single" as const, netOutput: result.best.netOutput, legs: [{ venue: result.best.venue }] } : null);
+        const chosen =
+          result?.route ??
+          (result?.best
+            ? {
+                kind: "single" as const,
+                netOutput: result.best.netOutput,
+                legs: [{ venue: result.best.venue }],
+              }
+            : null);
         if (chosen && result?.best) {
           row.routeKind = result.route ? "split" : "single";
-          row.routeVenues = (chosen.legs as { venue: string }[]).map((l) => l.venue);
+          row.routeVenues = (chosen.legs as { venue: string }[]).map(
+            (l) => l.venue,
+          );
           row.henarNetOut = chosen.netOutput;
           /* Net output already has the Henar fee removed; gross it back up to
              compare like with like against Jupiter's unrestricted route. */
           const net = BigInt(chosen.netOutput);
-          row.henarGrossOut = ((net * 10_000n) / BigInt(10_000 - FEE_BPS)).toString();
+          row.henarGrossOut = (
+            (net * 10_000n) /
+            BigInt(10_000 - FEE_BPS)
+          ).toString();
           const single = BigInt(result.best.netOutput);
-          if (single > 0n) row.splitGainBps = Number(((net - single) * 10_000n) / single);
+          if (single > 0n)
+            row.splitGainBps = Number(((net - single) * 10_000n) / single);
         }
 
         const jup = await jupiterOut(mint, sizeUsd);
         await sleep(1_100);
         if (jup) {
           row.jupiterOut = jup.toString();
-          if (row.henarGrossOut) row.grossVsJupiterBps = Number(((BigInt(row.henarGrossOut) - jup) * 10_000n) / jup);
-          if (row.henarNetOut) row.netVsJupiterBps = Number(((BigInt(row.henarNetOut) - jup) * 10_000n) / jup);
+          if (row.henarGrossOut)
+            row.grossVsJupiterBps = Number(
+              ((BigInt(row.henarGrossOut) - jup) * 10_000n) / jup,
+            );
+          if (row.henarNetOut)
+            row.netVsJupiterBps = Number(
+              ((BigInt(row.henarNetOut) - jup) * 10_000n) / jup,
+            );
           /* The race: whichever gross output is larger, then the fee. This is
              the comparison a user experiences, and it is bounded below by
              Jupiter's own price less the fee. */
@@ -208,7 +306,12 @@ async function main() {
 
         /* Build and simulate the winning native route's legs. A route that
            cannot survive this is not an improvement, whatever it quoted. */
-        if ((name === "all" || name === THREE_LEG_CONFIG) && result?.best && !result.best.unavailableReason && owner) {
+        if (
+          (name === "all" || name === THREE_LEG_CONFIG) &&
+          result?.best &&
+          !result.best.unavailableReason &&
+          owner
+        ) {
           try {
             const legs = result.route
               ? result.route.legs.map((l) => ({ venue: l.venue, quote: l }))
@@ -218,10 +321,23 @@ async function main() {
                been measured at 215k, so a two-leg route fails with
                ProgramFailedToComplete for a reason that is nothing to do with
                the route. Mirror the planner's ceiling. */
-            const instructions = [ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 })];
+            const instructions = [
+              ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
+            ];
             const outProgram = await tokenProgramOf(connection, mint);
             instructions.push(
-              createAssociatedTokenAccountIdempotentInstruction(owner, getAssociatedTokenAddressSync(new PublicKey(mint), owner, true, outProgram), owner, new PublicKey(mint), outProgram),
+              createAssociatedTokenAccountIdempotentInstruction(
+                owner,
+                getAssociatedTokenAddressSync(
+                  new PublicKey(mint),
+                  owner,
+                  true,
+                  outProgram,
+                ),
+                owner,
+                new PublicKey(mint),
+                outProgram,
+              ),
             );
             let ok = true;
             /* Every lookup table the adapters offer. The router's build path
@@ -231,14 +347,37 @@ async function main() {
             const tableAddresses = new Set<string>();
             for (const leg of legs) {
               const adapter = adapters.find((a) => a.venue === leg.venue);
-              const pool = pools.find((p) => p.address === leg.quote.poolAddress);
-              if (!adapter || !pool) { ok = false; row.simulationDetail = `no adapter or pool for ${leg.venue}`; break; }
-              const ctx: QuoteContext = { connection, pools: [pool], now: Date.now(), deadlineMs: 30_000 };
-              const minimumAmountOut = ((BigInt(leg.quote.expectedAmountOut) * 9_900n) / 10_000n).toString();
-              const built = await adapter.buildSwapInstructions(leg.quote, ctx, { owner: owner.toBase58(), minimumAmountOut });
-              if (built.reason || !built.instructions.length) { ok = false; row.simulationDetail = `${leg.venue} build: ${built.reason} ${built.detail ?? ""}`; break; }
+              const pool = pools.find(
+                (p) => p.address === leg.quote.poolAddress,
+              );
+              if (!adapter || !pool) {
+                ok = false;
+                row.simulationDetail = `no adapter or pool for ${leg.venue}`;
+                break;
+              }
+              const ctx: QuoteContext = {
+                connection,
+                pools: [pool],
+                now: Date.now(),
+                deadlineMs: 30_000,
+              };
+              const minimumAmountOut = (
+                (BigInt(leg.quote.expectedAmountOut) * 9_900n) /
+                10_000n
+              ).toString();
+              const built = await adapter.buildSwapInstructions(
+                leg.quote,
+                ctx,
+                { owner: owner.toBase58(), minimumAmountOut },
+              );
+              if (built.reason || !built.instructions.length) {
+                ok = false;
+                row.simulationDetail = `${leg.venue} build: ${built.reason} ${built.detail ?? ""}`;
+                break;
+              }
               instructions.push(...built.instructions);
-              for (const t of built.lookupTables) tableAddresses.add(t.toBase58());
+              for (const t of built.lookupTables)
+                tableAddresses.add(t.toBase58());
             }
             if (ok) {
               const protocolTable = process.env.STOCKROOM_LOOKUP_TABLE;
@@ -250,20 +389,37 @@ async function main() {
                 const carried = new Map<string, PublicKey>();
                 for (const ix of instructions as TransactionInstruction[]) {
                   carried.set(ix.programId.toBase58(), ix.programId);
-                  for (const k of ix.keys) if (!k.isSigner && !k.pubkey.equals(owner)) carried.set(k.pubkey.toBase58(), k.pubkey);
+                  for (const k of ix.keys)
+                    if (!k.isSigner && !k.pubkey.equals(owner))
+                      carried.set(k.pubkey.toBase58(), k.pubkey);
                 }
-                tables.push(new AddressLookupTableAccount({
-                  key: new PublicKey("11111111111111111111111111111112"),
-                  state: { deactivationSlot: BigInt("18446744073709551615"), lastExtendedSlot: 0, lastExtendedSlotStartIndex: 0, authority: owner, addresses: [...carried.values()] },
-                }));
+                tables.push(
+                  new AddressLookupTableAccount({
+                    key: new PublicKey("11111111111111111111111111111112"),
+                    state: {
+                      deactivationSlot: BigInt("18446744073709551615"),
+                      lastExtendedSlot: 0,
+                      lastExtendedSlotStartIndex: 0,
+                      authority: owner,
+                      addresses: [...carried.values()],
+                    },
+                  }),
+                );
               }
               for (const address of tableAddresses) {
-                const fetched = await connection.getAddressLookupTable(new PublicKey(address)).catch(() => null);
+                const fetched = await connection
+                  .getAddressLookupTable(new PublicKey(address))
+                  .catch(() => null);
                 if (fetched?.value?.isActive()) tables.push(fetched.value);
               }
               row.lookupTablesUsed = tables.length;
-              const { blockhash } = await connection.getLatestBlockhash("confirmed");
-              const message = new TransactionMessage({ payerKey: owner, recentBlockhash: blockhash, instructions }).compileToV0Message(tables);
+              const { blockhash } =
+                await connection.getLatestBlockhash("confirmed");
+              const message = new TransactionMessage({
+                payerKey: owner,
+                recentBlockhash: blockhash,
+                instructions,
+              }).compileToV0Message(tables);
               const transaction = new VersionedTransaction(message);
               /* Serialization is where an oversized transaction actually
                  fails, so measure it rather than estimating from accounts. */
@@ -273,7 +429,9 @@ async function main() {
                 row.simulated = false;
                 row.simulationDetail = `serialize: ${(error as Error).message}`;
                 rows.push(row);
-                process.stdout.write(`  ${ticker.padEnd(9)} $${String(sizeUsd).padStart(6)}  ${(row.routeKind ?? "none").padEnd(6)} ${row.routeVenues.join("+").padEnd(24)} OVERSIZED (${tables.length} ALTs)\n`);
+                process.stdout.write(
+                  `  ${ticker.padEnd(9)} $${String(sizeUsd).padStart(6)}  ${(row.routeKind ?? "none").padEnd(6)} ${row.routeVenues.join("+").padEnd(24)} OVERSIZED (${tables.length} ALTs)\n`,
+                );
                 continue;
               }
               if (name === THREE_LEG_CONFIG) {
@@ -282,11 +440,17 @@ async function main() {
                    still measured exactly — compilation is local and the quote
                    is the engine's — but simulation is not attempted rather
                    than recorded as a failure it is not. */
-                row.simulationDetail = "not simulated: lookup table is synthetic";
+                row.simulationDetail =
+                  "not simulated: lookup table is synthetic";
               } else {
-                const sim = await connection.simulateTransaction(transaction, { sigVerify: false, replaceRecentBlockhash: true, commitment: "confirmed" });
+                const sim = await connection.simulateTransaction(transaction, {
+                  sigVerify: false,
+                  replaceRecentBlockhash: true,
+                  commitment: "confirmed",
+                });
                 row.simulated = !sim.value.err;
-                if (sim.value.err) row.simulationDetail = JSON.stringify(sim.value.err);
+                if (sim.value.err)
+                  row.simulationDetail = JSON.stringify(sim.value.err);
               }
             } else row.simulated = false;
           } catch (error) {
@@ -303,51 +467,84 @@ async function main() {
     }
   }
 
-  await writeFile(OUTPUT, `${JSON.stringify({ measuredAt: new Date().toISOString(), sizes: SIZES, feeBps: FEE_BPS, rows }, null, 2)}\n`, "utf8");
+  await writeFile(
+    OUTPUT,
+    `${JSON.stringify({ measuredAt: new Date().toISOString(), sizes: SIZES, feeBps: FEE_BPS, rows }, null, 2)}\n`,
+    "utf8",
+  );
 
   process.stdout.write("\n=== summary\n");
   for (const { name } of configs) {
     const mine = rows.filter((r) => r.config === name);
     const splits = mine.filter((r) => r.routeKind === "split");
-    const pick = (f: (r: Row) => number | null) => median(mine.map(f).filter((n): n is number => n !== null));
+    const pick = (f: (r: Row) => number | null) =>
+      median(mine.map(f).filter((n): n is number => n !== null));
     process.stdout.write(
       `${name.padEnd(9)} splits ${String(splits.length).padStart(2)}/${mine.length}  split gain ${String(median(splits.map((r) => r.splitGainBps).filter((n): n is number => n !== null))).padStart(4)}  native gross ${String(pick((r) => r.grossVsJupiterBps)).padStart(5)}  native net ${String(pick((r) => r.netVsJupiterBps)).padStart(5)}  product net ${String(pick((r) => r.productNetVsJupiterBps)).padStart(5)} bps\n`,
     );
   }
   /* Paired against "all" on the same ticker and size. */
-  const base = new Map(rows.filter((r) => r.config === "all").map((r) => [`${r.ticker}:${r.sizeUsd}`, r]));
+  const base = new Map(
+    rows
+      .filter((r) => r.config === "all")
+      .map((r) => [`${r.ticker}:${r.sizeUsd}`, r]),
+  );
   const paired: number[] = [];
   const perSize = new Map<number, number[]>();
   for (const r of rows.filter((x) => x.config === THREE_LEG_CONFIG)) {
     const a = base.get(`${r.ticker}:${r.sizeUsd}`);
-    if (!a || a.grossVsJupiterBps === null || r.grossVsJupiterBps === null) continue;
+    if (!a || a.grossVsJupiterBps === null || r.grossVsJupiterBps === null)
+      continue;
     const gain = r.grossVsJupiterBps - a.grossVsJupiterBps;
     paired.push(gain);
     perSize.set(r.sizeUsd, [...(perSize.get(r.sizeUsd) ?? []), gain]);
   }
-  process.stdout.write(`\nthird leg, paired on the same row: median ${median(paired)} bps over ${paired.length} rows\n`);
+  process.stdout.write(
+    `\nthird leg, paired on the same row: median ${median(paired)} bps over ${paired.length} rows\n`,
+  );
   for (const size of SIZES) {
     const g = perSize.get(size) ?? [];
-    if (g.length) process.stdout.write(`  $${String(size).padStart(6)}: ${String(median(g)).padStart(4)} bps over ${g.length} rows\n`);
+    if (g.length)
+      process.stdout.write(
+        `  $${String(size).padStart(6)}: ${String(median(g)).padStart(4)} bps over ${g.length} rows\n`,
+      );
   }
 
   const simmed = rows.filter((r) => r.simulated !== null);
   const clean = simmed.filter((r) => r.simulated).length;
-  process.stdout.write(`build+simulate: ${clean}/${simmed.length} clean (${simmed.length ? Math.round((clean / simmed.length) * 100) : 0}%)\n`);
+  process.stdout.write(
+    `build+simulate: ${clean}/${simmed.length} clean (${simmed.length ? Math.round((clean / simmed.length) * 100) : 0}%)\n`,
+  );
   /* Per size, because the gap to Jupiter widens with size and a single median
      over the whole ladder hides that. */
   for (const size of SIZES) {
     const at = rows.filter((r) => r.config === "all" && r.sizeUsd === size);
-    const g = median(at.map((r) => r.grossVsJupiterBps).filter((n): n is number => n !== null));
-    const p = median(at.map((r) => r.productNetVsJupiterBps).filter((n): n is number => n !== null));
-    process.stdout.write(`  $${String(size).padStart(6)}: native gross ${String(g).padStart(5)} bps, product net ${String(p).padStart(5)} bps\n`);
+    const g = median(
+      at.map((r) => r.grossVsJupiterBps).filter((n): n is number => n !== null),
+    );
+    const p = median(
+      at
+        .map((r) => r.productNetVsJupiterBps)
+        .filter((n): n is number => n !== null),
+    );
+    process.stdout.write(
+      `  $${String(size).padStart(6)}: native gross ${String(g).padStart(5)} bps, product net ${String(p).padStart(5)} bps\n`,
+    );
   }
   const sized = rows.filter((r) => r.txBytes !== null);
   const byLegs = new Map<number, number[]>();
-  for (const r of sized) byLegs.set(r.routeVenues.length, [...(byLegs.get(r.routeVenues.length) ?? []), r.txBytes!]);
+  for (const r of sized)
+    byLegs.set(r.routeVenues.length, [
+      ...(byLegs.get(r.routeVenues.length) ?? []),
+      r.txBytes!,
+    ]);
   for (const [legs, bytes] of [...byLegs.entries()].sort((a, b) => a[0] - b[0]))
-    process.stdout.write(`  ${legs}-leg: ${bytes.length} routes, median ${median(bytes)} bytes, max ${Math.max(...bytes)} (limit 1232)\n`);
-  const oversized = rows.filter((r) => (r.simulationDetail ?? "").startsWith("serialize:"));
+    process.stdout.write(
+      `  ${legs}-leg: ${bytes.length} routes, median ${median(bytes)} bytes, max ${Math.max(...bytes)} (limit 1232)\n`,
+    );
+  const oversized = rows.filter((r) =>
+    (r.simulationDetail ?? "").startsWith("serialize:"),
+  );
   process.stdout.write(`  oversized: ${oversized.length}\n`);
   process.stdout.write(`Wrote ${OUTPUT}\n`);
 }

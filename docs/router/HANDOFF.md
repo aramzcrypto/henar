@@ -28,7 +28,7 @@ qualified intermediate (SOL, USDT, …). Fee is 10 bps (`MARKET_FEE_BPS`).
   new **two-leg path** (`packages/router-core/src/path.ts`): buy
   USDC → intermediate → equity over ROUTING_LEG pools, the USDC-side hop over
   INTERMEDIATE_ROUTE pools (SOL, USDT, JUP … from `router:discover:intermediates`).
-  The second hop is sized on the first hop's *floor*; whatever the first hop
+  The second hop is sized on the first hop's _floor_; whatever the first hop
   returns above it stays in the wallet as `residual`. Reported as
   `henarPath` and selected when it beats the split and every direct quote.
   `HENAR_PATH_ROUTING=0` turns it off.
@@ -67,16 +67,24 @@ JITO_BLOCK_ENGINE_URL, HENAR_RFQ_URL.
 
 ## Next
 
-1. **Owner:** first live router trade ($10 BA or AMC); keep the signature;
+1. **Re-measure the benchmark against Jupiter.** Every published win rate
+   comes from runs that predate `fc705f9`, when the adapter asked Jupiter only
+   at `swap/v2/order` and so recorded it net of Jupiter's own 10 bps platform
+   fee. The structural findings (who is reachable, at what size, why) survive;
+   the margins do not. Re-run
+   `HENAR_ROUTER_MATRIX_LOG=logs/router-matrix-v4.jsonl BENCH_SIZES="10,1000,10000,50000" npm run router:benchmark:matrix -- 25`
+   and write the result up as `BENCHMARK_MATRIX_V4.md`. Until then no win rate
+   is quoted in the README or the architecture doc.
+2. **Owner:** first live router trade ($10 BA or AMC); keep the signature;
    run `npm run router:trace -- <sig>` and record in `LIVE_VALIDATION.md`.
-2. Confirm on production that INTERMEDIATE_ROUTE pools verified at build
+3. Confirm on production that INTERMEDIATE_ROUTE pools verified at build
    (`/api/router/pools`) and that a path shows up for an equity whose SOL pool
    is deeper than its USDC pool (`henarPath` in `/api/router/quote`).
-3. First path execution ($10) once quotes show one; check the residual lands
+4. First path execution ($10) once quotes show one; check the residual lands
    in the wallet's wSOL account as expected.
-4. DBC Studio devnet dry run with a devnet-funded admin wallet; then decide
+5. DBC Studio devnet dry run with a devnet-funded admin wallet; then decide
    on mainnet (flag stays off until then).
-5. Decide on a Jito endpoint for protected submit; exercise once.
-6. If an RFQ maker with an open API appears, set `HENAR_RFQ_URL` and confirm
+6. Decide on a Jito endpoint for protected submit; exercise once.
+7. If an RFQ maker with an open API appears, set `HENAR_RFQ_URL` and confirm
    its wire shape matches `packages/venue-rfq` (or adapt the parser).
-7. MM-style DEXs (ZeroFi, Archer …) stay deprioritised per `MISSING_LIQUIDITY.md`.
+8. MM-style DEXs (ZeroFi, Archer …) stay deprioritised per `MISSING_LIQUIDITY.md`.

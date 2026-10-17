@@ -16,7 +16,14 @@ import Image from "next/image";
 import DecimalBase from "decimal.js";
 const Decimal = DecimalBase.clone({ precision: 80 });
 import dynamic from "next/dynamic";
-import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { Buffer } from "buffer";
@@ -80,7 +87,11 @@ import type { SelectorPrivateProduct } from "@/app/api/private-markets/products/
 import type { MarketReview } from "@/lib/market";
 import { quoteAuthorization } from "@/lib/wallet-access-client";
 import { validateMarketTransaction } from "@/lib/market-transaction";
-import { buildRouterTrade, prepareRouterTransaction, type RouterBuild } from "@/lib/router-trade";
+import {
+  buildRouterTrade,
+  prepareRouterTransaction,
+  type RouterBuild,
+} from "@/lib/router-trade";
 import { inspectRouteWallet } from "@/lib/wallet-route-state";
 import { PublicKey } from "@solana/web3.js";
 import { unpackMint } from "@solana/spl-token";
@@ -240,14 +251,33 @@ function Row({
  * the deviation of the quoted route from the tokenized reference, and the
  * protection state. Compact by design — the ticket is not a data dashboard.
  */
-function PythFairValueRows({ assessment, now }: { assessment: FairValueAssessment; now: number }) {
+function PythFairValueRows({
+  assessment,
+  now,
+}: {
+  assessment: FairValueAssessment;
+  now: number;
+}) {
   const ageOf = (at: string | null) => {
     if (!at) return "age unknown";
     const ms = Math.max(0, (now || Date.now()) - Date.parse(at));
-    return ms < 60_000 ? `${Math.round(ms / 1000)}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : `${(ms / 3_600_000).toFixed(1)}h`;
+    return ms < 60_000
+      ? `${Math.round(ms / 1000)}s`
+      : ms < 3_600_000
+        ? `${Math.round(ms / 60_000)}m`
+        : `${(ms / 3_600_000).toFixed(1)}h`;
   };
-  const price = (p: string | null | undefined) => (p ? `$${Number(p).toLocaleString("en-US", { maximumFractionDigits: Number(p) < 10 ? 4 : 2 })}` : "Unavailable");
-  const session: Record<string, string> = { regular: "Regular", preMarket: "Pre-market", postMarket: "Post-market", overNight: "Overnight", closed: "Closed" };
+  const price = (p: string | null | undefined) =>
+    p
+      ? `$${Number(p).toLocaleString("en-US", { maximumFractionDigits: Number(p) < 10 ? 4 : 2 })}`
+      : "Unavailable";
+  const session: Record<string, string> = {
+    regular: "Regular",
+    preMarket: "Pre-market",
+    postMarket: "Post-market",
+    overNight: "Overnight",
+    closed: "Closed",
+  };
   const reference = assessment.tokenReference ?? assessment.underlyingReference;
   const head = (
     <div className="pyth-trade-head">
@@ -273,16 +303,43 @@ function PythFairValueRows({ assessment, now }: { assessment: FairValueAssessmen
     <div className="pyth-trade-rows">
       {head}
       <Row label="Token reference">
-        {assessment.tokenReference ? `${price(assessment.tokenReference.price)} · ${assessment.tokenReference.freshness === "live" ? "live" : assessment.tokenReference.freshness}` : "No Pyth reference"}
+        {assessment.tokenReference
+          ? `${price(assessment.tokenReference.price)} · ${assessment.tokenReference.freshness === "live" ? "live" : assessment.tokenReference.freshness}`
+          : "No Pyth reference"}
       </Row>
       <Row label="Underlying reference">
-        {assessment.underlyingReference ? `${price(assessment.underlyingReference.price)} · ${session[assessment.underlyingReference.marketSession ?? ""] ?? "session unknown"}` : "No Pyth reference"}
+        {assessment.underlyingReference
+          ? `${price(assessment.underlyingReference.price)} · ${session[assessment.underlyingReference.marketSession ?? ""] ?? "session unknown"}`
+          : "No Pyth reference"}
       </Row>
-      <Row label="Execution deviation">{assessment.routeVsTokenBps === null ? "Not comparable" : formatBps(assessment.routeVsTokenBps)}</Row>
-      <Row label="Token basis">{assessment.tokenVsUnderlyingBps === null ? (assessment.comparability === "unverified" && assessment.tokenReference && assessment.underlyingReference ? "Comparability unverified" : "—") : formatBps(assessment.tokenVsUnderlyingBps)}</Row>
-      <Row label="Market session">{assessment.underlyingMarketSession ? (session[assessment.underlyingMarketSession] ?? assessment.underlyingMarketSession) : "—"}</Row>
-      <Row label="Data age">{reference ? `${ageOf(reference.feedUpdatedAt)} · ${reference.publisherCount ?? "?"} publishers` : "—"}</Row>
-      <Row label="Protection status">{FAIR_VALUE_LABELS[assessment.status]}</Row>
+      <Row label="Execution deviation">
+        {assessment.routeVsTokenBps === null
+          ? "Not comparable"
+          : formatBps(assessment.routeVsTokenBps)}
+      </Row>
+      <Row label="Token basis">
+        {assessment.tokenVsUnderlyingBps === null
+          ? assessment.comparability === "unverified" &&
+            assessment.tokenReference &&
+            assessment.underlyingReference
+            ? "Comparability unverified"
+            : "—"
+          : formatBps(assessment.tokenVsUnderlyingBps)}
+      </Row>
+      <Row label="Market session">
+        {assessment.underlyingMarketSession
+          ? (session[assessment.underlyingMarketSession] ??
+            assessment.underlyingMarketSession)
+          : "—"}
+      </Row>
+      <Row label="Data age">
+        {reference
+          ? `${ageOf(reference.feedUpdatedAt)} · ${reference.publisherCount ?? "?"} publishers`
+          : "—"}
+      </Row>
+      <Row label="Protection status">
+        {FAIR_VALUE_LABELS[assessment.status]}
+      </Row>
     </div>
   );
 }
@@ -425,7 +482,9 @@ export function Stockroom({
      reporting no reference, which reads as a broken integration rather than
      as an honest one. Falls back to the head of the list. */
   const [marketReceive, setMarketReceive] = useState<PaymentToken>(() => {
-    const opening = stocks.find((candidate) => candidate.ticker === OPENING_TICKER) ?? stocks[0];
+    const opening =
+      stocks.find((candidate) => candidate.ticker === OPENING_TICKER) ??
+      stocks[0];
     return {
       mint: opening.mint,
       symbol: opening.ticker,
@@ -448,11 +507,22 @@ export function Stockroom({
           }
         : current,
     );
-  }, [stock.mint, stock.name, stock.provider, stock.ticker, stock.logo, stockDecimals]);
+  }, [
+    stock.mint,
+    stock.name,
+    stock.provider,
+    stock.ticker,
+    stock.logo,
+    stockDecimals,
+  ]);
   const payment = mode === "market" ? marketPayment : funding;
   const receive = mode === "market" ? marketReceive : stockToken;
-  const paymentStock = stocks.find((candidate) => candidate.mint === payment.mint);
-  const receiveStock = stocks.find((candidate) => candidate.mint === receive.mint);
+  const paymentStock = stocks.find(
+    (candidate) => candidate.mint === payment.mint,
+  );
+  const receiveStock = stocks.find(
+    (candidate) => candidate.mint === receive.mint,
+  );
   const disclosureStock = receiveStock ?? paymentStock;
   const [receiveAmount, setReceiveAmount] = useState("");
   const [review, setReview] = useState<MarketReview | null>(null);
@@ -481,7 +551,11 @@ export function Stockroom({
     expiresAt?: string | null;
     feeBps?: number;
     /** Whether the share behind the quote can be traded or hedged right now. */
-    underlying?: { phase: "regular" | "extended" | "overnight" | "weekend"; hedgeable: boolean; label: string } | null;
+    underlying?: {
+      phase: "regular" | "extended" | "overnight" | "weekend";
+      hedgeable: boolean;
+      label: string;
+    } | null;
     /** Pyth Fair Value Engine finding for a USDC ↔ representation pair; null when Pyth has nothing. */
     pyth?: FairValueAssessment | null;
   } | null>(null);
@@ -492,9 +566,15 @@ export function Stockroom({
     if (!estimate) return "Best of every connected source";
     const legs = estimate.route ?? [];
     const source = estimate.executionSource ?? estimate.quoteProvider ?? null;
-    if (!legs.length) return source ? getExecutionSourceBrand(source).label : "Best of every connected source";
+    if (!legs.length)
+      return source
+        ? getExecutionSourceBrand(source).label
+        : "Best of every connected source";
     const venues = [...new Set(legs.map((leg) => leg.venue).filter(Boolean))];
-    const via = venues.length > 1 ? `${venues.length} pools · ${venues.join(" + ")}` : venues[0];
+    const via =
+      venues.length > 1
+        ? `${venues.length} pools · ${venues.join(" + ")}`
+        : venues[0];
     return source ? `${getExecutionSourceBrand(source).label} · ${via}` : via;
   }, [estimate]);
   /* A route Henar's own optimizer constructed, fetched alongside the
@@ -528,8 +608,13 @@ export function Stockroom({
   /* The router quotes one representation against USDC. Anything else is
      outside its scope and executes through the market path. */
   const routerSide: "buy" | "sell" | null =
-    payment.mint === PAYMENT_USDC.mint ? "buy" : receive.mint === PAYMENT_USDC.mint ? "sell" : null;
-  const routerMint = payment.mint === PAYMENT_USDC.mint ? receive.mint : payment.mint;
+    payment.mint === PAYMENT_USDC.mint
+      ? "buy"
+      : receive.mint === PAYMENT_USDC.mint
+        ? "sell"
+        : null;
+  const routerMint =
+    payment.mint === PAYMENT_USDC.mint ? receive.mint : payment.mint;
   const [quoteRefresh, setQuoteRefresh] = useState(0);
   const lastActivity = useRef(Date.now());
   const [paused, setPaused] = useState(false);
@@ -547,12 +632,15 @@ export function Stockroom({
     if (!routerExecutable) return "market";
     if (!marketBestOutput) return "router";
     try {
-      return new Decimal(routerExecutable.netOutput).gt(new Decimal(marketBestOutput)) ? "router" : "market";
+      return new Decimal(routerExecutable.netOutput).gt(
+        new Decimal(marketBestOutput),
+      )
+        ? "router"
+        : "market";
     } catch {
       return "market";
     }
   }, [routerExecutable, marketBestOutput]);
-
 
   /* Every source competes on final net user output, Henar's own construction
      included. It earns its place in the ranking rather than sitting above the
@@ -567,9 +655,16 @@ export function Stockroom({
       source: candidate.source,
       output: candidate.output,
       minimumOutput: candidate.minimumOutput,
-      priceImpactBps: candidate.priceImpactPct === null ? null : Math.round(Number(candidate.priceImpactPct) * 10_000),
+      priceImpactBps:
+        candidate.priceImpactPct === null
+          ? null
+          : Math.round(Number(candidate.priceImpactPct) * 10_000),
       providerFeeBps: candidate.providerFeeBps,
-      legs: candidate.route.map((step) => ({ venue: step.venue, pool: step.pool, percent: step.percent })),
+      legs: candidate.route.map((step) => ({
+        venue: step.venue,
+        pool: step.pool,
+        percent: step.percent,
+      })),
       henar: false,
       /* A source Henar has no builder for. Shown, because where the
          liquidity actually is worth knowing, but never badged as something
@@ -591,7 +686,9 @@ export function Stockroom({
         fillable: true,
         via: henarRoute.via,
       });
-    return rows.sort((a, b) => new Decimal(b.output).comparedTo(new Decimal(a.output)));
+    return rows.sort((a, b) =>
+      new Decimal(b.output).comparedTo(new Decimal(a.output)),
+    );
   }, [estimate, henarRoute]);
 
   /** The best row the user can actually be given, which is what "Best" means. */
@@ -599,7 +696,6 @@ export function Stockroom({
     () => rankedCandidates.find((row) => row.fillable)?.key ?? null,
     [rankedCandidates],
   );
-
 
   const [estimateError, setEstimateError] = useState("");
   const [estimating, setEstimating] = useState(false);
@@ -700,7 +796,11 @@ export function Stockroom({
             const response = await fetch("/api/router/quote", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ mint: routerMint, side: routerSide, amount: raw.toString() }),
+              body: JSON.stringify({
+                mint: routerMint,
+                side: routerSide,
+                amount: raw.toString(),
+              }),
               signal: controller.signal,
             });
             if (!response.ok) throw new Error("router unavailable");
@@ -714,11 +814,18 @@ export function Stockroom({
                Jupiter is ranked too, but it is built through /api/market, so
                it is not what this field is about. */
             const mode = quote.executionProtection?.mode ?? null;
-            const legs: { venue: string; poolAddress: string | null; percentBps: number }[] = quote.route ?? [];
+            const legs: {
+              venue: string;
+              poolAddress: string | null;
+              percentBps: number;
+            }[] = quote.route ?? [];
             setRouterExecutable(
               mode === "execute" && quote.netUserOutput && legs.length
                 ? {
-                    netOutput: formatUnits(BigInt(quote.netUserOutput), receive.decimals),
+                    netOutput: formatUnits(
+                      BigInt(quote.netUserOutput),
+                      receive.decimals,
+                    ),
                     legs: legs.length,
                     venues: [...new Set(legs.map((leg) => leg.venue))],
                   }
@@ -731,7 +838,9 @@ export function Stockroom({
             const path = quote.henarPath;
             const splitOk = split && split.legs.length >= 2 && split.executable;
             const pathOk = path && path.executable && path.legs.length >= 2;
-            const usePath = pathOk && (!splitOk || BigInt(path.netOutput) > BigInt(split.netOutput));
+            const usePath =
+              pathOk &&
+              (!splitOk || BigInt(path.netOutput) > BigInt(split.netOutput));
             const built = usePath ? path : splitOk ? split : null;
             if (!built) {
               setHenarRoute(null);
@@ -739,14 +848,31 @@ export function Stockroom({
             }
             setHenarRoute({
               output: formatUnits(BigInt(built.netOutput), receive.decimals),
-              minimumOutput: built.minNetUserOutput ? formatUnits(BigInt(built.minNetUserOutput), receive.decimals) : null,
-              priceImpactBps: usePath ? (quote.priceImpactBps ?? null) : (built.priceImpactBps ?? null),
+              minimumOutput: built.minNetUserOutput
+                ? formatUnits(BigInt(built.minNetUserOutput), receive.decimals)
+                : null,
+              priceImpactBps: usePath
+                ? (quote.priceImpactBps ?? null)
+                : (built.priceImpactBps ?? null),
               feeBps: quote.fees?.henarBps ?? tradeFeeBps,
-              legs: built.legs.map((leg: { venue: string; poolAddress: string | null; percentBps: number }) => ({ venue: leg.venue, pool: leg.poolAddress, percent: leg.percentBps / 100 })),
+              legs: built.legs.map(
+                (leg: {
+                  venue: string;
+                  poolAddress: string | null;
+                  percentBps: number;
+                }) => ({
+                  venue: leg.venue,
+                  pool: leg.poolAddress,
+                  percent: leg.percentBps / 100,
+                }),
+              ),
               via: usePath
                 ? {
                     symbol: path.intermediate?.symbol ?? "an intermediate",
-                    residual: path.residual && path.intermediate ? `${formatUnits(BigInt(path.residual.expected), path.intermediate.decimals)} ${path.intermediate.symbol ?? ""}`.trim() : null,
+                    residual:
+                      path.residual && path.intermediate
+                        ? `${formatUnits(BigInt(path.residual.expected), path.intermediate.decimals)} ${path.intermediate.symbol ?? ""}`.trim()
+                        : null,
                   }
                 : null,
             });
@@ -816,9 +942,9 @@ export function Stockroom({
   const [assetPickerSide, setAssetPickerSide] = useState<"input" | "output">(
     "input",
   );
-  const [assetClass, setAssetClass] = useState<"all" | "crypto" | "stocks" | "preipo">(
-    "all",
-  );
+  const [assetClass, setAssetClass] = useState<
+    "all" | "crypto" | "stocks" | "preipo"
+  >("all");
   const [assetIssuer, setAssetIssuer] = useState<
     "all" | "xStocks" | "Backpack" | "Ondo" | "PreStocks" | "Tessera"
   >("all");
@@ -1008,29 +1134,34 @@ export function Stockroom({
      (PreStocks, Tessera) through Henar's own route, never hard-coded. Each
      is a specific provider, product and mint; the selector groups them by
      company for reading but never merges them. */
-  const [privateProducts, setPrivateProducts] = useState<SelectorPrivateProduct[]>([]);
+  const [privateProducts, setPrivateProducts] = useState<
+    SelectorPrivateProduct[]
+  >([]);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/private-markets/products", { signal: controller.signal })
       .then(async (r) => (r.ok ? r.json() : null))
       .then((data: { products?: SelectorPrivateProduct[] } | null) => {
-        if (data?.products && !controller.signal.aborted) setPrivateProducts(data.products);
+        if (data?.products && !controller.signal.aborted)
+          setPrivateProducts(data.products);
       })
       .catch(() => {});
     return () => controller.abort();
   }, []);
-  const verifiedPrivateAssets: PaymentToken[] = privateProducts.map((entry) => ({
-    mint: entry.mint,
-    symbol: entry.symbol,
-    name: entry.name,
-    decimals: balances?.[entry.mint]?.decimals ?? entry.decimals ?? -1,
-    logo: entry.logo ?? undefined,
-    provider: entry.provider,
-    assetClass: "PRIVATE_MARKET_EXPOSURE",
-    company: entry.companyName,
-    companySlug: entry.companySlug,
-    transferFeeBps: entry.transferFeeBps,
-  }));
+  const verifiedPrivateAssets: PaymentToken[] = privateProducts.map(
+    (entry) => ({
+      mint: entry.mint,
+      symbol: entry.symbol,
+      name: entry.name,
+      decimals: balances?.[entry.mint]?.decimals ?? entry.decimals ?? -1,
+      logo: entry.logo ?? undefined,
+      provider: entry.provider,
+      assetClass: "PRIVATE_MARKET_EXPOSURE",
+      company: entry.companyName,
+      companySlug: entry.companySlug,
+      transferFeeBps: entry.transferFeeBps,
+    }),
+  );
   const verifiedStockAssets: PaymentToken[] = stocks.map((entry) => ({
     mint: entry.mint,
     symbol: entry.ticker,
@@ -1064,25 +1195,26 @@ export function Stockroom({
   ];
   const oppositeMint =
     assetPickerSide === "input" ? marketReceive.mint : marketPayment.mint;
-  const searchedPaymentOptions = availablePayments
-    .filter((token) => {
-      const isStock = isPublicEquity(token);
-      const isPrivate = isPrivateMarket(token);
-      const inClass =
-        assetClass === "all" ||
-        (assetClass === "stocks" ? isStock : assetClass === "preipo" ? isPrivate : !isStock && !isPrivate);
-      return (
-        token.mint !== oppositeMint &&
-        inClass &&
-        `${token.symbol} ${token.name} ${token.provider ?? ""} ${token.company ?? ""} ${token.mint}`
-          .toLowerCase()
-          .includes(paymentSearch.toLowerCase())
-      );
-    });
+  const searchedPaymentOptions = availablePayments.filter((token) => {
+    const isStock = isPublicEquity(token);
+    const isPrivate = isPrivateMarket(token);
+    const inClass =
+      assetClass === "all" ||
+      (assetClass === "stocks"
+        ? isStock
+        : assetClass === "preipo"
+          ? isPrivate
+          : !isStock && !isPrivate);
+    return (
+      token.mint !== oppositeMint &&
+      inClass &&
+      `${token.symbol} ${token.name} ${token.provider ?? ""} ${token.company ?? ""} ${token.mint}`
+        .toLowerCase()
+        .includes(paymentSearch.toLowerCase())
+    );
+  });
   const paymentOptions = searchedPaymentOptions
-    .filter(
-      (token) => assetIssuer === "all" || token.provider === assetIssuer,
-    )
+    .filter((token) => assetIssuer === "all" || token.provider === assetIssuer)
     .sort((a, b) => {
       const aHeld = BigInt(balances?.[a.mint]?.amount ?? "0") > 0n ? 1 : 0;
       const bHeld = BigInt(balances?.[b.mint]?.amount ?? "0") > 0n ? 1 : 0;
@@ -1098,8 +1230,12 @@ export function Stockroom({
       }
       // Private-market products sort by company so two providers' products
       // for one company sit together; everything else by name.
-      const aKey = isPrivateMarket(a) ? `${a.company ?? a.name} ${a.provider ?? ""}` : a.name;
-      const bKey = isPrivateMarket(b) ? `${b.company ?? b.name} ${b.provider ?? ""}` : b.name;
+      const aKey = isPrivateMarket(a)
+        ? `${a.company ?? a.name} ${a.provider ?? ""}`
+        : a.name;
+      const bKey = isPrivateMarket(b)
+        ? `${b.company ?? b.name} ${b.provider ?? ""}`
+        : b.name;
       return aKey.localeCompare(bKey);
     });
   const heldPaymentOptions = paymentOptions.filter(
@@ -1192,8 +1328,15 @@ export function Stockroom({
     const seen = () => {
       if (!document.hidden) lastActivity.current = Date.now();
     };
-    const events = ["pointerdown", "keydown", "wheel", "touchstart", "visibilitychange"] as const;
-    for (const event of events) document.addEventListener(event, seen, { passive: true });
+    const events = [
+      "pointerdown",
+      "keydown",
+      "wheel",
+      "touchstart",
+      "visibilitychange",
+    ] as const;
+    for (const event of events)
+      document.addEventListener(event, seen, { passive: true });
     return () => {
       for (const event of events) document.removeEventListener(event, seen);
     };
@@ -1240,7 +1383,9 @@ export function Stockroom({
     fee = formatUnits(feeFor(parseUnits(displayedAmount, 6), tradeFeeBps), 6);
   } catch {}
   /* A built route awaiting confirmation, whichever builder produced it. */
-  const routerExpired = routerReview ? now >= Date.parse(routerReview.plan.expiresAt) : false;
+  const routerExpired = routerReview
+    ? now >= Date.parse(routerReview.plan.expiresAt)
+    : false;
   const expired = review ? now >= review.expiresAt : routerExpired;
   const built = Boolean(review) || Boolean(routerReview);
   async function getQuote() {
@@ -1301,7 +1446,12 @@ export function Stockroom({
     }
   }
   async function buy() {
-    if ((!review && !routerReview) || !wallet.signTransaction || !owner || operation.current)
+    if (
+      (!review && !routerReview) ||
+      !wallet.signTransaction ||
+      !owner ||
+      operation.current
+    )
       return;
     operation.current = true;
     setBusy(true);
@@ -1324,7 +1474,8 @@ export function Stockroom({
           },
           connection,
         );
-        if (token !== generation.current) throw new Error("Quote changed. Nothing was signed.");
+        if (token !== generation.current)
+          throw new Error("Quote changed. Nothing was signed.");
         setStatus("Confirm in your wallet");
         const signedRouterTx = await wallet.signTransaction(routerTx);
         const routerSig = bs58.encode(signedRouterTx.signatures[0]);
@@ -1335,25 +1486,60 @@ export function Stockroom({
            own RPC broadcast. A 503 means "not configured", not "refused". */
         const protectedSubmit = await fetch("/api/router/submit", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: routerAuthorization.current ?? "" },
-          body: JSON.stringify({ transaction: Buffer.from(signedRouterTx.serialize()).toString("base64"), owner, lastValidBlockHeight: routerReview.lastValidBlockHeight ?? 0 }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: routerAuthorization.current ?? "",
+          },
+          body: JSON.stringify({
+            transaction: Buffer.from(signedRouterTx.serialize()).toString(
+              "base64",
+            ),
+            owner,
+            lastValidBlockHeight: routerReview.lastValidBlockHeight ?? 0,
+          }),
         }).catch(() => null);
         if (protectedSubmit?.ok) {
-          const outcome = (await protectedSubmit.json()) as { submitter: string | null };
-          setStatus(outcome.submitter === "jito" ? "Submitted privately · awaiting confirmation" : "Submitted · awaiting confirmation");
-        } else if (protectedSubmit && protectedSubmit.status !== 503 && protectedSubmit.status !== 404) {
-          const failure = (await protectedSubmit.json().catch(() => ({}))) as { detail?: string; error?: string };
-          throw new Error(failure.detail ?? failure.error ?? "Submission failed. Check Solscan before retrying.");
+          const outcome = (await protectedSubmit.json()) as {
+            submitter: string | null;
+          };
+          setStatus(
+            outcome.submitter === "jito"
+              ? "Submitted privately · awaiting confirmation"
+              : "Submitted · awaiting confirmation",
+          );
+        } else if (
+          protectedSubmit &&
+          protectedSubmit.status !== 503 &&
+          protectedSubmit.status !== 404
+        ) {
+          const failure = (await protectedSubmit.json().catch(() => ({}))) as {
+            detail?: string;
+            error?: string;
+          };
+          throw new Error(
+            failure.detail ??
+              failure.error ??
+              "Submission failed. Check Solscan before retrying.",
+          );
         } else {
-          await connection.sendRawTransaction(signedRouterTx.serialize(), { skipPreflight: false, maxRetries: 2 });
+          await connection.sendRawTransaction(signedRouterTx.serialize(), {
+            skipPreflight: false,
+            maxRetries: 2,
+          });
           setStatus("Submitted · awaiting confirmation");
         }
         const routerDeadline = Date.now() + 60_000;
         while (Date.now() < routerDeadline) {
           const result = await connection.getSignatureStatuses([routerSig]);
           const value = result.value[0];
-          if (value?.err) throw new Error("Transaction failed onchain. Inspect it on Solscan.");
-          if (value?.confirmationStatus === "confirmed" || value?.confirmationStatus === "finalized") {
+          if (value?.err)
+            throw new Error(
+              "Transaction failed onchain. Inspect it on Solscan.",
+            );
+          if (
+            value?.confirmationStatus === "confirmed" ||
+            value?.confirmationStatus === "finalized"
+          ) {
             setStatus("Confirmed");
             return;
           }
@@ -1882,7 +2068,10 @@ export function Stockroom({
                   matters most, and it pushed it off the bottom of the screen.
                   The key still resets it per quote, so it reopens closed
                   rather than carrying the last quote's disclosure open. */}
-              <details className="fee-disclosure" key={review?.transaction ?? "no-quote"}>
+              <details
+                className="fee-disclosure"
+                key={review?.transaction ?? "no-quote"}
+              >
                 <summary>
                   <span>
                     <Info size={14} />{" "}
@@ -1902,18 +2091,23 @@ export function Stockroom({
                   </Row>
                   <Row label="Slippage tolerance">0.50%</Row>
                   <Row label="Price impact">
-                    {review ? formatPriceImpact(Number(review.priceImpactPct)) : "—"}
+                    {review
+                      ? formatPriceImpact(Number(review.priceImpactPct))
+                      : "—"}
                   </Row>
-                  {mode === "market" && (isPrivateMarket(receive) || isPrivateMarket(payment)) && (
-                    <Row label="Token transfer fee">
-                      {(() => {
-                        const fee = isPrivateMarket(receive) ? receive.transferFeeBps : payment.transferFeeBps;
-                        return fee === null || fee === undefined
-                          ? "Read from the mint at quote time"
-                          : `${(fee / 100).toFixed(2)}% (Token-2022) · quotes are net of it`;
-                      })()}
-                    </Row>
-                  )}
+                  {mode === "market" &&
+                    (isPrivateMarket(receive) || isPrivateMarket(payment)) && (
+                      <Row label="Token transfer fee">
+                        {(() => {
+                          const fee = isPrivateMarket(receive)
+                            ? receive.transferFeeBps
+                            : payment.transferFeeBps;
+                          return fee === null || fee === undefined
+                            ? "Read from the mint at quote time"
+                            : `${(fee / 100).toFixed(2)}% (Token-2022) · quotes are net of it`;
+                        })()}
+                      </Row>
+                    )}
                   {review?.route.routePlan.length ? (
                     <Row label="Execution route">
                       {[
@@ -2082,7 +2276,11 @@ export function Stockroom({
                 )}
               </div>
               {mode === "market" && paused && (
-                <section className="session-paused" role="status" aria-live="polite">
+                <section
+                  className="session-paused"
+                  role="status"
+                  aria-live="polite"
+                >
                   <h2>Session paused</h2>
                   <p>
                     We paused refreshing quotes while you were away, so you are
@@ -2102,7 +2300,10 @@ export function Stockroom({
                 </section>
               )}
               {mode === "market" && !paused && (
-                <section className="live-quotes" aria-label="Live execution quotes">
+                <section
+                  className="live-quotes"
+                  aria-label="Live execution quotes"
+                >
                   <div className="live-quotes-head">
                     <div>
                       <span className="quote-live-dot" aria-hidden="true" />
@@ -2115,7 +2316,9 @@ export function Stockroom({
                     </div>
                     <button
                       type="button"
-                      className={estimating ? "quote-refresh spinning" : "quote-refresh"}
+                      className={
+                        estimating ? "quote-refresh spinning" : "quote-refresh"
+                      }
                       onClick={() => setQuoteRefresh((n) => n + 1)}
                       disabled={estimating}
                       aria-label="Refresh quotes"
@@ -2130,27 +2333,50 @@ export function Stockroom({
                       key={`${rankedCandidates[0].source}-${rankedCandidates[0].output}`}
                       aria-live="polite"
                     >
-                      {rankedCandidates.slice(0, 4).map((candidate, index) => {
-                        const source = getExecutionSourceBrand(candidate.source).label;
+                      {rankedCandidates.slice(0, 4).map((candidate) => {
+                        const source = getExecutionSourceBrand(
+                          candidate.source,
+                        ).label;
                         /* "Best" means best of what the user can actually
                            have. A comparison-only source can top the list on
                            price and still not be a route Henar can build, so
                            it is labelled for what it is rather than badged. */
-                        const isBest = candidate.fillable && candidate.key === bestFillableKey;
+                        const isBest =
+                          candidate.fillable &&
+                          candidate.key === bestFillableKey;
                         /* The row names the liquidity it was built over, like
                            every other row. The allocation, pool count and
                            impact belong in the route detail, not in a list a
                            user scans for a number. */
                         const venuesUsed = candidate.henar
-                          ? Array.from(new Set(candidate.legs.map((leg) => getExecutionSourceBrand(leg.venue).label))).join(" + ")
-                          : Array.from(new Set(candidate.legs.map((step) => step.venue))).slice(0, 2).join(" · ");
+                          ? Array.from(
+                              new Set(
+                                candidate.legs.map(
+                                  (leg) =>
+                                    getExecutionSourceBrand(leg.venue).label,
+                                ),
+                              ),
+                            ).join(" + ")
+                          : Array.from(
+                              new Set(candidate.legs.map((step) => step.venue)),
+                            )
+                              .slice(0, 2)
+                              .join(" · ");
                         /* A path names the asset it passes through: the user
                            should know their trade touches SOL before they see
                            SOL dust in their wallet. */
-                        const allocation = candidate.via ? `${venuesUsed} via ${candidate.via.symbol}` : venuesUsed;
+                        const allocation = candidate.via
+                          ? `${venuesUsed} via ${candidate.via.symbol}`
+                          : venuesUsed;
                         return (
                           <div
-                            className={isBest ? "quote-row best" : candidate.fillable ? "quote-row" : "quote-row reference"}
+                            className={
+                              isBest
+                                ? "quote-row best"
+                                : candidate.fillable
+                                  ? "quote-row"
+                                  : "quote-row reference"
+                            }
                             key={candidate.key}
                           >
                             <ExecutionSourceLogo source={candidate.source} />
@@ -2158,7 +2384,8 @@ export function Stockroom({
                               <strong>{source}</strong>
                               <span>
                                 {allocation || "Direct route"}
-                                {!candidate.henar && candidate.providerFeeBps > 0
+                                {!candidate.henar &&
+                                candidate.providerFeeBps > 0
                                   ? ` · ${percent(candidate.providerFeeBps)} provider fee`
                                   : ""}
                               </span>
@@ -2166,17 +2393,30 @@ export function Stockroom({
                             {isBest ? (
                               <span className="best-badge">Best</span>
                             ) : candidate.fillable ? null : (
-                              <span className="reference-badge" title="Henar cannot build this route; shown for comparison">
+                              <span
+                                className="reference-badge"
+                                title="Henar cannot build this route; shown for comparison"
+                              >
                                 Reference
                               </span>
                             )}
                             <div className="quote-output">
                               <strong>
-                                {new Decimal(candidate.output).toSignificantDigits(8).toFixed()} {receive.symbol}
+                                {new Decimal(candidate.output)
+                                  .toSignificantDigits(8)
+                                  .toFixed()}{" "}
+                                {receive.symbol}
                               </strong>
-                              {usdEstimate(candidate.output, receiveUsdPrice) && (
+                              {usdEstimate(
+                                candidate.output,
+                                receiveUsdPrice,
+                              ) && (
                                 <small>
-                                  ≈ {usdEstimate(candidate.output, receiveUsdPrice)}
+                                  ≈{" "}
+                                  {usdEstimate(
+                                    candidate.output,
+                                    receiveUsdPrice,
+                                  )}
                                 </small>
                               )}
                             </div>
@@ -2186,21 +2426,27 @@ export function Stockroom({
                     </div>
                   ) : (
                     <div className="quote-empty">
-                      {estimateError || (estimating ? "Comparing live routes…" : "Enter an amount to compare routes")}
+                      {estimateError ||
+                        (estimating
+                          ? "Comparing live routes…"
+                          : "Enter an amount to compare routes")}
                     </div>
                   )}
-                  {estimate?.underlying?.hedgeable === false && receiveStock && (
-                    /* A maker who cannot offset a position until Sunday widens
+                  {estimate?.underlying?.hedgeable === false &&
+                    receiveStock && (
+                      /* A maker who cannot offset a position until Sunday widens
                        the quote or steps back, so a weekend price is not a
                        weekday price. Say which one this is rather than letting
                        the spread speak for itself. */
-                    <div className="quote-session-note" role="note">
-                      {estimate.underlying.label}. Spreads on tokenised equities
-                      are typically wider while the share cannot be traded.
-                    </div>
-                  )}
+                      <div className="quote-session-note" role="note">
+                        {estimate.underlying.label}. Spreads on tokenised
+                        equities are typically wider while the share cannot be
+                        traded.
+                      </div>
+                    )}
                   <div className="quote-fee-note">
-                    Ranked after provider fees · Net of Henar&apos;s {percent(tradeFeeBps)} fee
+                    Ranked after provider fees · Net of Henar&apos;s{" "}
+                    {percent(tradeFeeBps)} fee
                   </div>
                 </section>
               )}
@@ -2367,23 +2613,37 @@ export function Stockroom({
                 )}
               </section>
             )}
-            {privateProducts.some((p) => BigInt(balances?.[p.mint]?.amount ?? "0") > 0n) && (
+            {privateProducts.some(
+              (p) => BigInt(balances?.[p.mint]?.amount ?? "0") > 0n,
+            ) && (
               <section className="holdings" id="preipo-holdings">
                 <div className="section-heading">
                   <h2>Pre-IPO exposure</h2>
-                  <small className="holdings-note">Provider products stay separate · valuation is the Henar executable reference, not the provider mark</small>
+                  <small className="holdings-note">
+                    Provider products stay separate · valuation is the Henar
+                    executable reference, not the provider mark
+                  </small>
                 </div>
                 {privateProducts
                   .filter((p) => BigInt(balances?.[p.mint]?.amount ?? "0") > 0n)
                   .map((p) => {
                     const balance = balances![p.mint];
-                    const units = balance.uiAmount ?? formatUnits(balance.amount, balance.decimals);
+                    const units =
+                      balance.uiAmount ??
+                      formatUnits(balance.amount, balance.decimals);
                     const reference = p.executionReference?.price ?? null;
-                    const valued = reference ? usdEstimate(units, Number(reference)) : null;
+                    const valued = reference
+                      ? usdEstimate(units, Number(reference))
+                      : null;
                     return (
                       <div className="holding-row" key={p.mint}>
                         <span className="asset">
-                          <TokenLogo token={{ symbol: p.symbol, logo: p.logo ?? undefined }} />
+                          <TokenLogo
+                            token={{
+                              symbol: p.symbol,
+                              logo: p.logo ?? undefined,
+                            }}
+                          />
                           <span>
                             <strong>{p.companyName}</strong>
                             <small>
@@ -2394,8 +2654,12 @@ export function Stockroom({
                         <strong>
                           {units} units
                           <small className="holding-value">
-                            {valued ? `≈ ${valued} · Henar executable reference` : "No executable reference"}
-                            {p.markPrice !== null ? ` · ${p.provider} mark $${p.markPrice.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : ""}
+                            {valued
+                              ? `≈ ${valued} · Henar executable reference`
+                              : "No executable reference"}
+                            {p.markPrice !== null
+                              ? ` · ${p.provider} mark $${p.markPrice.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+                              : ""}
                           </small>
                         </strong>
                         <a
@@ -2677,7 +2941,11 @@ export function Stockroom({
                   aria-pressed={assetClass === value}
                   className={assetClass === value ? "active" : ""}
                   onClick={() => {
-                    const next = value as "all" | "crypto" | "stocks" | "preipo";
+                    const next = value as
+                      | "all"
+                      | "crypto"
+                      | "stocks"
+                      | "preipo";
                     setAssetClass(next);
                     // Provider filters belong to one category; leaving it resets them.
                     if (next !== assetClass) setAssetIssuer("all");
@@ -2746,7 +3014,10 @@ export function Stockroom({
             )}
             <div className="selector-columns asset-selector-columns">
               <span>
-                Asset <span className="result-count">{paymentOptions.length.toLocaleString()}</span>
+                Asset{" "}
+                <span className="result-count">
+                  {paymentOptions.length.toLocaleString()}
+                </span>
               </span>
               <span>Balance</span>
             </div>
@@ -2769,8 +3040,8 @@ export function Stockroom({
                         <strong>{token.symbol}</strong>
                         <small>
                           {token.name}
-                          {token.provider ? ` · ${token.provider}` : ""} · {token.mint.slice(0, 4)}…
-                          {token.mint.slice(-4)}
+                          {token.provider ? ` · ${token.provider}` : ""} ·{" "}
+                          {token.mint.slice(0, 4)}…{token.mint.slice(-4)}
                         </small>
                       </span>
                     </span>
@@ -2786,19 +3057,24 @@ export function Stockroom({
                   </button>
                 </div>
               ))}
-              {catalogPaymentOptions.length > 0 && heldPaymentOptions.length > 0 && (
-                <div className="selector-section-label catalog-label">
-                  <span>Explore</span>
-                  <span />
-                </div>
-              )}
+              {catalogPaymentOptions.length > 0 &&
+                heldPaymentOptions.length > 0 && (
+                  <div className="selector-section-label catalog-label">
+                    <span>Explore</span>
+                    <span />
+                  </div>
+                )}
               {catalogPaymentOptions.map((token, index) => {
                 /* Private-market products that reference the same company sit
                    under one company label, so "OpenAI" reads as one entry with
                    two distinct products — each its own provider and mint. */
                 const previous = catalogPaymentOptions[index - 1];
                 const groupLabel =
-                  isPrivateMarket(token) && token.company && previous?.company !== token.company ? token.company : null;
+                  isPrivateMarket(token) &&
+                  token.company &&
+                  previous?.company !== token.company
+                    ? token.company
+                    : null;
                 return (
                   <Fragment key={token.mint}>
                     {groupLabel && (
@@ -2808,24 +3084,26 @@ export function Stockroom({
                       </div>
                     )}
                     <div className="selector-row">
-                    <button
-                      className="asset-choice"
-                      disabled={resolvingPayment}
-                      onClick={() => choosePayment(token)}
-                    >
-                      <span className="asset">
-                        <TokenLogo token={token} />
-                        <span>
-                          <strong>{token.symbol}</strong>
-                          <small>
-                            {token.name}
-                            {token.provider ? ` · ${token.provider}` : ""} · {token.mint.slice(0, 4)}…
-                            {token.mint.slice(-4)}
-                          </small>
+                      <button
+                        className="asset-choice"
+                        disabled={resolvingPayment}
+                        onClick={() => choosePayment(token)}
+                      >
+                        <span className="asset">
+                          <TokenLogo token={token} />
+                          <span>
+                            <strong>{token.symbol}</strong>
+                            <small>
+                              {token.name}
+                              {token.provider
+                                ? ` · ${token.provider}`
+                                : ""} · {token.mint.slice(0, 4)}…
+                              {token.mint.slice(-4)}
+                            </small>
+                          </span>
                         </span>
-                      </span>
-                      <span className="selector-balance">—</span>
-                    </button>
+                        <span className="selector-balance">—</span>
+                      </button>
                     </div>
                   </Fragment>
                 );

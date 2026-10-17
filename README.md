@@ -50,6 +50,8 @@ Henar quotes Solana venues directly rather than reselling an aggregator's answer
 
 **Selection is by best obtainable net output.** The Trade quote list ranks candidates on what the user would actually receive after venue cost and the 10 bps market fee, and execution follows that ranking. The fee is applied to every candidate, including Henar's own routes, so it cannot bias the comparison. A route that prices well but is not reachable is shown and labelled, never selected.
 
+**What the measurements say.** Henar native clears the guard on about 40% of observations overall, and that rate falls with size: on a 196-observation matrix across four sizes and both sides it was approved on 38 of 49 rows at $10 and on none at all at $50,000, where either no native venue quotes or the price impact exceeds the ceiling. Depth, not routing, is the binding constraint at size, and the aggregator wins those trades. The benchmark doc states the sample size and the failures alongside the wins, and currently withholds the head-to-head win rate: the last full run predates a fix to how Jupiter was quoted, and a figure measured against a stale comparator is not worth publishing. See [the benchmark matrix](docs/router/BENCHMARK_MATRIX_V2.md) and [architecture §10](docs/router/ARCHITECTURE.md).
+
 ## Data policy
 
 Henar shows verified data or it shows nothing. Sector classification comes from each company's SEC-filed SIC code. Earnings come from filed XBRL facts. Prices and routes come from live quotes against exact verified mints. Where a source is not connected, the interface says so rather than estimating — "Unavailable", "Coming soon" and "External opportunity" are real states in this product, not placeholders.

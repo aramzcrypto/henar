@@ -67,11 +67,28 @@ export class JupiterAdapter implements VenueAdapter {
     };
   }
 
-  async getQuote(request: QuoteRequest, ctx: QuoteContext): Promise<VenueQuote> {
+  async getQuote(
+    request: QuoteRequest,
+    ctx: QuoteContext,
+  ): Promise<VenueQuote> {
     if (request.amountType !== "input")
-      return unavailableQuote("jupiter", request, "NOT_IMPLEMENTED", "exact-out", null, ctx.now);
+      return unavailableQuote(
+        "jupiter",
+        request,
+        "NOT_IMPLEMENTED",
+        "exact-out",
+        null,
+        ctx.now,
+      );
     if (!process.env.JUPITER_API_KEY)
-      return unavailableQuote("jupiter", request, "VENUE_NOT_CONFIGURED", "JUPITER_API_KEY is not set", null, ctx.now);
+      return unavailableQuote(
+        "jupiter",
+        request,
+        "VENUE_NOT_CONFIGURED",
+        "JUPITER_API_KEY is not set",
+        null,
+        ctx.now,
+      );
 
     let result;
     try {
@@ -90,14 +107,22 @@ export class JupiterAdapter implements VenueAdapter {
       const message = error instanceof Error ? error.message : String(error);
       // Jupiter pushing back is reported as such: a paced caller can retry it,
       // and a benchmark must never read it as illiquidity.
-      const reason = error instanceof RateLimitError
-        ? "RATE_LIMIT_RETRY"
-        : /terms did not match/i.test(message)
-          ? "QUOTE_TERMS_MISMATCH"
-          : /abort|timeout/i.test(message)
-            ? "VENUE_TIMEOUT"
-            : "VENUE_UNHEALTHY";
-      return unavailableQuote("jupiter", request, reason, message, null, ctx.now);
+      const reason =
+        error instanceof RateLimitError
+          ? "RATE_LIMIT_RETRY"
+          : /terms did not match/i.test(message)
+            ? "QUOTE_TERMS_MISMATCH"
+            : /abort|timeout/i.test(message)
+              ? "VENUE_TIMEOUT"
+              : "VENUE_UNHEALTHY";
+      return unavailableQuote(
+        "jupiter",
+        request,
+        reason,
+        message,
+        null,
+        ctx.now,
+      );
     }
 
     if (
@@ -105,7 +130,14 @@ export class JupiterAdapter implements VenueAdapter {
       result.outputMint !== request.outputMint ||
       result.inputAmount !== request.amount
     )
-      return unavailableQuote("jupiter", request, "QUOTE_TERMS_MISMATCH", "adapter response drifted from request", null, ctx.now);
+      return unavailableQuote(
+        "jupiter",
+        request,
+        "QUOTE_TERMS_MISMATCH",
+        "adapter response drifted from request",
+        null,
+        ctx.now,
+      );
 
     const single = result.route.length === 1 ? result.route[0] : null;
     return {
@@ -119,8 +151,17 @@ export class JupiterAdapter implements VenueAdapter {
       expectedAmountOut: result.outputAmount,
       minimumAmountOut: result.minimumOutputAmount,
       effectivePrice: null,
-      venueFeeBps: null,
-      venueFeeAmount: null,
+      /* Jupiter's own cut, reported rather than assumed away. `swap/v2/order`
+         answers with `feeBps: 10` and prices `outAmount` net of it, while
+         `swap/v1/quote` charges nothing; `quoteJupiter` races both and keeps
+         the better answer, so which one is in hand is not knowable from the
+         output alone. Recording it is what lets a benchmark say whether a
+         margin against Jupiter is route quality or Jupiter's fee. Dropping
+         these to null is how a 10 bps endpoint fee was read as a Henar edge
+         on 25 of 79 paired rows in the 15 September matrix. */
+      venueFeeBps: result.providerFeeBps === 0 ? null : result.providerFeeBps,
+      venueFeeAmount:
+        result.providerFeeAmount === "0" ? null : result.providerFeeAmount,
       estimatedNetworkCostLamports: null,
       priceImpactBps: pctToBps(result.priceImpactPct),
       slot: result.contextSlot,

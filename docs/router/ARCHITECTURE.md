@@ -1,10 +1,16 @@
 # Henar Equity Router — Architecture
 
-Status: Tasks 1–25 implemented in OFFLINE DEVELOPMENT MODE (15 September
-2026) with deterministic fixture tests only. **Every RPC-dependent gate is
-LIVE_VALIDATION_PENDING** — see [LIVE_VALIDATION.md](LIVE_VALIDATION.md)
-for tonight's checklist. Execution flags are off; the production Trade path
-is unchanged.
+Status: live in production as of 2 October 2026. `HENAR_ROUTER_QUOTES`,
+`HENAR_ROUTER_UI` and `HENAR_ROUTER_EXECUTION` are all set in the Vercel
+production environment: Henar's own routes are quoted, ranked in the Trade
+list against the aggregators, and selectable for execution. Split and path
+routing are on by default. [LIVE_VALIDATION.md](LIVE_VALIDATION.md) remains
+the gate-by-gate record of what has run against mainnet and what has not;
+no native mainnet trade has been recorded there yet.
+
+This document is written as a log. Sections 1–8 describe the system as of
+15 September 2026 and some of their statements have since been superseded —
+§9 and §10 say what changed and are authoritative where they conflict.
 
 Package map after Tasks 8–25: `router-core` (types, registry, engine,
 telemetry, native-state, validation, split), `execution-guard` (Task 9),
@@ -228,11 +234,11 @@ configuration, `discoveredFrom`, `verifiedAt`, `enabled`,
 
 **Verification is a state, not a nullable timestamp.**
 
-| `verification`        | Meaning                                                         | `onchainVerifiedAt` |
-|-----------------------|-----------------------------------------------------------------|---------------------|
-| `DISCOVERED`          | mints matched the catalogue exactly; venue metadata only        | must be `null`      |
-| `ONCHAIN_VERIFIED`    | mint accounts + pool program re-read from chain agree           | must be set         |
-| `VERIFICATION_FAILED` | chain disagreed; pool cannot be enabled                         | must be `null`      |
+| `verification`        | Meaning                                                  | `onchainVerifiedAt` |
+| --------------------- | -------------------------------------------------------- | ------------------- |
+| `DISCOVERED`          | mints matched the catalogue exactly; venue metadata only | must be `null`      |
+| `ONCHAIN_VERIFIED`    | mint accounts + pool program re-read from chain agree    | must be set         |
+| `VERIFICATION_FAILED` | chain disagreed; pool cannot be enabled                  | must be `null`      |
 
 `validatePool()` rejects any pool whose state and timestamp disagree, and
 `isOnchainVerified(pool)` is the only predicate execution code may use —
@@ -260,11 +266,11 @@ serves reference data but not swap quotes.
 Three capabilities are kept apart on every adapter (`VenueCapabilities`)
 and on every quote (`executionPath`):
 
-| Capability          | Jupiter | Raydium | Meteora | Meaning                                              |
-|---------------------|---------|---------|---------|------------------------------------------------------|
-| `quote`             | yes     | yes     | yes     | can price a swap                                     |
-| `legacyExecution`   | yes     | no      | no      | executable via the pre-router `/api/market` path     |
-| `nativeBuild`       | no      | no      | no      | router builds instructions itself (Task 14+)         |
+| Capability        | Jupiter | Raydium | Meteora | Meaning                                          |
+| ----------------- | ------- | ------- | ------- | ------------------------------------------------ |
+| `quote`           | yes     | yes     | yes     | can price a swap                                 |
+| `legacyExecution` | yes     | no      | no      | executable via the pre-router `/api/market` path |
+| `nativeBuild`     | no      | no      | no      | router builds instructions itself (Task 14+)     |
 
 A Jupiter quote therefore carries `executionPath: "legacy-market-api"`,
 direct quotes carry `"none"`, and nothing carries `"henar-native"` yet.
@@ -285,7 +291,7 @@ real pool; Standard/CPMM pools are registered but disabled with a reason.
 `DLMM.create(connection, pool)`, `getBinArrayForSwap(swapForY, count)`,
 then `swapQuote(inAmount, swapForY, allowedSlippage, binArrays, false)`.
 
-*Bin arrays.* `swapQuote` only walks the arrays it is handed and, with
+_Bin arrays._ `swapQuote` only walks the arrays it is handed and, with
 partial fill off, throws `SWAP_QUOTE_INSUFFICIENT_LIQUIDITY` when it runs
 past the last one — a loading limit, not a depth fact. `getBinArrayForSwap`
 returns fewer than `count` only when the pair's bitmap has no further
@@ -358,11 +364,11 @@ deducted again. Ranking key is `netUserOutput`.
 Real CLMM pools exist with real depth. Queried by exact mint pair against
 `api-v3.raydium.io/pools/info/mint`:
 
-| Pair        | Pools | Deepest TVL |
-|-------------|-------|-------------|
-| NVDAx/USDC  | 10    | $2.14M      |
-| SPYx/USDC   | 10    | $2.54M      |
-| TSLAx/USDC  | 6     | $2.10M      |
+| Pair       | Pools | Deepest TVL |
+| ---------- | ----- | ----------- |
+| NVDAx/USDC | 10    | $2.14M      |
+| SPYx/USDC  | 10    | $2.54M      |
+| TSLAx/USDC | 6     | $2.10M      |
 
 Example pool `49iMatQtoyabsYAQc8GafVq6aeBFVDxSRH44oiatyyw6`: program
 `CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK` (matches the SDK's
@@ -489,19 +495,19 @@ Status as of 15 September 2026, on the development machine without
 `SOLANA_RPC_URL` or `JUPITER_API_KEY` (they live on another device by
 design). Nothing below is mocked and nothing is marked passed.
 
-| Check                                                     | State                  |
-|-----------------------------------------------------------|------------------------|
-| Types, lint, unit tests (mock adapters, registry rules)   | pass, this machine     |
-| Raydium discovery sweep (HTTP, no credentials)            | done, 310 pools        |
-| Meteora DLMM discovery (`DLMM.getLbPairs`, needs RPC)      | **not run**            |
-| On-chain pool verification pass (→ `ONCHAIN_VERIFIED`)     | **not written, not run** |
-| Raydium live quote via SDK (`tests/router/venue-direct`)   | **skipped — no RPC**   |
-| Meteora live quote via SDK                                 | **no pool to quote**   |
-| Jupiter live quote via `quoteJupiter`                      | **not run — no key**   |
-| Benchmark `npm run router:benchmark`                       | **not run**            |
-| DBC / DAMM v2 offline quote validation vs official SDKs    | pass, this machine     |
-| DBC discovery `npm run router:discover:dbc` (needs RPC)     | **not run**            |
-| Live DBC / DAMM v2 quotes                                  | **not run — no RPC**   |
+| Check                                                    | State                    |
+| -------------------------------------------------------- | ------------------------ |
+| Types, lint, unit tests (mock adapters, registry rules)  | pass, this machine       |
+| Raydium discovery sweep (HTTP, no credentials)           | done, 310 pools          |
+| Meteora DLMM discovery (`DLMM.getLbPairs`, needs RPC)    | **not run**              |
+| On-chain pool verification pass (→ `ONCHAIN_VERIFIED`)   | **not written, not run** |
+| Raydium live quote via SDK (`tests/router/venue-direct`) | **skipped — no RPC**     |
+| Meteora live quote via SDK                               | **no pool to quote**     |
+| Jupiter live quote via `quoteJupiter`                    | **not run — no key**     |
+| Benchmark `npm run router:benchmark`                     | **not run**              |
+| DBC / DAMM v2 offline quote validation vs official SDKs  | pass, this machine       |
+| DBC discovery `npm run router:discover:dbc` (needs RPC)  | **not run**              |
+| Live DBC / DAMM v2 quotes                                | **not run — no RPC**     |
 
 Remaining live steps, in order, on the machine that has the credentials:
 
@@ -571,3 +577,125 @@ over `buildCurveWithMarketCap` + `validateConfigParameters`, the
 liquidity-targeted graduation model (constant-product, full-range, MODELED),
 a volatility-aware fee profile, and wallet-signed deployment with the mainnet
 guard (`deploymentProblems`). See `METEORA-DBC.md`.
+
+## 10. Additions of 25 September to 2 October 2026
+
+The §8 live steps have run. What they found, and what changed as a result.
+
+### Pool verification now checks the pair (`pool-mints.ts`)
+
+The first verification pass passed 587 of 587 pools, which was the tell: it
+re-read the accounts but never asked what pair the pool actually trades.
+`decodePoolMints` decodes the two mints from the pool account itself at fixed
+per-layout offsets (`whirlpool` base 101 / quote 181, `clmm` 73 / 105, `cpmm`
+168 / 200), checked against the venue SDKs for all 12 layout cases.
+`classifyPoolVerification` now requires that pair to agree, unordered, with
+the registry record. A layout that cannot be decoded stays `DISCOVERED`
+rather than being trusted, and `ONCHAIN_VERIFIED` is a precondition for
+native execution. The registry currently holds 1,512 pools, 700 verified in
+the committed snapshot, and the pass runs again on every deploy (`prebuild`).
+
+### Verified mint facts are persisted (`verified-mints.ts`)
+
+`router:verify:mints` writes `src/data/router/mints.json`: 2,369 records, each
+with mint, decimals, token program, Token-2022 extensions, the slot read and
+the timestamp. Decimals and token program are never inferred or defaulted; a
+mint whose facts could not be read stays unverified and is not routable.
+
+### The split reports, it does not decide
+
+`split.ts` used to discard a construction early and charge a fixed 2 bps per
+extra leg, which is a policy guess dressed as a cost. It now returns the best
+valid construction with `improvementBps`, `costBps` and `netImprovementBps`
+from the real incremental cost, and the caller decides.
+`DEFAULT_SPLIT_OPTIONS` is `{ granularity: 20, maxLegs: 2, extraLegCostBps: 0,
+refineSteps: 60 }`: a coarse marginal allocation followed by a ternary search
+on the boundary (`refineBoundary`).
+
+### The intermediate hop asks for what it costs
+
+The fixed `intermediateHopSlippageBps` of 10 described in §9 left dust on
+every path. `intermediateHopBps` is now a function of the measured price
+impact — `min(ceil(impact + 3), 10)` — and the guard policy carries
+`intermediateHopMaxSlippageBps: 10` with `intermediateHopMarginBps: 3`. The
+ceiling still does its job: a BROS path whose second leg priced at 912 bps
+was refused rather than sized.
+
+### Intermediates are qualified by measurement
+
+`router:qualify:intermediates` probes each candidate with a $10,000 round
+trip and admits only those losing under 100 bps: 40 of 157 probed qualified,
+recorded in `src/data/router/intermediates.json` with each asset's measured
+round-trip loss and, for the rejects, the reason (unsupported token
+semantics, transfer fees, no USDC side).
+
+### Selection is by what is obtainable, not by mode
+
+The API used `mode === "execute"` as a proxy for whether a route could be
+reached, which let a quote-only candidate hold the incumbent slot and beat a
+route the user could actually take. Reachability is now a property of the
+verdict:
+
+```ts
+export function obtainableNet(
+  verdict: GuardVerdict | null | undefined,
+): bigint | null {
+  if (!verdict || !verdict.approved) return null;
+  return capabilityOf(verdict) === "QUOTE_ONLY"
+    ? null
+    : fromRaw(verdict.quote.netOutput);
+}
+```
+
+The Trade list ranks every candidate on net output after the 10 bps market
+fee, which is charged to Henar's own routes as well so it cannot bias the
+comparison, and execution follows that ranking.
+
+### Measured result, and why the headline numbers are withheld
+
+A 196-observation matrix was run on 15 September (sizes $10 / $1k / $10k /
+$50k, both sides, the 10 bps fee charged to every candidate, log
+`logs/router-matrix-v3-10bps.jsonl`). Its structural findings stand:
+
+- Henar native was approved on 79 of 196 observations, and the approval rate
+  falls with size: 38 of 49 at $10, 32 at $1,000, 9 at $10,000, **0 at
+  $50,000**. At $50k no native venue even quoted on 27 of 49 rows, and on the
+  22 where one did the guard refused it — `PRICE_IMPACT_TOO_HIGH` 18 times,
+  `ROUTE_STATE_STALE` 4. That is a liquidity fact about the pools, not a
+  routing defect.
+- Orca and Raydium contributed almost equally when native was approved (41
+  and 38 best-native quotes); Meteora contributed nothing for a listed public
+  equity.
+- The build-and-simulate gate passed 44 of 46 attempts, the two failures
+  being `NO_FUNDED_OWNER`.
+- `bestObserved` equalled `bestSelectable` on 178 of 188 rows, so the ranking
+  was rarely leaving a better reachable route on the table.
+
+The **win rate against Jupiter from that run is not reported here**, because
+the run predates `fc705f9` (17 September). Until that commit the Jupiter
+adapter asked only `swap/v2/order`, whose answer is net of Jupiter's own
+10 bps platform fee (`feeBps: 10`, confirmed against the live endpoint), while
+`swap/v1/quote` carries no such fee. The benchmark therefore recorded Jupiter
+about 10 bps below what Jupiter itself would quote on any liquid pair: 25 of
+the 79 paired rows sit at exactly +10.01 bps in Henar's favour on the same
+pool. Those are an artifact of the endpoint, not an edge.
+
+`bestOfJupiterEndpoints` now asks both endpoints and takes the better answer,
+so the comparison is sound going forward, but the aggregate has to be measured
+again on current code before any win rate is quoted. A re-run is the first
+item in [HANDOFF.md](HANDOFF.md).
+
+### Supporting fixes
+
+- `request-cache.ts` — a memoizing `Connection` proxy with stable identity
+  per connection, epoch invalidation, and eviction of failed reads.
+- `src/lib/rpc-limiter.ts` — rate limiting installed under `Connection` via a
+  paced `fetch` with `Retry-After` handling, and an `AsyncLocalStorage`
+  re-entrancy guard after a nested limiter deadlocked.
+- Simulation compared the owner's aggregate balance for a mint instead of the
+  destination account named in the plan, and decoded a missing post state as
+  zero. Both now read the exact designated account.
+- `gate.warm()` — owner discovery inside the freshness window was expiring
+  quotes it had just taken (18 of 45 demotions).
+- The RFQ adapter demanded exact slippage equality and so rejected firm
+  quotes; only `slippageBps > requested` is a mismatch.
